@@ -1,14 +1,15 @@
 import { useState } from 'react';
+import { copyText } from '../clipboard.js';
 
 export function Ticket({ words, name }: { words: string[]; name: string }): JSX.Element {
-  const [copied, setCopied] = useState(false);
+  const [state, setState] = useState<'idle' | 'copied' | 'manual'>('idle');
   const copy = async (): Promise<void> => {
-    try {
-      await navigator.clipboard.writeText(`${name}: ${words.join(' ')}`);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
-    } catch {
-      /* clipboard unavailable */
+    if (await copyText(`${name}: ${words.join(' ')}`)) {
+      setState('copied');
+      setTimeout(() => setState('idle'), 1500);
+    } else {
+      // Blocked on a plain http address, so tell them rather than doing nothing.
+      setState('manual');
     }
   };
   return (
@@ -23,8 +24,13 @@ export function Ticket({ words, name }: { words: string[]; name: string }): JSX.
         Type these five words with the name <strong>{name}</strong> to get your history back another night. Nobody can recover them for you.
       </p>
       <button className="btn btn-small" onClick={() => void copy()}>
-        {copied ? 'Copied' : 'Copy'}
+        {state === 'copied' ? 'Copied' : 'Copy'}
       </button>
+      {state === 'manual' && (
+        <p className="micro" style={{ marginTop: 8, marginBottom: 0 }}>
+          This browser will not let the page reach the clipboard. Write the words down instead.
+        </p>
+      )}
     </div>
   );
 }

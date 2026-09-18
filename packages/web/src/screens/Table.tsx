@@ -9,10 +9,12 @@ import { SeatCard } from '../components/Seat.js';
 import { ActionBar } from '../components/ActionBar.js';
 import { DrawBar } from '../components/DrawBar.js';
 import { GameStrip } from '../components/GameStrip.js';
+import { Invite } from '../components/Invite.js';
 import { useConfirm } from '../components/Modal.js';
 import { ThemePicker } from '../components/ThemePicker.js';
 import { Toast } from '../components/Toast.js';
-import { fmt, fmtDuration, fmtMoney } from '../format.js';
+import { copyText } from '../clipboard.js';
+import { absoluteUrl, fmt, fmtDuration, fmtMoney } from '../format.js';
 import { Link } from '../router.js';
 import { useNow, type RoomSocket } from '../ws.js';
 
@@ -99,6 +101,7 @@ export function Table({ room, socket }: { room: RoomView; socket: RoomSocket }):
   const [announce, setAnnounce] = useState('');
   const [levelUp, setLevelUp] = useState<string | null>(null);
   const [selected, setSelected] = useState<string[]>([]);
+  const [copyNote, setCopyNote] = useState<string | null>(null);
   const seenLevel = useRef(room.level.index);
 
   const legal = useMemo(() => {
@@ -148,6 +151,25 @@ export function Table({ room, socket }: { room: RoomView; socket: RoomSocket }):
     setSelected([]);
   }, [hand?.number, hand?.streetIndex, hand?.stage, hand?.round.actor]);
 
+  const showInvite = async (): Promise<void> => {
+    await confirm({
+      title: 'Invite someone',
+      body: <Invite code={room.code} joinUrl={room.joinUrl} hasPassword={room.hasPassword} qrSize={200} />,
+      confirmLabel: 'Done',
+      hideCancel: true,
+    });
+  };
+
+  const copyLink = async (): Promise<void> => {
+    const ok = await copyText(absoluteUrl(room.joinUrl));
+    if (ok) {
+      setCopyNote('Join link copied');
+      setTimeout(() => setCopyNote(null), 2000);
+    } else {
+      void showInvite(); // clipboard is blocked, so show it to copy by hand
+    }
+  };
+
   const send = (a: Action): void => socket.send({ type: 'action', action: a });
   const toggleCard = (card: string): void => {
     if (!myDraw) return;
@@ -182,7 +204,14 @@ export function Table({ room, socket }: { room: RoomView; socket: RoomSocket }):
     <div className="table-screen">
       <header className="table-top">
         <Link to="/" className="brand">Calliope</Link>
-        <span className="room-code smallcaps">{room.code}</span>
+        <button
+          className="room-code smallcaps room-code-button"
+          onClick={() => void copyLink()}
+          title="Copy the join link"
+          aria-label={`Room ${room.code}. Copy the join link.`}
+        >
+          {room.code}
+        </button>
         {clockLeft !== null && (
           <span
             className={`clock ${room.phase === 'final-hand' ? 'final' : ''}`}
@@ -287,6 +316,7 @@ export function Table({ room, socket }: { room: RoomView; socket: RoomSocket }):
               <div onClick={(e) => e.stopPropagation()}>
                 <ThemePicker compact />
               </div>
+              <button className="btn" onClick={() => void showInvite()}>Invite someone</button>
               <Link to="/me" className="btn">My record</Link>
             </div>
           )}
@@ -408,7 +438,7 @@ export function Table({ room, socket }: { room: RoomView; socket: RoomSocket }):
       </div>
 
       <div className="sr-only" aria-live="polite">{announce}</div>
-      <Toast text={socket.error?.message ?? (socket.status !== 'open' ? 'Reconnecting…' : null)} />
+      <Toast text={copyNote ?? socket.error?.message ?? (socket.status !== 'open' ? 'Reconnecting…' : null)} />
     </div>
   );
 }

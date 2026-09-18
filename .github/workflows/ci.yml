@@ -100,6 +100,12 @@ jobs:
           BASE: http://localhost:3000
           OUT: ${{ runner.temp }}/shots
 
+      - name: The lobby guards the deal, cancels and shares
+        run: npm run e2e:lobby-and-sharing --workspace @calliope/web
+        env:
+          BASE: http://localhost:3000
+          OUT: ${{ runner.temp }}/shots
+
       - name: Keep the screenshots when something fails
         if: failure()
         uses: actions/upload-artifact@v4

@@ -26,6 +26,8 @@ export const hostCommandSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('remove-player'), playerId: z.string().min(1) }),
   z.object({ kind: z.literal('extend'), minutes: z.number().int().positive().max(600) }),
   z.object({ kind: z.literal('end-night') }),
+  /** Throw the table away before a single hand has been dealt. */
+  z.object({ kind: z.literal('cancel-room') }),
   z.object({ kind: z.literal('transfer-host'), playerId: z.string().min(1) }),
   z.object({ kind: z.literal('rename-room'), name: nameSchema }),
 ]);
@@ -182,6 +184,10 @@ export interface RoomView {
   handCount: number;
   report: NightReport | null;
   variants: VariantInfo[];
+  /**
+   * Relative (`/r/CODE`) unless the operator set PUBLIC_URL. Resolve it
+   * against the page address before showing, copying or encoding it.
+   */
   joinUrl: string;
 }
 

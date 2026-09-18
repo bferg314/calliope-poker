@@ -28,3 +28,19 @@ export function fmtDate(ms: number): string {
 export function fmtTime(ms: number): string {
   return new Date(ms).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
 }
+
+/**
+ * Make a join link absolute so it can be copied, sent or turned into a QR.
+ *
+ * The server sends `/r/CODE` unless the operator set PUBLIC_URL, which is the
+ * honest answer on a self-hosted box: it has no way to know whether people
+ * reach it by LAN address, hostname or through a proxy. The browser does know,
+ * because it got here somehow, so resolve against the current address.
+ */
+export function absoluteUrl(url: string): string {
+  try {
+    return new URL(url, window.location.href).href;
+  } catch {
+    return url;
+  }
+}

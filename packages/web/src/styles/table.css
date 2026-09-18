@@ -883,3 +883,23 @@
 .choose-panel .choose-game .micro {
   line-height: 1.25;
 }
+
+/* The room code doubles as the quickest way to share the table. */
+.room-code-button {
+  all: unset;
+  cursor: pointer;
+  font-family: var(--font-display);
+  letter-spacing: 0.14em;
+  color: var(--ink);
+  border-bottom: 1px dotted var(--ink-3);
+  white-space: nowrap;
+}
+
+.room-code-button:hover {
+  border-bottom-color: var(--ink);
+}
+
+.room-code-button:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}

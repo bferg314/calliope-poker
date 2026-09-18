@@ -266,11 +266,13 @@ Buttons: "Copy", "Choose my own words", "Got it". Recovery screen is the same ti
 
 ### Lobby
 
-Left: the seat ring as it will appear at the table, with empty seats printed as dotted circles ("open"). Host sees "+ bot" on empty seats. Right (below on phone): settings as a printed form with sections: Game (variant mode, betting, blinds), Chips (buy-in, denominations, starting stack), Re-buys, End of night. A share block shows the room code large and the join link with a copy button. "Deal the first hand" is the single primary action, `--red`.
+Left: the seat ring as it will appear at the table, with empty seats printed as dotted circles ("open"). Host sees "+ bot" on empty seats. Right (below on phone): settings as a printed form with sections: Game (variant mode, betting, blinds), Chips (buy-in, denominations, starting stack), Re-buys, End of night. A share block shows the room code large, a QR of the join link, and the link itself with a copy button. "Deal the first hand" is the single primary action, `--red`; it is disabled while the settings form has unsaved edits, with the reason and a "Save them" button printed beside it rather than in a tooltip, which a phone has no way to show. Below the form, quietly, "Cancel this table".
 
 ### Table
 
-§4.
+§4. The room code in the top bar is a button: pressing it copies the join link and says so. "Invite someone" in the host menu opens the same share block as a dialog, one acknowledge button.
+
+The QR is drawn as our own SVG from the module matrix, on a card-stock plate with a four-module quiet zone inside the viewBox. It is always dark-on-light, never inheriting the theme: a transparent code on a dark theme puts dark modules on a dark quiet zone and scans nowhere.
 
 ### Night report
 

@@ -18,6 +18,8 @@ A session is a random token. The browser gets it as an httpOnly cookie `calliope
 | GET | `/api/stats/me` | | lifetime stats and past nights |
 | GET | `/api/variants` | | the registered poker variants |
 | POST | `/api/rooms` | `{ name?, password?, settings? }` | `{ code, joinUrl }` |
+
+`joinUrl`, here and in `RoomView`, is relative (`/r/CODE`) unless the operator set `PUBLIC_URL`. A self-hosted server cannot know whether people reach it by LAN address, hostname or proxy, so it declines to guess and the client resolves the link against the address it is already on.
 | GET | `/api/rooms/:code` | | public info for the join screen |
 | POST | `/api/rooms/:code/join` | `{ password? }` | `{ ok }` |
 | GET | `/api/rooms/:code/report` | | the night report once the night has ended |
@@ -56,7 +58,7 @@ Only members (who have called `join`) can connect. The server sends a full `snap
 { type: 'ping' }
 ```
 
-Host commands: `start`, `pause`, `deal`, `set-settings { settings }`, `add-bot { seat, personality? }`, `remove-player { playerId }`, `extend { minutes }`, `end-night`, `transfer-host { playerId }`, `rename-room { name }`. `deal` starts one hand when the room is not dealing automatically.
+Host commands: `start`, `pause`, `deal`, `set-settings { settings }`, `add-bot { seat, personality? }`, `remove-player { playerId }`, `extend { minutes }`, `end-night`, `cancel-room`, `transfer-host { playerId }`, `rename-room { name }`. `deal` starts one hand when the room is not dealing automatically.
 
 ### Server → client
 
@@ -83,3 +85,20 @@ Bet and raise amounts are "to" totals for the street, the same numbers `legalAct
 ## Room phases
 
 `lobby → playing ⇄ paused → final-hand → ended`. `final-hand` is entered when the clock runs out or the host ends the night mid-hand; the hand in progress is the last one. `extend` moves it back to `playing`.
+
+There is one way out that is not `ended`: `cancel-room` throws the table away
+before any hand is dealt. It is refused in every other phase with
+`already-started`, because a night that dealt cards owes its players a report,
+which is what `end-night` produces.
+
+Cancelling deletes the Redis snapshot first and only then drops the room from
+memory, so a table cannot come back on the next restart. If Redis refuses the
+delete the room is left completely intact and the host gets `cancel-failed` and
+can try again. Postgres keeps the row and stamps `cancelled_at`; nothing is
+deleted there, so no future change to the phase rule can erase a played night.
+
+Everyone connected is sent `{ type: 'error', code: 'cancelled' }` and then
+closed with **4005**, alongside the existing **4004** for a room that is not
+there. Players who were offline at the time never see that frame; they come back
+through a link or the resume banner, get a 404 from `GET /api/rooms/:code`, and
+land on the "no table here" screen.

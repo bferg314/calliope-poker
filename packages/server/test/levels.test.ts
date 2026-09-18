@@ -5,6 +5,8 @@ import { RoomManager, type Client, type ManagerDeps, type RoomRuntime } from '..
 
 const silentDeps = (onHand?: (s: HandSummary) => void): ManagerDeps => ({
   persist: async () => undefined,
+  forget: async () => undefined,
+  onRoomCancelled: async () => undefined,
   onRoomCreated: async () => undefined,
   onRoomStarted: async () => undefined,
   onHandSettled: async (_r, summary) => { onHand?.(summary); },

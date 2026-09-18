@@ -41,7 +41,10 @@ services:
       PORT: 3000
       DATABASE_URL: postgres://${POSTGRES_USER:-calliope}:${POSTGRES_PASSWORD:-change-me}@postgres:5432/${POSTGRES_DB:-calliope}
       REDIS_URL: redis://redis:6379
-      PUBLIC_URL: ${PUBLIC_URL:-http://localhost:8080}
+      # Leave this unset unless guests reach the server on a different address
+      # than you do. Unset means join links are built from whatever address
+      # each browser is already using, which is right on a home network.
+      PUBLIC_URL: ${PUBLIC_URL:-}
       SECRET: ${SECRET:-change-me-too}
       # Set this in .env so only you can open tables on this server.
       HOST_KEY: ${HOST_KEY:-}

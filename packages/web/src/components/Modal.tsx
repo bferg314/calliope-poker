@@ -10,6 +10,8 @@ export interface ConfirmOptions {
   cancelLabel?: string;
   /** 'danger' colours the confirm red and puts the keyboard on cancel first. */
   tone?: 'danger' | 'normal';
+  /** One button only, for a dialog that just shows something. */
+  hideCancel?: boolean;
 }
 
 type Pending = ConfirmOptions & { resolve: (ok: boolean) => void };
@@ -78,9 +80,11 @@ export function ConfirmProvider({ children }: { children: ReactNode }): JSX.Elem
             <h2 id="modal-title">{pending.title}</h2>
             {pending.body && <div className="modal-body">{pending.body}</div>}
             <div className="modal-actions">
-              <button ref={cancelRef} type="button" className="btn" onClick={() => settle(false)}>
-                {pending.cancelLabel ?? 'Never mind'}
-              </button>
+              {!pending.hideCancel && (
+                <button ref={cancelRef} type="button" className="btn" onClick={() => settle(false)}>
+                  {pending.cancelLabel ?? 'Never mind'}
+                </button>
+              )}
               <button
                 ref={confirmRef}
                 type="button"

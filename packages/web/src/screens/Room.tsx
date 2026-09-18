@@ -59,8 +59,30 @@ export function Room({ code }: { code: string }): JSX.Element {
       <div className="page page-narrow stack">
         <TopBar />
         <h1>No table here</h1>
-        <p className="muted">{infoError}</p>
+        <p className="muted">
+          {infoError} It may have been cancelled by whoever opened it.
+        </p>
         <button className="btn" onClick={() => navigate('/')}>Back to the start</button>
+      </div>
+    );
+  }
+
+  if (socket.fatal?.code === 'cancelled') {
+    return (
+      <div className="page page-narrow stack">
+        <TopBar />
+        <div className="stack" style={{ flex: 1, justifyContent: 'center' }}>
+          <div className="ornament">
+            <span className="italic">called off</span>
+          </div>
+          <h1>The host cancelled this table</h1>
+          <p className="muted">
+            Nothing was dealt and nobody is out of pocket. Ask them for a new link when they open another one.
+          </p>
+          <div className="row">
+            <button className="btn btn-ink" onClick={() => navigate('/')}>Back to the start</button>
+          </div>
+        </div>
       </div>
     );
   }

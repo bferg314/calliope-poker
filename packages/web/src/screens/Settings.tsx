@@ -11,6 +11,10 @@ interface SettingsProps {
   variants: VariantInfo[];
   editable: boolean;
   onSave: (patch: Partial<RoomSettings>) => void;
+  /** Told whenever there are edits the host has not saved yet. */
+  onDirtyChange?: (dirty: boolean) => void;
+  /** Lets the lobby trigger the save from its own button. */
+  saveRef?: { current: (() => void) | null };
 }
 
 const BETTING_LABEL: Record<string, string> = { 'no-limit': 'No limit', 'pot-limit': 'Pot limit', 'fixed-limit': 'Fixed limit' };
@@ -25,13 +29,31 @@ function Num({ label, value, onChange, min = 0, disabled }: { label: string; val
 }
 
 /** The room's settings as a printed form. Host edits; others read. */
-export function Settings({ settings, variants, editable, onSave }: SettingsProps): JSX.Element {
+export function Settings({ settings, variants, editable, onSave, onDirtyChange, saveRef }: SettingsProps): JSX.Element {
   const [draft, setDraft] = useState<RoomSettings>(settings);
   const [dirty, setDirty] = useState(false);
 
   useEffect(() => {
     if (!dirty) setDraft(settings);
   }, [settings, dirty]);
+
+  // Told from an effect, never from inside an event handler that runs during
+  // render, so the parent is only ever updated after this component commits.
+  useEffect(() => {
+    onDirtyChange?.(dirty);
+  }, [dirty, onDirtyChange]);
+
+  const save = (): void => {
+    onSave(draft);
+    setDirty(false);
+  };
+
+  // So the lobby can save from beside its own Deal button.
+  useEffect(() => {
+    if (!saveRef) return undefined;
+    saveRef.current = save;
+    return () => { saveRef.current = null; };
+  });
 
   const set = <K extends keyof RoomSettings>(key: K, value: RoomSettings[K]): void => {
     setDraft((d) => ({ ...d, [key]: value }));
@@ -286,7 +308,7 @@ export function Settings({ settings, variants, editable, onSave }: SettingsProps
 
         {editable && (
           <div className="row" style={{ paddingTop: 'var(--s-3)' }}>
-            <button className="btn btn-ink" disabled={!dirty} onClick={() => { onSave(draft); setDirty(false); }}>Save settings</button>
+            <button className="btn btn-ink" disabled={!dirty} onClick={save}>Save settings</button>
             <button className="btn btn-quiet" disabled={!dirty} onClick={() => { setDraft(settings); setDirty(false); }}>discard</button>
           </div>
         )}

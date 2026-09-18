@@ -27,6 +27,8 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE INDEX IF NOT EXISTS users_name ON users (lower(name));
 -- For databases created before the host key existed.
 ALTER TABLE users ADD COLUMN IF NOT EXISTS can_open_tables boolean NOT NULL DEFAULT false;
+-- For databases created before a table could be cancelled.
+ALTER TABLE rooms ADD COLUMN IF NOT EXISTS cancelled_at timestamptz;
 
 CREATE TABLE IF NOT EXISTS sessions (
   token_hash text PRIMARY KEY,
@@ -44,7 +46,8 @@ CREATE TABLE IF NOT EXISTS rooms (
   started_at timestamptz,
   ended_at timestamptz,
   settings jsonb NOT NULL,
-  report jsonb
+  report jsonb,
+  cancelled_at timestamptz
 );
 
 CREATE TABLE IF NOT EXISTS room_players (
@@ -159,6 +162,15 @@ export class Db {
       INSERT INTO rooms (code, name, host_id, created_at, settings)
       VALUES (${room.code}, ${room.name}, ${room.hostId}, ${new Date(room.createdAt)}, ${this.sql.json(room.settings as never)})
       ON CONFLICT (code) DO NOTHING`;
+  }
+
+  /**
+   * Mark a table as cancelled. The `started_at IS NULL` guard puts the
+   * lobby-only rule in the database, so a night that was actually played can
+   * never be quietly erased by this path.
+   */
+  async roomCancelled(code: string, at: number): Promise<void> {
+    await this.sql`UPDATE rooms SET cancelled_at = ${new Date(at)} WHERE code = ${code} AND started_at IS NULL`;
   }
 
   async roomStarted(code: string, startedAt: number): Promise<void> {

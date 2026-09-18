@@ -62,11 +62,18 @@ most places.
 ## Run it
 
 ```
-cp .env.example .env    # set PUBLIC_URL to the address your friends will use
+cp .env.example .env    # set a password and a secret
 docker compose up -d
 ```
 
-Open `PUBLIC_URL` (default http://localhost:8080). Three containers: Postgres, Redis, and the app (which serves the web client and the API).
+Open http://localhost:8080. Three containers: Postgres, Redis, and the app, which
+serves the web client and the API.
+
+To play with other people, give them the address this machine has on your network,
+like `http://192.168.1.50:8080`. The room code, the join link and the QR code in
+the lobby are all built from the address the browser is already on, so whatever
+works for you works for the people you send it to. Set `PUBLIC_URL` only if guests
+reach the server somewhere else than you do, such as through a proxy or a domain.
 
 ## Keeping the server to yourself
 
@@ -153,6 +160,7 @@ npm run typecheck
 npm run e2e --workspace @calliope/web                  # every screen, screenshotted
 npm run e2e:dealers-choice --workspace @calliope/web   # regression guard
 npm run e2e:draw-games --workspace @calliope/web       # Pineapple and five-card draw
+npm run e2e:lobby-and-sharing --workspace @calliope/web # unsaved settings, cancelling, the join link
 ```
 
 The walkthroughs open tables, so against a host-only server pass the same
@@ -161,7 +169,7 @@ The walkthroughs open tables, so against a host-only server pass the same
 ```
 ```
 
-The server reads `DATABASE_URL`, `REDIS_URL`, `PORT`, and `PUBLIC_URL` from the environment (see `example.env`). In production it also serves `packages/web/dist`.
+The server reads `DATABASE_URL`, `REDIS_URL`, `PORT`, `SECRET`, `HOST_KEY` and `PUBLIC_URL` from the environment; `.env.example` documents each one. In production it also serves `packages/web/dist`.
 
 ## How it is put together
 

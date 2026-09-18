@@ -26,6 +26,8 @@ export class RoomError extends Error {
 export interface Client {
   userId: string;
   send(msg: ServerMessage): void;
+  /** Hang up on this client. The manager has no other handle on the socket. */
+  close?(code: number, reason: string): void;
 }
 
 export interface RoomRuntime {
@@ -35,10 +37,15 @@ export interface RoomRuntime {
   deadline: number | null;
   /** Consecutive timeouts per seat, to sit out absent players. */
   timeouts: Record<number, number>;
+  /** The table has been cancelled; this runtime is dead and must not persist. */
+  cancelled: boolean;
 }
 
 export interface ManagerDeps {
   persist(record: RoomRecord): Promise<void>;
+  /** The exact inverse of persist. Must succeed, or the table comes back. */
+  forget(record: RoomRecord): Promise<void>;
+  onRoomCancelled(record: RoomRecord): Promise<void>;
   onRoomCreated(record: RoomRecord): Promise<void>;
   onRoomStarted(record: RoomRecord): Promise<void>;
   onHandSettled(record: RoomRecord, summary: HandSummary): Promise<void>;
@@ -73,7 +80,7 @@ export class RoomManager {
   }
 
   private runtime(record: RoomRecord): RoomRuntime {
-    return { record, clients: new Set(), timer: null, deadline: null, timeouts: {} };
+    return { record, clients: new Set(), timer: null, deadline: null, timeouts: {}, cancelled: false };
   }
 
   async create(host: { id: string; name: string }, opts: { name?: string; passwordHash?: string | null; settings?: Partial<RoomSettings> }): Promise<RoomRecord> {
@@ -93,6 +100,7 @@ export class RoomManager {
   }
 
   join(rt: RoomRuntime, user: { id: string; name: string }): void {
+    if (rt.cancelled) throw new RoomError('cancelled', 'That table was cancelled.');
     const r = rt.record;
     if (!r.members[user.id]) {
       r.members[user.id] = { id: user.id, name: user.name, kind: 'human', joinedAt: Date.now() };
@@ -113,13 +121,15 @@ export class RoomManager {
 
   disconnect(rt: RoomRuntime, client: Client): void {
     rt.clients.delete(client);
+    if (rt.cancelled) return; // there is no room left to describe
     this.broadcast(rt);
   }
 
   // ---------- messages ----------
 
-  handle(rt: RoomRuntime, userId: string, msg: ClientMessage, client: Client): void {
+  handle(rt: RoomRuntime, userId: string, msg: ClientMessage, client: Client): void | Promise<void> {
     const r = rt.record;
+    if (rt.cancelled) throw new RoomError('cancelled', 'The host cancelled this table.');
     if (!r.members[userId]) throw new RoomError('not-a-member', 'Join the room first');
     switch (msg.type) {
       case 'ping':
@@ -156,8 +166,7 @@ export class RoomManager {
         return;
       case 'host':
         if (r.hostId !== userId) throw new RoomError('not-host', 'Only the host can do that');
-        this.host(rt, msg.command);
-        return;
+        return this.host(rt, msg.command);
       default:
         throw new RoomError('bad-message', 'Unknown message');
     }
@@ -229,7 +238,7 @@ export class RoomManager {
     this.afterChange(rt);
   }
 
-  private host(rt: RoomRuntime, cmd: HostCommand): void {
+  private host(rt: RoomRuntime, cmd: HostCommand): void | Promise<void> {
     const r = rt.record;
     if (r.phase === 'ended' && cmd.kind !== 'rename-room') throw new RoomError('ended', 'The night is over');
     switch (cmd.kind) {
@@ -334,6 +343,8 @@ export class RoomManager {
         this.afterChange(rt);
         return;
       }
+      case 'cancel-room':
+        return this.cancelRoom(rt);
       case 'end-night': {
         const h = r.table.hand;
         if (h && h.stage !== 'settled') { r.phase = 'final-hand'; this.afterChange(rt); }
@@ -405,6 +416,7 @@ export class RoomManager {
   }
 
   private afterChange(rt: RoomRuntime): void {
+    if (rt.cancelled) return; // never write a cancelled table back to Redis
     rt.record.clock.tickedAt = Date.now();
     this.armTimers(rt);
     void this.deps.persist(rt.record).catch((e) => this.deps.log('persist failed', e));
@@ -420,6 +432,7 @@ export class RoomManager {
   }
 
   private armTimers(rt: RoomRuntime): void {
+    if (rt.cancelled) return;
     const r = rt.record;
     const t = r.table;
     const h = t.hand;
@@ -572,6 +585,49 @@ export class RoomManager {
     this.applyLevel(rt, now);
     const deck = shuffle(fullDeck(), (n) => randomInt(n));
     this.safeDispatch(rt, { type: 'start-hand', deck });
+  }
+
+  /**
+   * Throw a table away before it has dealt a hand. Ordering matters: Redis is
+   * what makes a room real, because `restore` rebuilds everything it holds at
+   * boot. So the runtime is marked dead first, Redis has to go before the room
+   * leaves memory, and Postgres is a best-effort footnote afterwards.
+   *
+   * If Redis refuses, nothing has changed and the host can simply try again.
+   */
+  private async cancelRoom(rt: RoomRuntime): Promise<void> {
+    const r = rt.record;
+    if (rt.cancelled) return;
+    if (r.phase !== 'lobby') {
+      throw new RoomError('already-started', 'The night has already started. End the night instead.');
+    }
+
+    // Before the first await, so nothing that runs during it can persist the
+    // room back into Redis through afterChange.
+    rt.cancelled = true;
+    if (rt.timer) { clearTimeout(rt.timer); rt.timer = null; }
+
+    try {
+      await this.deps.forget(r);
+    } catch (e) {
+      rt.cancelled = false;
+      this.armTimers(rt);
+      this.deps.log(`could not cancel ${r.code}`, e);
+      throw new RoomError('cancel-failed', 'Could not cancel the table. Try again.');
+    }
+
+    this.rooms.delete(r.code);
+    for (const c of rt.clients) {
+      try {
+        c.send({ type: 'error', code: 'cancelled', message: 'The host cancelled this table.' });
+        c.close?.(4005, 'cancelled');
+      } catch (e) {
+        this.deps.log('could not tell a client the table was cancelled', e);
+      }
+    }
+    rt.clients.clear();
+
+    void this.deps.onRoomCancelled(r).catch((e) => this.deps.log('onRoomCancelled failed', e));
   }
 
   private endNight(rt: RoomRuntime): void {

@@ -1,31 +1,27 @@
-import { useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { BOT_PERSONALITIES, type RoomView } from '@calliope/shared';
 import { GameStrip } from '../components/GameStrip.js';
+import { Invite } from '../components/Invite.js';
 import { useConfirm } from '../components/Modal.js';
 import { TopBar } from '../components/TopBar.js';
 import { Toast } from '../components/Toast.js';
 import { fmt } from '../format.js';
+import { useRouter } from '../router.js';
 import type { RoomSocket } from '../ws.js';
 import { personalityLabel, Settings } from './Settings.js';
 
 export function Lobby({ room, socket }: { room: RoomView; socket: RoomSocket }): JSX.Element {
   const me = room.me;
   const confirm = useConfirm();
+  const { navigate } = useRouter();
   const isHost = !!me?.isHost;
-  const [copied, setCopied] = useState(false);
   const [botMenu, setBotMenu] = useState<number | null>(null);
+  const [settingsDirty, setSettingsDirty] = useState(false);
+  const saveSettings = useRef<(() => void) | null>(null);
+  // Stable, so the effect in Settings that reports it does not loop.
+  const onDirtyChange = useCallback((dirty: boolean) => setSettingsDirty(dirty), []);
   const seated = room.table.seats.filter(Boolean).length;
   const withChips = room.table.seats.filter((s) => s && s.stack > 0).length;
-
-  const copy = async (): Promise<void> => {
-    try {
-      await navigator.clipboard.writeText(room.joinUrl);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
-    } catch {
-      /* ignore */
-    }
-  };
 
   return (
     <div className="page">
@@ -38,15 +34,24 @@ export function Lobby({ room, socket }: { room: RoomView; socket: RoomSocket }):
             <h1>{room.name}</h1>
           </div>
           {isHost && (
-            <button
-              className="btn btn-red"
-              style={{ minHeight: 56 }}
-              disabled={withChips < 2}
-              onClick={() => socket.send({ type: 'host', command: { kind: 'start' } })}
-              title={withChips < 2 ? 'Two players with chips are needed' : undefined}
-            >
-              Deal the first hand
-            </button>
+            <div className="stack" style={{ gap: 'var(--s-2)', alignItems: 'flex-end' }}>
+              <button
+                className="btn btn-red"
+                style={{ minHeight: 56 }}
+                disabled={withChips < 2 || settingsDirty}
+                onClick={() => socket.send({ type: 'host', command: { kind: 'start' } })}
+              >
+                Deal the first hand
+              </button>
+              {settingsDirty ? (
+                <div className="row" style={{ gap: 'var(--s-2)' }}>
+                  <span className="micro">You have unsaved settings.</span>
+                  <button className="btn btn-small" onClick={() => saveSettings.current?.()}>Save them</button>
+                </div>
+              ) : withChips < 2 ? (
+                <span className="micro">Two players with chips are needed.</span>
+              ) : null}
+            </div>
           )}
         </div>
 
@@ -124,12 +129,7 @@ export function Lobby({ room, socket }: { room: RoomView; socket: RoomSocket }):
 
             <div className="panel stack">
               <div className="label">invite</div>
-              <div className="code-big">{room.code}</div>
-              <div className="row" style={{ flexWrap: 'nowrap' }}>
-                <input className="input" readOnly value={room.joinUrl} onFocus={(e) => e.currentTarget.select()} aria-label="Join link" />
-                <button className="btn" onClick={() => void copy()}>{copied ? 'Copied' : 'Copy link'}</button>
-              </div>
-              {room.hasPassword && <div className="micro">This table has a password. Tell people in person.</div>}
+              <Invite code={room.code} joinUrl={room.joinUrl} hasPassword={room.hasPassword} />
             </div>
 
             <div className="stack">
@@ -169,11 +169,45 @@ export function Lobby({ room, socket }: { room: RoomView; socket: RoomSocket }):
               settings={room.settings}
               variants={room.variants}
               editable={isHost}
+              onDirtyChange={onDirtyChange}
+              saveRef={saveSettings}
               onSave={(patch) => socket.send({ type: 'host', command: { kind: 'set-settings', settings: patch } })}
             />
           </div>
         </div>
       </div>
+
+      {isHost && (
+        <div className="settings-section" style={{ marginTop: 'var(--s-5)' }}>
+          <button
+            className="btn btn-quiet btn-small"
+            style={{ alignSelf: 'flex-start' }}
+            onClick={() => void (async () => {
+              if (await confirm({
+                title: 'Cancel this table?',
+                body: (
+                  <p>
+                    It disappears for everyone, including the {room.members.length === 1 ? 'nobody' : 'people'} waiting in it.
+                    Nothing has been dealt, so nobody is out of pocket. This cannot be undone.
+                  </p>
+                ),
+                confirmLabel: 'Cancel the table',
+                cancelLabel: 'Keep it',
+                tone: 'danger',
+              })) {
+                socket.send({ type: 'host', command: { kind: 'cancel-room' } });
+                // Leave straight away, so only the other players see the notice.
+                navigate('/');
+              }
+            })()}
+          >
+            Cancel this table
+          </button>
+          <p className="micro" style={{ margin: 0 }}>
+            Only possible before the first hand. Once you are playing, use "End the night" instead.
+          </p>
+        </div>
+      )}
     </div>
   );
 }

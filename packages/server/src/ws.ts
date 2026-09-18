@@ -17,7 +17,11 @@ export function registerWs(app: FastifyInstance, s: Services): void {
     if (!rt) { send({ type: 'error', code: 'no-room', message: 'No table with that code' }); socket.close(4004, 'no-room'); return; }
     if (!rt.record.members[row.id]) { send({ type: 'error', code: 'not-a-member', message: 'Join the room first' }); socket.close(4003, 'not-a-member'); return; }
 
-    const client: Client = { userId: row.id, send };
+    const client: Client = {
+      userId: row.id,
+      send,
+      close: (code, reason) => { try { socket.close(code, reason); } catch { /* already gone */ } },
+    };
     s.manager.connect(rt, client);
 
     let alive = true;
@@ -37,12 +41,17 @@ export function registerWs(app: FastifyInstance, s: Services): void {
         send({ type: 'error', code: 'bad-message', message });
         return;
       }
-      try {
-        s.manager.handle(rt, row.id, msg, client);
-      } catch (e) {
+      const fail = (e: unknown): void => {
         if (e instanceof RoomError) send({ type: 'error', code: e.code, message: e.message });
         else if (e instanceof z.ZodError) send({ type: 'error', code: 'invalid', message: e.issues.map((i) => i.message).join('; ') });
         else { app.log.error(e); send({ type: 'error', code: 'internal', message: 'Something went wrong' }); }
+      };
+      try {
+        // Most commands are synchronous; cancelling a table is not.
+        const pending = s.manager.handle(rt, row.id, msg, client);
+        if (pending) void pending.catch(fail);
+      } catch (e) {
+        fail(e);
       }
     });
 

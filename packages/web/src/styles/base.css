@@ -921,3 +921,50 @@ select {
   font-weight: 600;
   color: var(--ink);
 }
+
+/* ---------- inviting people ---------- */
+.invite {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+}
+
+/* Code, then camera, then link: one centred column so the panel reads as a
+   printed invitation rather than a form with a picture stuck in it. */
+.invite-code {
+  text-align: center;
+}
+
+.invite-code .code-big {
+  line-height: 1.05;
+}
+
+/* The caption sits under the code, not beside it: a QR reads as a printed
+   square, and anything alongside it competes for the same glance. */
+.invite-qr {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s-2);
+}
+
+.invite-qr .qr {
+  flex-shrink: 0;
+  border: 1px solid var(--card-edge);
+  display: block;
+}
+
+.invite-qr .micro {
+  text-align: center;
+}
+
+.invite-link {
+  display: flex;
+  gap: var(--s-2);
+  flex-wrap: nowrap;
+}
+
+.invite-link .btn {
+  flex-shrink: 0;
+}
+

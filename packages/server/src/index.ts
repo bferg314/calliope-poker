@@ -41,6 +41,8 @@ async function main(): Promise<void> {
     publicUrl: config.publicUrl,
     log: (msg, extra) => app.log.warn({ extra }, msg),
     persist: (record) => store.save(record),
+    forget: (record) => store.remove(record.code),
+    onRoomCancelled: (record) => db.roomCancelled(record.code, Date.now()),
     onRoomCreated: (record) => db.insertRoom({ code: record.code, name: record.name, hostId: record.hostId, createdAt: record.createdAt, settings: record.settings }),
     onRoomStarted: (record) => db.roomStarted(record.code, record.clock.startedAt ?? Date.now()),
     onHandSettled: (record, summary) => db.insertHand(record.code, summary),

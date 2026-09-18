@@ -39,14 +39,29 @@ Under the OFL, these fonts may be used, modified and redistributed freely,
 including commercially, but may not be sold on their own, and any derivative
 font must not use the Reserved Font Names.
 
+## QR codes
+
+The join-link QR code is generated with **qrcode-generator**, which is bundled
+into the web client.
+
+- Source: <https://github.com/kazuhikoarase/qrcode-generator>
+- Copyright 2009 Kazuhiko Arase
+- License: MIT, full text in `licenses/qrcode-generator-MIT.txt`
+
+Only the module matrix comes from the library; the SVG is drawn by this project
+(`packages/web/src/components/QrCode.tsx`).
+
+"QR Code" is a registered trademark of DENSO WAVE INCORPORATED. The mark is used
+here only to describe what the feature is.
+
 ## Dependencies
 
 Everything installed from npm is permissively licensed. At the time of writing,
-across 203 packages in the dependency tree:
+across 204 packages in the dependency tree:
 
 | License | Packages |
 |---|---|
-| MIT | 165 |
+| MIT | 166 |
 | ISC | 16 |
 | BlueOak-1.0.0 | 7 |
 | Apache-2.0 | 7 |
