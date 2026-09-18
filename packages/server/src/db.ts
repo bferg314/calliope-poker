@@ -27,8 +27,6 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE INDEX IF NOT EXISTS users_name ON users (lower(name));
 -- For databases created before the host key existed.
 ALTER TABLE users ADD COLUMN IF NOT EXISTS can_open_tables boolean NOT NULL DEFAULT false;
--- For databases created before a table could be cancelled.
-ALTER TABLE rooms ADD COLUMN IF NOT EXISTS cancelled_at timestamptz;
 
 CREATE TABLE IF NOT EXISTS sessions (
   token_hash text PRIMARY KEY,
@@ -49,6 +47,9 @@ CREATE TABLE IF NOT EXISTS rooms (
   report jsonb,
   cancelled_at timestamptz
 );
+-- For databases created before a table could be cancelled. It has to come after
+-- the CREATE above, or a fresh database fails here before the table exists.
+ALTER TABLE rooms ADD COLUMN IF NOT EXISTS cancelled_at timestamptz;
 
 CREATE TABLE IF NOT EXISTS room_players (
   room_code text NOT NULL REFERENCES rooms(code) ON DELETE CASCADE,
