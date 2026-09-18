@@ -18,7 +18,7 @@ Tokens are CSS custom properties on `:root`, set by the active theme. Components
 
 ### Color
 
-| Token | Paper & ink (default) | Meaning |
+| Token | Paper & ink | Meaning |
 |---|---|---|
 | `--paper` | `#F4EFE3` | Page ground |
 | `--paper-2` | `#EAE3D2` | Slightly deeper ground: panels, the table surface |
@@ -291,12 +291,15 @@ Two rules that keep every theme readable:
 - **Cards keep white stock on every ground.** They are printed objects sitting on the table, not part of it. Only `--card-edge` and the back inks change.
 - **`--on-red` is the text colour on a red fill,** because a red bright enough to read on a dark ground is too light for white text. Light-red themes set it to their darkest ink; dark-red themes set it to paper.
 
-Five themes ship:
+Five themes ship. **Felt is the default**, and its palette lives on bare `:root`
+as well as `[data-theme='felt']`, so the very first paint is already correct and
+there is no flash of a light page before the stored choice is applied.
 
-| id | ground | ink | accent |
-|---|---|---|---|
+
+| id | ground | ink | accent | |
+|---|---|---|---|---|
 | `paper-ink` | cream stock | black and red ink | deep teal |
-| `felt` | deep green | cream | pale blue |
+| `felt` | deep green | cream | pale blue | *default* |
 | `midnight` | blue-black | warm cream | brass |
 | `noir` | true black | bright white | steel |
 | `oxblood` | burgundy-brown | aged paper | muted gold |

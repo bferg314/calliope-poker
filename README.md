@@ -4,6 +4,29 @@ Self-hosted poker for a table of friends. Room codes and join links, dealer's ch
 
 No accounts. Everyone gets a name for the evening and a five-word ticket that brings their record back another night.
 
+
+![A hand of Texas Hold'em on a desktop browser](docs/screenshots/table-desktop.png)
+
+The player's own hand is always the loudest thing on the table, and the game
+being played is named across the top, because in dealer's choice it changes
+every hand.
+
+| On a phone | Throwing a card away |
+|---|---|
+| ![The table on a phone](docs/screenshots/table-phone.png) | ![Choosing which card to discard in Pineapple](docs/screenshots/pineapple-discard.png) |
+
+Your own cards become the control when it is your turn to discard: tap one and
+it drops, fades and takes a red stamp.
+
+| Five themes | Stakes that climb |
+|---|---|
+| ![The five themes, each swatch drawn in its own palette](docs/screenshots/themes.png) | ![The generated blind schedule](docs/screenshots/rising-stakes.png) |
+
+![The night report, showing the winner and a ledger of everyone's night](docs/screenshots/night-report.png)
+
+Every night ends with a printed report: who won, what everybody put in and took
+out, the biggest pot and the luckiest draw.
+
 ## What this is, and is not
 
 Calliope is a scorekeeper and a dealer for a private game among people who already

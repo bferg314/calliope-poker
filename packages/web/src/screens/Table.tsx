@@ -42,6 +42,18 @@ function seatPosition(k: number, n: number, phone: boolean, seatW: number): { le
   return { left: `calc(50% + (50% - ${half}px) * ${cos})`, top: `calc(50% + (50% - 44px) * ${sin})` };
 }
 
+/** True on a narrow phone, where the own-seat cards have to give up room. */
+function useNarrow(): boolean {
+  const [narrow, setNarrow] = useState(() => window.matchMedia('(max-width: 400px)').matches);
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 400px)');
+    const onChange = (): void => setNarrow(mq.matches);
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, []);
+  return narrow;
+}
+
 function useWide(): boolean {
   const [wide, setWide] = useState(() => window.matchMedia('(min-width: 900px)').matches);
   useEffect(() => {
@@ -196,7 +208,7 @@ export function Table({ room, socket }: { room: RoomView; socket: RoomSocket }):
           </span>
         )}
         <span className="grow" />
-        <span className="micro">hand {room.handCount + (hand ? 1 : 0)}</span>
+        <span className="micro hand-count">hand {room.handCount + (hand ? 1 : 0)}</span>
         <div className="menu-wrap">
           <button className="btn btn-quiet btn-small" onClick={() => setMenuOpen((o) => !o)} aria-expanded={menuOpen} aria-haspopup="menu">
             {me?.name ?? 'menu'} ▾
@@ -436,8 +448,13 @@ function OwnSeat({ room, socket, mySeat, toAct, winAmount, timerFraction, onRebu
   const drewNote = p && p.drew > 0 ? `drew ${p.drew}` : null;
   const label = hand?.stage === 'settled' && hand.results?.hands[mySeat] ? hand.results.hands[mySeat]!.label : ownHandLabel(hand, mySeat);
   const wide = useWide();
+  const narrow = useNarrow();
   const many = cards.length >= 5;
-  const cw = many ? (wide ? 64 : 44) : cards.length > 2 ? (wide ? 84 : 60) : wide ? 112 : 88;
+  const cw = many
+    ? (wide ? 64 : narrow ? 40 : 44)
+    : cards.length > 2
+      ? (wide ? 84 : narrow ? 52 : 60)
+      : wide ? 112 : narrow ? 72 : 88;
   return (
     <div className={`own-seat ${toAct ? 'to-act' : ''} ${many ? 'many-cards' : ''}`}>
       <div className={`cards ${selectable ? 'selectable' : ''}`}>

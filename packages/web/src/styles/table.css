@@ -2,19 +2,55 @@
 .table-screen {
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
-  min-height: 100dvh;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
 }
 
 .table-top {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--s-3);
+  flex-wrap: nowrap;
+  gap: var(--s-2);
   min-height: 44px;
   padding: 0 var(--s-3);
   border-bottom: 1px solid var(--ink-3);
   position: relative;
+  /* No overflow:hidden here: the menu drops out of this 44px bar. The screen
+     itself is clipped instead, and the rules below keep the bar's contents in. */
+}
+
+.table-top > * {
+  flex-shrink: 0;
+}
+
+.table-top .brand {
+  flex-shrink: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.table-top .hand-count {
+  white-space: nowrap;
+}
+
+/* On a narrow phone, drop the least useful things rather than overflow. */
+@media (max-width: 540px) {
+  .table-top {
+    gap: 6px;
+    padding: 0 var(--s-2);
+  }
+  .table-top .hand-count {
+    display: none;
+  }
+}
+
+@media (max-width: 430px) {
+  .table-top .level-chip .until {
+    display: none;
+  }
 }
 
 .table-top .brand {
@@ -31,13 +67,15 @@
 }
 
 .table-layout {
-  flex: 1;
+  flex: 1 1 auto;
+  min-height: 0;
   display: flex;
   flex-direction: column;
 }
 
 .table-main {
-  flex: 1;
+  flex: 1 1 auto;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   min-width: 0;
@@ -50,8 +88,22 @@
   max-height: 58vh;
   max-height: 58dvh;
   margin: var(--s-2) auto 0;
+  flex: 0 1 auto;
+  min-height: 0;
   --seat-w: 84px;
   --board-card: 40px;
+}
+
+/*
+ * On a phone the column is tight: top bar, game strip, table, the player's own
+ * seat and the action bar all have to fit. Let the table give up room rather
+ * than push the hand label under the action bar on a short screen.
+ */
+@media (max-width: 899px) {
+  .table-area {
+    max-height: 52vh;
+    max-height: 52dvh;
+  }
 }
 
 @media (max-width: 899px) {
@@ -439,6 +491,40 @@
   display: none;
 }
 
+/* A wrapped label makes the whole bar a line taller, which on a short phone
+   pushes the hand label under it. Keep labels on one line and shrink instead. */
+@media (max-width: 899px) {
+  .action-bar .btn {
+    min-height: 60px;
+  }
+  .action-bar .btn span {
+    white-space: nowrap;
+  }
+}
+
+@media (max-width: 400px) {
+  .action-bar {
+    padding-left: var(--s-2);
+    padding-right: var(--s-2);
+  }
+  .action-bar .buttons {
+    gap: 6px;
+  }
+  .action-bar .btn {
+    font-size: 1rem;
+    padding: 0 var(--s-1);
+    letter-spacing: 0.02em;
+  }
+  .own-seat {
+    gap: var(--s-3);
+    padding: var(--s-2) var(--s-3);
+    min-height: 0;
+  }
+  .own-seat .name {
+    font-size: 1.25rem;
+  }
+}
+
 .action-bar .waiting {
   text-align: center;
   color: var(--ink-2);
@@ -610,7 +696,7 @@
     padding: var(--s-4);
     font-size: var(--t-small);
     overflow-y: auto;
-    max-height: calc(100vh - 44px);
+    min-height: 0;
   }
 }
 

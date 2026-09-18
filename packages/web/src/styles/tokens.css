@@ -1,28 +1,28 @@
 /* Design tokens. See docs/design.md §2. Every theme defines every token. */
 :root,
-[data-theme='paper-ink'] {
-  color-scheme: light;
-  --paper: #f4efe3;
-  --paper-2: #eae3d2;
-  --paper-3: #ddd4be;
-  --ink: #1b1a17;
-  --ink-2: #5b574d;
-  --ink-3: #9a9384;
-  --red: #b3261e;
-  --red-2: #8f1d17;
-  --on-red: #fbf8f1;
-  --accent: #1f4e5f;
-  --felt: #eae3d2;
-  --focus: #1f4e5f;
+[data-theme='felt'] {
+  color-scheme: dark;
+  --paper: #1e3a2f;
+  --paper-2: #183026;
+  --paper-3: #12261e;
+  --ink: #f4efe3;
+  --ink-2: #cfc8b5;
+  --ink-3: #8e9a88;
+  --red: #ec7a68;
+  --red-2: #d9604c;
+  --on-red: #12261e;
+  --accent: #9ac7d6;
+  --felt: #1e3a2f;
+  --focus: #9ac7d6;
 
   /* Cards keep their own inks so they read as printed stock on any ground. */
-  --field-bg: #fbf8f1;
+  --field-bg: #183026;
   --card-face: #fbf8f1;
   --card-ink: #1b1a17;
   --card-red: #b3261e;
   --card-edge: #b9b09b;
-  --card-back: #1b1a17;
-  --card-back-ink: #f4efe3;
+  --card-back: #f4efe3;
+  --card-back-ink: #1e3a2f;
 
   --font-display: 'Fraunces Variable', 'Iowan Old Style', Georgia, serif;
   --font-ui: 'Instrument Sans Variable', 'Helvetica Neue', Arial, system-ui, sans-serif;
@@ -55,27 +55,27 @@
   --r-btn: 4px;
 }
 
-[data-theme='felt'] {
-  color-scheme: dark;
-  --paper: #1e3a2f;
-  --paper-2: #183026;
-  --paper-3: #12261e;
-  --ink: #f4efe3;
-  --ink-2: #cfc8b5;
-  --ink-3: #8e9a88;
-  --red: #ec7a68;
-  --red-2: #d9604c;
-  --on-red: #12261e;
-  --accent: #9ac7d6;
-  --felt: #1e3a2f;
-  --focus: #9ac7d6;
-  --field-bg: #183026;
+[data-theme='paper-ink'] {
+  color-scheme: light;
+  --paper: #f4efe3;
+  --paper-2: #eae3d2;
+  --paper-3: #ddd4be;
+  --ink: #1b1a17;
+  --ink-2: #5b574d;
+  --ink-3: #9a9384;
+  --red: #b3261e;
+  --red-2: #8f1d17;
+  --on-red: #fbf8f1;
+  --accent: #1f4e5f;
+  --felt: #eae3d2;
+  --focus: #1f4e5f;
+  --field-bg: #fbf8f1;
   --card-face: #fbf8f1;
   --card-ink: #1b1a17;
   --card-red: #b3261e;
   --card-edge: #b9b09b;
-  --card-back: #f4efe3;
-  --card-back-ink: #1e3a2f;
+  --card-back: #1b1a17;
+  --card-back-ink: #f4efe3;
 }
 
 /* Midnight: a neutral dark mode for playing late. Brass on blue-black. */

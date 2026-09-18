@@ -1,0 +1,109 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Types, tests and build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci --ignore-scripts
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Build the web client
+        run: npm run build --workspace @calliope/web
+
+  play:
+    name: Play a few hands in a browser
+    runs-on: ubuntu-latest
+    # The engine is covered by unit tests; this proves the whole stack actually
+    # deals a hand, including the two games with a discard round.
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: calliope
+          POSTGRES_PASSWORD: ci-password
+          POSTGRES_DB: calliope
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U calliope -d calliope"
+          --health-interval 5s --health-timeout 3s --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports: ['6379:6379']
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s --health-timeout 3s --health-retries 10
+
+    env:
+      DATABASE_URL: postgres://calliope:ci-password@localhost:5432/calliope
+      REDIS_URL: redis://localhost:6379
+      PORT: 3000
+      PUBLIC_URL: http://localhost:3000
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci --ignore-scripts
+
+      - name: Install the browser
+        run: npx playwright install --with-deps chromium
+
+      - name: Build the web client
+        run: npm run build --workspace @calliope/web
+
+      - name: Start the server
+        run: |
+          WEB_DIST="$PWD/packages/web/dist" npx tsx packages/server/src/index.ts &
+          for i in $(seq 1 60); do
+            curl -sf http://localhost:3000/api/health && break
+            sleep 1
+          done
+          curl -sf http://localhost:3000/api/health
+
+      - name: Dealer's choice stays on screen
+        run: npm run e2e:dealers-choice --workspace @calliope/web
+        env:
+          BASE: http://localhost:3000
+          OUT: ${{ runner.temp }}/shots
+          SECONDS: 40
+
+      - name: Pineapple and five-card draw play through
+        run: npm run e2e:draw-games --workspace @calliope/web
+        env:
+          BASE: http://localhost:3000
+          OUT: ${{ runner.temp }}/shots
+
+      - name: Keep the screenshots when something fails
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshots
+          path: ${{ runner.temp }}/shots
+          if-no-files-found: ignore

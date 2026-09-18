@@ -129,7 +129,7 @@ await page.waitForSelector('text=your record');
 await page.screenshot({ path: out('10-profile.png'), fullPage: true });
 
 // Every theme, on the table.
-for (const [i, theme] of ['Felt', 'Midnight', 'Noir', 'Oxblood'].entries()) {
+for (const [i, theme] of ['Paper & ink', 'Midnight', 'Noir', 'Oxblood'].entries()) {
   await page.goto(`${BASE}/me`);
   await page.waitForSelector('.theme-grid');
   if (i === 0) await page.screenshot({ path: out('11-themes.png') });
@@ -137,13 +137,13 @@ for (const [i, theme] of ['Felt', 'Midnight', 'Noir', 'Oxblood'].entries()) {
   await page.goto(`${BASE}/r/${code}`);
   await page.waitForSelector('.table-area');
   await page.waitForTimeout(1200);
-  await page.screenshot({ path: out(`12-theme-${theme.toLowerCase()}.png`) });
+  await page.screenshot({ path: out(`12-theme-${theme.toLowerCase().replace(/[^a-z]+/g, '-')}.png`) });
 }
 
 // Desktop, back on the default look.
 await page.goto(`${BASE}/me`);
 await page.waitForSelector('.theme-grid');
-await page.getByRole('radio', { name: /^Paper & ink/ }).click();
+await page.getByRole('radio', { name: /^Felt/ }).click();
 await page.goto(`${BASE}/r/${code}`);
 await page.waitForSelector('.table-area');
 await page.setViewportSize({ width: 1280, height: 820 });
