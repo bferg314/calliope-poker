@@ -399,6 +399,9 @@
   padding: var(--s-3) var(--s-4);
   border-top: 1px solid var(--ink-3);
   min-height: 132px;
+  /* Your own cards and your next decision never give up room. When the bet
+     panel opens, the table above shrinks instead. */
+  flex-shrink: 0;
 }
 
 .own-seat .cards {
@@ -462,6 +465,7 @@
 }
 
 .action-bar {
+  flex-shrink: 0;
   position: sticky;
   bottom: 0;
   background: var(--paper);

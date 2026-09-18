@@ -7,25 +7,40 @@ No accounts. Everyone gets a name for the evening and a five-word ticket that br
 
 ![A hand of Texas Hold'em on a desktop browser](docs/screenshots/table-desktop.png)
 
-The player's own hand is always the loudest thing on the table, and the game
-being played is named across the top, because in dealer's choice it changes
-every hand.
+Your own hand is always the loudest thing on the table, and the game being
+played is named across the top, because in dealer's choice it changes every
+hand.
 
-| On a phone | Throwing a card away |
-|---|---|
-| ![The table on a phone](docs/screenshots/table-phone.png) | ![Choosing which card to discard in Pineapple](docs/screenshots/pineapple-discard.png) |
+<table>
+<tr>
+<td width="33%"><img src="docs/screenshots/table-phone.png" alt="The table on a phone" width="100%"></td>
+<td width="33%"><img src="docs/screenshots/bet-panel.png" alt="Choosing how much to raise" width="100%"></td>
+<td width="33%"><img src="docs/screenshots/pineapple-discard.png" alt="Choosing which card to throw away in Pineapple" width="100%"></td>
+</tr>
+<tr>
+<td align="center"><em>A phone is a first-class seat</em></td>
+<td align="center"><em>Raise with presets or the slider</em></td>
+<td align="center"><em>Tap a card to throw it away</em></td>
+</tr>
+</table>
 
-Your own cards become the control when it is your turn to discard: tap one and
-it drops, fades and takes a red stamp.
+<table>
+<tr>
+<td width="50%"><img src="docs/screenshots/themes.png" alt="Five themes, each swatch drawn in its own palette" width="100%"></td>
+<td width="50%"><img src="docs/screenshots/rising-stakes.png" alt="The generated blind schedule, previewed in the lobby" width="100%"></td>
+</tr>
+<tr>
+<td align="center"><em>Five themes, each swatch drawn in its own colours</em></td>
+<td align="center"><em>Blinds and antes climb on a schedule you can see</em></td>
+</tr>
+</table>
 
-| Five themes | Stakes that climb |
-|---|---|
-| ![The five themes, each swatch drawn in its own palette](docs/screenshots/themes.png) | ![The generated blind schedule](docs/screenshots/rising-stakes.png) |
+<p align="center">
+  <img src="docs/screenshots/night-report.png" alt="The night report: the winner and a ledger of everyone's night" width="72%">
+</p>
 
-![The night report, showing the winner and a ledger of everyone's night](docs/screenshots/night-report.png)
-
-Every night ends with a printed report: who won, what everybody put in and took
-out, the biggest pot and the luckiest draw.
+<p align="center"><em>Every night ends with a printed report: who won, what everybody put in and
+took out, the biggest pot and the luckiest draw.</em></p>
 
 ## What this is, and is not
 
