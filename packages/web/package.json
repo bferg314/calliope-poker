@@ -1,0 +1,31 @@
+{
+  "name": "@calliope/web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Calliope Poker web client.",
+  "license": "MIT",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "e2e": "node e2e/walkthrough.mjs",
+    "e2e:dealers-choice": "node e2e/dealers-choice.mjs",
+    "e2e:draw-games": "node e2e/draw-games.mjs"
+  },
+  "dependencies": {
+    "@calliope/engine": "*",
+    "@calliope/shared": "*",
+    "@fontsource-variable/fraunces": "^5.1.0",
+    "@fontsource-variable/instrument-sans": "^5.1.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.4",
+    "vite": "^5.4.11"
+  }
+}

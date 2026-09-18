@@ -1,0 +1,20 @@
+{
+  "name": "@calliope/shared",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Protocol schemas and view types shared by the server and the web client.",
+  "license": "MIT",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@calliope/engine": "*",
+    "zod": "^3.23.8"
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "name": "calliope-poker",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Self-hosted poker for a table of friends. Room codes, dealer's choice, bots, and a night report.",
+  "license": "MIT",
+  "type": "module",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "dev": "npm run dev --workspace @calliope/server & npm run dev --workspace @calliope/web",
+    "dev:server": "npm run dev --workspace @calliope/server",
+    "dev:web": "npm run dev --workspace @calliope/web"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "devDependencies": {
+    "playwright": "1.49",
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.8"
+  }
+}

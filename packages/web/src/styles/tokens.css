@@ -1,0 +1,159 @@
+/* Design tokens. See docs/design.md §2. Every theme defines every token. */
+:root,
+[data-theme='paper-ink'] {
+  color-scheme: light;
+  --paper: #f4efe3;
+  --paper-2: #eae3d2;
+  --paper-3: #ddd4be;
+  --ink: #1b1a17;
+  --ink-2: #5b574d;
+  --ink-3: #9a9384;
+  --red: #b3261e;
+  --red-2: #8f1d17;
+  --on-red: #fbf8f1;
+  --accent: #1f4e5f;
+  --felt: #eae3d2;
+  --focus: #1f4e5f;
+
+  /* Cards keep their own inks so they read as printed stock on any ground. */
+  --field-bg: #fbf8f1;
+  --card-face: #fbf8f1;
+  --card-ink: #1b1a17;
+  --card-red: #b3261e;
+  --card-edge: #b9b09b;
+  --card-back: #1b1a17;
+  --card-back-ink: #f4efe3;
+
+  --font-display: 'Fraunces Variable', 'Iowan Old Style', Georgia, serif;
+  --font-ui: 'Instrument Sans Variable', 'Helvetica Neue', Arial, system-ui, sans-serif;
+
+  --t-display: 3.5rem;
+  --t-h1: 2.25rem;
+  --t-h2: 1.5rem;
+  --t-body: 1rem;
+  --t-small: 0.875rem;
+  --t-micro: 0.75rem;
+  --t-stack: 1.125rem;
+  --t-pot: 1.75rem;
+  --t-action: 1.125rem;
+
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-5: 24px;
+  --s-6: 32px;
+  --s-7: 48px;
+  --s-8: 64px;
+
+  --d-fast: 120ms;
+  --d-base: 200ms;
+  --d-slow: 360ms;
+  --ease: cubic-bezier(0.2, 0, 0, 1);
+
+  --r-card: 6px;
+  --r-btn: 4px;
+}
+
+[data-theme='felt'] {
+  color-scheme: dark;
+  --paper: #1e3a2f;
+  --paper-2: #183026;
+  --paper-3: #12261e;
+  --ink: #f4efe3;
+  --ink-2: #cfc8b5;
+  --ink-3: #8e9a88;
+  --red: #ec7a68;
+  --red-2: #d9604c;
+  --on-red: #12261e;
+  --accent: #9ac7d6;
+  --felt: #1e3a2f;
+  --focus: #9ac7d6;
+  --field-bg: #183026;
+  --card-face: #fbf8f1;
+  --card-ink: #1b1a17;
+  --card-red: #b3261e;
+  --card-edge: #b9b09b;
+  --card-back: #f4efe3;
+  --card-back-ink: #1e3a2f;
+}
+
+/* Midnight: a neutral dark mode for playing late. Brass on blue-black. */
+[data-theme='midnight'] {
+  color-scheme: dark;
+  --paper: #12141a;
+  --paper-2: #191c24;
+  --paper-3: #23272f;
+  --ink: #ece6d9;
+  --ink-2: #a9a294;
+  --ink-3: #6f6a5d;
+  --red: #e0705e;
+  --red-2: #c85a48;
+  --on-red: #12141a;
+  --accent: #c9a227;
+  --felt: #12141a;
+  --focus: #c9a227;
+  --field-bg: #191c24;
+  --card-face: #fbf8f1;
+  --card-ink: #1b1a17;
+  --card-red: #b3261e;
+  --card-edge: #4a4740;
+  --card-back: #ece6d9;
+  --card-back-ink: #12141a;
+}
+
+/* Noir: true black, one hot red. High contrast and cinematic. */
+[data-theme='noir'] {
+  color-scheme: dark;
+  --paper: #0a0a0a;
+  --paper-2: #151515;
+  --paper-3: #222222;
+  --ink: #f5f5f5;
+  --ink-2: #a8a8a8;
+  --ink-3: #6e6e6e;
+  --red: #e5342a;
+  --red-2: #c4221a;
+  --on-red: #fbf8f1;
+  --accent: #9fb8c4;
+  --felt: #0a0a0a;
+  --focus: #9fb8c4;
+  --field-bg: #151515;
+  --card-face: #fbf8f1;
+  --card-ink: #1b1a17;
+  --card-red: #b3261e;
+  --card-edge: #3d3d3d;
+  --card-back: #f5f5f5;
+  --card-back-ink: #0a0a0a;
+}
+
+/* Oxblood: leather and mahogany. The back room of a private club. */
+[data-theme='oxblood'] {
+  color-scheme: dark;
+  --paper: #241416;
+  --paper-2: #2e1a1c;
+  --paper-3: #3b2326;
+  --ink: #efe3d2;
+  --ink-2: #bda893;
+  --ink-3: #8a7565;
+  --red: #e2705a;
+  --red-2: #c95a45;
+  --on-red: #241416;
+  --accent: #d4af37;
+  --felt: #241416;
+  --focus: #d4af37;
+  --field-bg: #2e1a1c;
+  --card-face: #fbf8f1;
+  --card-ink: #1b1a17;
+  --card-red: #b3261e;
+  --card-edge: #5a4038;
+  --card-back: #efe3d2;
+  --card-back-ink: #241416;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --d-fast: 0ms;
+    --d-base: 0ms;
+    --d-slow: 0ms;
+  }
+}

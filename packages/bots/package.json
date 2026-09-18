@@ -1,0 +1,20 @@
+{
+  "name": "@calliope/bots",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Rule-based poker bots with a few personalities.",
+  "license": "MIT",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@calliope/engine": "*",
+    "@calliope/shared": "*"
+  }
+}

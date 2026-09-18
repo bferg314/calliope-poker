@@ -1,0 +1,16 @@
+{
+  "name": "@calliope/engine",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Pure, deterministic poker engine: cards, hand evaluation, betting, pots, variants, and the table reducer.",
+  "license": "MIT",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  }
+}

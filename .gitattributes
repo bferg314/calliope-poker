@@ -1,0 +1,6 @@
+# Keep line endings consistent for everyone, whatever they check out on.
+* text=auto eol=lf
+
+# Binary
+*.woff2 binary
+*.png binary
