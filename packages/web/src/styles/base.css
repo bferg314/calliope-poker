@@ -848,6 +848,81 @@ select {
   background: var(--red);
 }
 
+/* ---------- card backs ---------- */
+:root,
+[data-card-back='lattice'] {
+  --card-back: #f4efe3;
+  --card-back-ink: #1e3a2f;
+}
+
+[data-card-back='waves'] {
+  --card-back: #182b49;
+  --card-back-ink: #f4efe3;
+}
+
+[data-card-back='stars'] {
+  --card-back: #12141a;
+  --card-back-ink: #c9a227;
+}
+
+[data-card-back='sunburst'] {
+  --card-back: #a72c24;
+  --card-back-ink: #fbf8f1;
+}
+
+.card-back-design {
+  display: none;
+}
+
+[data-card-back='lattice'] .card-back-lattice,
+[data-card-back='waves'] .card-back-waves,
+[data-card-back='stars'] .card-back-stars,
+[data-card-back='sunburst'] .card-back-sunburst {
+  display: inline;
+}
+
+.card-back-heading {
+  margin: var(--s-5) 0 var(--s-2);
+}
+
+.card-back-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: var(--s-3);
+}
+
+.card-back-swatch {
+  appearance: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  padding: var(--s-2);
+  color: var(--ink);
+  background: transparent;
+  border: 1px solid var(--ink-3);
+  text-align: left;
+  font: inherit;
+}
+
+.card-back-swatch.on {
+  border-color: var(--ink);
+  box-shadow: inset 0 0 0 1px var(--ink);
+}
+
+.card-back-swatch .card {
+  flex: 0 0 auto;
+}
+
+.card-back-swatch .name,
+.card-back-swatch .micro {
+  display: block;
+}
+
+.card-back-swatch .name {
+  font-family: var(--font-display);
+}
+
 /* ---------- back to your game ---------- */
 .resume {
   display: flex;
@@ -997,4 +1072,3 @@ select {
 .invite-link .btn {
   flex-shrink: 0;
 }
-
