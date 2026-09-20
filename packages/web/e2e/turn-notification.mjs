@@ -49,6 +49,28 @@ page.on('console', (m) => { if (m.type() === 'error') log('CONSOLE error', m.tex
 
 const rings = () => page.evaluate(() => window.__oscillators);
 
+/*
+ * Whether this machine can make a sound at all. A CI runner often has no audio
+ * device, and a context that never reaches "running" makes the bell silent for
+ * reasons that have nothing to do with the code. Checked once, so a missing
+ * sound card reads as a skipped check rather than a failed one.
+ */
+async function audioWorks() {
+  return page.evaluate(async () => {
+    const Ctor = window.AudioContext ?? window.webkitAudioContext;
+    if (!Ctor) return false;
+    try {
+      const c = new Ctor();
+      await c.resume().catch(() => {});
+      const ok = c.state === 'running';
+      void c.close();
+      return ok;
+    } catch {
+      return false;
+    }
+  });
+}
+
 await page.goto(BASE + '/');
 await page.waitForSelector('text=A name for the evening');
 await page.getByRole('button', { name: 'Sit down' }).click();
@@ -109,10 +131,12 @@ log('clearance below the pot:', clash.gap, 'px');
 if (clash.pot > 0) throw new Error(`the stamp covers the pot by ${clash.pot}px2`);
 if (clash.board > 0) throw new Error(`the stamp covers the board by ${clash.board}px2`);
 
-// 4. The bell rang, once.
+// 4. The bell rang.
+const audio = await audioWorks();
 const after = await rings();
 log('oscillators built:', after - before);
-if (after === before) throw new Error('the bell did not ring when the turn arrived');
+if (!audio) log('SKIPPED: this machine has no working audio context, so the bell cannot be judged');
+else if (after === before) throw new Error('the bell did not ring when the turn arrived');
 
 // 5. It hangs about for a second or two, then leaves on its own.
 await page.waitForSelector('.turn-pop', { state: 'detached', timeout: 4000 });
@@ -138,6 +162,8 @@ if (!sawPop) log('WARNING: no second turn arrived inside 40s, so the mute check 
 else {
   const stillMuted = await rings();
   log('oscillators while muted:', stillMuted - muted);
+  // Worth asserting even with no audio device: switching the bell off must stop
+  // ringBell before it ever asks the context for an oscillator.
   if (stillMuted !== muted) throw new Error('the bell rang after it was switched off');
   await page.screenshot({ path: out('turn-02-pop-muted.png') });
   log('switched off, the bell stayed quiet and the stamp still showed');

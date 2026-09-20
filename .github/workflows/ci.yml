@@ -106,6 +106,12 @@ jobs:
           BASE: http://localhost:3000
           OUT: ${{ runner.temp }}/shots
 
+      - name: The turn rings a bell and clears the pot
+        run: npm run e2e:turn-notification --workspace @calliope/web
+        env:
+          BASE: http://localhost:3000
+          OUT: ${{ runner.temp }}/shots
+
       - name: Keep the screenshots when something fails
         if: failure()
         uses: actions/upload-artifact@v4
