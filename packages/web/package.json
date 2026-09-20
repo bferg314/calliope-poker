@@ -14,7 +14,8 @@
     "e2e:dealers-choice": "node e2e/dealers-choice.mjs",
     "e2e:draw-games": "node e2e/draw-games.mjs",
     "e2e:lobby-and-sharing": "node e2e/lobby-and-sharing.mjs",
-    "e2e:turn-notification": "node e2e/turn-notification.mjs"
+    "e2e:turn-notification": "node e2e/turn-notification.mjs",
+    "e2e:night-report": "node e2e/night-report.mjs"
   },
   "dependencies": {
     "@calliope/engine": "*",

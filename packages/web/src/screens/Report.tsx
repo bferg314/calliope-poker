@@ -1,11 +1,15 @@
-import type { NightReport, RoomView } from '@calliope/shared';
+import { useMemo } from 'react';
+import { priceNight, type NightReport, type RoomView } from '@calliope/shared';
 import { TopBar } from '../components/TopBar.js';
-import { fmt, fmtDate, fmtDuration, fmtMoney, fmtSigned } from '../format.js';
+import { fmt, fmtCash, fmtCashSigned, fmtDate, fmtDuration, fmtSigned } from '../format.js';
 import { Link } from '../router.js';
 
-export function ReportSheet({ report, currency, chipValue }: { report: NightReport; currency: string; chipValue: number }): JSX.Element {
+export function ReportSheet({ report, youId }: { report: NightReport; youId: string | null }): JSX.Element {
   const winner = report.players[0];
-  const money = (chips: number): string => (chipValue > 0 ? ` (${fmtMoney(Math.round(chips * chipValue * 100) / 100, currency)})` : '');
+  const cash = report.cash;
+  const you = youId ? report.players.find((p) => p.id === youId) ?? null : null;
+  const totalIn = report.players.reduce((a, p) => a + p.totalIn, 0);
+  const totalOut = report.players.reduce((a, p) => a + p.finalStack, 0);
   return (
     <div className="stack">
       <div className="report-hero">
@@ -18,7 +22,7 @@ export function ReportSheet({ report, currency, chipValue }: { report: NightRepo
             <p className="label" style={{ marginTop: 'var(--s-4)' }}>the winner</p>
             <div className="display">{winner.name}!</div>
             <p className="muted">
-              up {fmt(winner.net)} chips{money(winner.net)}
+              up {fmt(winner.net)} chips{cash ? ` (${fmtCash(winner.cashNet, cash.currency)})` : ''}
             </p>
           </>
         ) : (
@@ -26,6 +30,17 @@ export function ReportSheet({ report, currency, chipValue }: { report: NightRepo
         )}
       </div>
       <hr className="rule-double" />
+      {cash && you && (
+        <div className="payout">
+          <div className="label">your payout</div>
+          <div className="big num">{fmtCash(you.cashOut, cash.currency)}</div>
+          <p className="micro">
+            {fmtCash(you.cashIn, cash.currency)} in over {you.buyIns + you.rebuys} {you.buyIns + you.rebuys === 1 ? 'buy-in' : 'buy-ins'}
+            {' · '}
+            {fmtCashSigned(you.cashNet, cash.currency)} on the night
+          </p>
+        </div>
+      )}
       <div style={{ overflowX: 'auto' }}>
         <table className="ledger">
           <thead>
@@ -49,17 +64,48 @@ export function ReportSheet({ report, currency, chipValue }: { report: NightRepo
                 </td>
                 <td className="num">{p.buyIns}</td>
                 <td className="num">{p.rebuys}</td>
-                <td className="num">{fmt(p.totalIn)}</td>
-                <td className="num">{fmt(p.finalStack)}</td>
-                <td className={`num ${p.net > 0 ? 'pos' : p.net < 0 ? 'neg' : ''}`}>{fmtSigned(p.net)}</td>
+                <td className="num">
+                  {fmt(p.totalIn)}
+                  {cash && <span className="cash">{fmtCash(p.cashIn, cash.currency)}</span>}
+                </td>
+                <td className="num">
+                  {fmt(p.finalStack)}
+                  {cash && <span className="cash">{fmtCash(p.cashOut, cash.currency)}</span>}
+                </td>
+                <td className={`num ${p.net > 0 ? 'pos' : p.net < 0 ? 'neg' : ''}`}>
+                  {fmtSigned(p.net)}
+                  {cash && <span className="cash">{fmtCashSigned(p.cashNet, cash.currency)}</span>}
+                </td>
                 <td className="num">{p.handsPlayed}</td>
                 <td className="num">{p.handsWon}</td>
                 <td className="num">{p.vpipPct}%</td>
               </tr>
             ))}
           </tbody>
+          {cash && (
+            <tfoot>
+              <tr>
+                <td className="smallcaps">the bank</td>
+                <td />
+                <td />
+                <td className="num">
+                  {fmt(totalIn)}
+                  <span className="cash">{fmtCash(cash.paidIn, cash.currency)}</span>
+                </td>
+                <td className="num">
+                  {fmt(totalOut)}
+                  <span className="cash">{fmtCash(cash.paidOut, cash.currency)}</span>
+                </td>
+                <td />
+                <td />
+                <td />
+                <td />
+              </tr>
+            </tfoot>
+          )}
         </table>
       </div>
+      {cash && <p className="micro">Chips cash at {fmtCash(cash.buyIn, cash.currency)} per {fmt(cash.chipsPerBuyIn)}. Settling up happens between you.</p>}
       <div className="report-cards">
         {report.biggestPot && (
           <div className="report-card">
@@ -107,12 +153,19 @@ export function ReportSheet({ report, currency, chipValue }: { report: NightRepo
 }
 
 export function Report({ room }: { room: RoomView }): JSX.Element {
-  const chipValue = room.settings.chips.buyInChips > 0 ? room.settings.chips.buyInValue / room.settings.chips.buyInChips : 0;
+  // Nights that ended before payouts were worked out have no cash on their
+  // report, but the table they were played at still knows what a buy-in cost.
+  const report = useMemo(() => {
+    const r = room.report;
+    if (!r || r.cash) return r;
+    const players = r.players.map((p) => ({ ...p }));
+    return { ...r, players, cash: priceNight(players, room.settings.chips) };
+  }, [room.report, room.settings.chips]);
   return (
     <div className="page page-narrow" style={{ maxWidth: 760 }}>
       <TopBar right={<span className="room-code smallcaps">{room.code}</span>} />
       <div style={{ paddingTop: 'var(--s-4)' }}>
-        {room.report ? <ReportSheet report={room.report} currency={room.settings.chips.currency} chipValue={chipValue} /> : <p className="muted">The night has ended.</p>}
+        {report ? <ReportSheet report={report} youId={room.me?.id ?? null} /> : <p className="muted">The night has ended.</p>}
       </div>
       <div className="row" style={{ paddingTop: 'var(--s-6)' }}>
         <Link to="/" className="btn btn-ink">Another night</Link>

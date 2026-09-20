@@ -1,7 +1,7 @@
 import { randomInt } from 'node:crypto';
 import { createTable, type HandSummary, type TableConfig, type TableState } from '@calliope/engine';
 import {
-  baseStakesOf, chipUnitOf, DEFAULT_ROOM_SETTINGS, ladderOptsOf, roomSettingsSchema,
+  baseStakesOf, chipUnitOf, DEFAULT_ROOM_SETTINGS, ladderOptsOf, priceNight, roomSettingsSchema,
   ROOM_CODE_ALPHABET, ROOM_CODE_LENGTH, stakesForLevel,
   type BotPersonality, type LedgerEntry, type LevelStakes, type LevelView, type NightReport,
   type ReportPlayer, type RoomPhase, type RoomSettings,
@@ -191,9 +191,13 @@ export function buildReport(r: RoomRecord, endedAt: number): NightReport {
       showdownsWon: st.sdWon,
       vpipPct: st.played ? Math.round((st.vpip / st.played) * 100) : 0,
       biggestPotWon: st.biggest,
+      cashIn: 0,
+      cashOut: 0,
+      cashNet: 0,
     });
   }
   players.sort((a, b) => b.net - a.net);
+  const cash = priceNight(players, r.settings.chips);
   const withHands = players.filter((p) => p.handsPlayed >= 5);
   const most = [...players].sort((a, b) => b.handsWon - a.handsWon)[0];
   const tight = [...withHands].sort((a, b) => a.vpipPct - b.vpipPct)[0];
@@ -212,6 +216,7 @@ export function buildReport(r: RoomRecord, endedAt: number): NightReport {
     levelsPlayed: stakesSeen.size,
     tightest: tight ? { name: tight.name, vpipPct: tight.vpipPct } : null,
     loosest: loose && loose !== tight ? { name: loose.name, vpipPct: loose.vpipPct } : null,
+    cash,
   };
 }
 
