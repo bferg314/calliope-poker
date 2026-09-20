@@ -1,9 +1,11 @@
-// Checks the three lobby and sharing behaviours end to end:
+// Checks the four lobby and sharing behaviours end to end:
 //   1. unsaved settings block "Deal the first hand"
 //   2. cancelling a table removes it for everyone
 //   3. the join link can be copied from a table in play, and the QR renders
+//   4. the ticket saves to the device as an image
 //   BASE=http://localhost:3000 OUT=./shots CHANNEL=chrome node e2e/lobby-and-sharing.mjs
 import { chromium } from 'playwright';
+import fs from 'node:fs/promises';
 import path from 'node:path';
 
 const BASE = process.env.BASE ?? 'http://localhost:3000';
@@ -125,6 +127,29 @@ check('the link beside the QR is absolute and points here',
 const buttons = await page.locator('dialog.modal .modal-actions .btn').count();
 check('the invite dialog has one button', buttons === 1, `${buttons} buttons`);
 await page.screenshot({ path: path.join(OUT, 'invite-dialog.png') });
+
+// ---- 4. keeping the ticket as an image ----
+// A fresh context, because the ticket is only printed the once.
+const keeper = await ctx.browser().newContext({ acceptDownloads: true });
+const keeperPage = await keeper.newPage();
+await keeperPage.goto(BASE + '/');
+await keeperPage.getByRole('button', { name: 'Sit down' }).click();
+await keeperPage.waitForSelector('.ticket');
+const saving = keeperPage.waitForEvent('download', { timeout: 10000 });
+await keeperPage.getByRole('button', { name: 'Save image' }).click();
+const saved = await saving;
+const file = path.join(OUT, 'ticket-image.png');
+await saved.saveAs(file);
+check('the ticket saves under the player\'s name', saved.suggestedFilename().startsWith('calliope-ticket-'), saved.suggestedFilename());
+// An empty canvas would still be a PNG, so look at what came out: the right
+// stock width, and enough bytes that something was actually printed on it.
+const png = await fs.readFile(file);
+const magic = png.subarray(1, 4).toString();
+const width = png.readUInt32BE(16);
+check('and it is a PNG of the printed ticket', magic === 'PNG' && width === 2280 && png.length > 20000,
+  `${magic} ${width}px ${png.length} bytes`);
+check('and says it saved', await keeperPage.getByRole('button', { name: 'Saved' }).isVisible());
+await keeper.close();
 
 await browser.close();
 log(failures === 0 ? 'all checks passed' : `${failures} check(s) failed`);

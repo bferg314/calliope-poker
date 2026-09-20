@@ -298,7 +298,9 @@ First visit: "You're **Quiet Heron** tonight." with a pencil icon to rename. Und
 └ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┘
 ```
 
-Buttons: "Copy", "Choose my own words", "Got it". Recovery screen is the same ticket with blank word slots.
+Buttons: "Copy", "Save image", "Choose my own words", "Got it". Recovery screen is the same ticket with blank word slots.
+
+"Save image" draws the ticket to a PNG the player can keep on their phone: the same stock, name, words and instruction, set in Fraunces on cream with dark ink. Like the cards and the QR it ignores the active theme, because half of them are dark and a saved dark rectangle is a poor thing to read five words off a year later. It is drawn on a canvas rather than scraped off the page, so the saved ticket carries the words and the one instruction they are useless without, and none of the buttons beside them.
 
 ### Lobby
 

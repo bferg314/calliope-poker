@@ -1,8 +1,11 @@
 import { useState } from 'react';
 import { copyText } from '../clipboard.js';
+import { saveBlob } from '../download.js';
+import { ticketFileName, ticketImage } from '../ticketImage.js';
 
 export function Ticket({ words, name }: { words: string[]; name: string }): JSX.Element {
   const [state, setState] = useState<'idle' | 'copied' | 'manual'>('idle');
+  const [save, setSave] = useState<'idle' | 'saving' | 'saved' | 'failed'>('idle');
   const copy = async (): Promise<void> => {
     if (await copyText(`${name}: ${words.join(' ')}`)) {
       setState('copied');
@@ -10,6 +13,16 @@ export function Ticket({ words, name }: { words: string[]; name: string }): JSX.
     } else {
       // Blocked on a plain http address, so tell them rather than doing nothing.
       setState('manual');
+    }
+  };
+  const download = async (): Promise<void> => {
+    setSave('saving');
+    const image = await ticketImage(words, name);
+    if (image && saveBlob(image, ticketFileName(name))) {
+      setSave('saved');
+      setTimeout(() => setSave('idle'), 1500);
+    } else {
+      setSave('failed');
     }
   };
   return (
@@ -23,12 +36,22 @@ export function Ticket({ words, name }: { words: string[]; name: string }): JSX.
       <p className="micro" style={{ marginBottom: 8 }}>
         Type these five words with the name <strong>{name}</strong> to get your history back another night. Nobody can recover them for you.
       </p>
-      <button className="btn btn-small" onClick={() => void copy()}>
-        {state === 'copied' ? 'Copied' : 'Copy'}
-      </button>
+      <div className="row">
+        <button className="btn btn-small" onClick={() => void copy()}>
+          {state === 'copied' ? 'Copied' : 'Copy'}
+        </button>
+        <button className="btn btn-small" disabled={save === 'saving'} onClick={() => void download()}>
+          {save === 'saving' ? 'Saving' : save === 'saved' ? 'Saved' : 'Save image'}
+        </button>
+      </div>
       {state === 'manual' && (
         <p className="micro" style={{ marginTop: 8, marginBottom: 0 }}>
-          This browser will not let the page reach the clipboard. Write the words down instead.
+          This browser will not let the page reach the clipboard. Save the image or write the words down instead.
+        </p>
+      )}
+      {save === 'failed' && (
+        <p className="micro" style={{ marginTop: 8, marginBottom: 0 }}>
+          This browser would not save the image. Copy the words or write them down instead.
         </p>
       )}
     </div>

@@ -62,13 +62,27 @@ async function openTable(p, { buyInValue } = {}) {
   return p.url().split('/r/')[1];
 }
 
+/** Whatever this seat can do without thinking: call along, or take the draw. */
+async function actOnce(p) {
+  const call = p.locator('.action-bar .btn-ink:not([disabled])');
+  if (await call.count()) {
+    await call.first().click({ timeout: 2000 }).catch(() => {});
+    return true;
+  }
+  const draw = p.locator('.action-bar .draw-buttons .btn-red:not([disabled])');
+  if (await draw.count()) {
+    await draw.first().click({ timeout: 2000 }).catch(() => {});
+    return true;
+  }
+  return false;
+}
+
 /** Call along, so chips actually move before the night is called. */
 async function playFor(p, ms) {
   const deadline = Date.now() + ms;
   while (Date.now() < deadline) {
-    const call = p.locator('.action-bar .btn-ink:not([disabled])');
-    if (await call.count()) { await call.first().click(); await p.waitForTimeout(250); }
-    else await p.waitForTimeout(250);
+    await actOnce(p);
+    await p.waitForTimeout(250);
   }
 }
 
@@ -77,7 +91,17 @@ async function endNight(p) {
   await p.getByRole('button', { name: 'End the night' }).click();
   await p.waitForSelector('dialog.modal[open]');
   await p.locator('dialog.modal .modal-actions .btn').filter({ hasText: 'End the night' }).click();
-  await p.waitForSelector('.report-hero', { timeout: 90000 });
+  // The night ends when the hand in progress does, and a player who stops
+  // acting moves that hand along one thirty-second act clock per street,
+  // because a timeout checks when it can rather than folding. Three streets
+  // of that is longer than any timeout worth waiting, so keep calling until
+  // the report is up instead of sitting on the clock.
+  const deadline = Date.now() + 90000;
+  while (Date.now() < deadline && (await p.locator('.report-hero').count()) === 0) {
+    await actOnce(p);
+    await p.waitForTimeout(250);
+  }
+  await p.waitForSelector('.report-hero', { timeout: 15000 });
   await p.waitForTimeout(400);
 }
 
