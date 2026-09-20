@@ -13,6 +13,8 @@ import { Invite } from '../components/Invite.js';
 import { useConfirm } from '../components/Modal.js';
 import { ThemePicker } from '../components/ThemePicker.js';
 import { Toast } from '../components/Toast.js';
+import { TurnPop } from '../components/TurnPop.js';
+import { bellOn, ringBell, setBellOn } from '../bell.js';
 import { copyText } from '../clipboard.js';
 import { absoluteUrl, fmt, fmtDuration, fmtMoney } from '../format.js';
 import { Link } from '../router.js';
@@ -98,11 +100,14 @@ export function Table({ room, socket }: { room: RoomView; socket: RoomSocket }):
   const [confirmFold, setConfirmFold] = useState(() => {
     try { return localStorage.getItem('calliope.confirmFold') === '1'; } catch { return false; }
   });
+  const [bell, setBell] = useState(bellOn);
   const [announce, setAnnounce] = useState('');
   const [levelUp, setLevelUp] = useState<string | null>(null);
+  const [turnPop, setTurnPop] = useState(false);
   const [selected, setSelected] = useState<string[]>([]);
   const [copyNote, setCopyNote] = useState<string | null>(null);
   const seenLevel = useRef(room.level.index);
+  const wasMyTurn = useRef(false);
 
   const legal = useMemo(() => {
     if (mySeat === null || !hand || hand.stage !== 'betting' || hand.round.actor !== mySeat) return null;
@@ -123,6 +128,19 @@ export function Table({ room, socket }: { room: RoomView; socket: RoomSocket }):
     ? hand.round.actor
     : hand?.stage === 'choosing' ? hand.chooser : null;
   const actorName = actorSeat !== null && actorSeat !== undefined ? table.seats[actorSeat]?.name ?? null : null;
+  const myTurn = mySeat !== null && actorSeat === mySeat;
+  // What the turn is actually asking for, so the popup is worth more than a nudge.
+  const turnHint = hand?.stage === 'choosing'
+    ? 'pick the game'
+    : myDraw
+      ? myDraw.replace ? 'the draw' : myDraw.max === 1 ? 'throw one away' : 'the discard'
+      : legal
+        ? legal.canCheck
+          // The big blind can check and *raise*, not bet, so ask the engine
+          // rather than guessing: the hint has to match the button beneath it.
+          ? legal.raise ? `check or ${legal.raise.kind}` : 'check'
+          : `${fmt(legal.callAmount)} to call`
+        : null;
   const timerFraction = room.deadline ? Math.max(0, (room.deadline - now) / (room.settings.actionSeconds * 1000)) : null;
   const settled = hand?.stage === 'settled';
   const winners = new Set(settled ? hand!.results!.winners : []);
@@ -135,6 +153,40 @@ export function Table({ room, socket }: { room: RoomView; socket: RoomSocket }):
     if (legal) setAnnounce('Your turn');
     else if (lastLog) setAnnounce(lastLog);
   }, [legal, lastLog]);
+
+  /*
+   * The action reaching you is the one thing you may have looked away for, so
+   * ring a bell and stamp "your turn" onto the table. Edge-triggered on the turn
+   * itself: a redraw mid-turn must not ring again, and two turns in the same
+   * hand must both ring. Acting takes the stamp down with it.
+   */
+  useEffect(() => {
+    if (myTurn === wasMyTurn.current) return;
+    wasMyTurn.current = myTurn;
+    setTurnPop(myTurn);
+    if (myTurn) ringBell();
+  }, [myTurn]);
+
+  /*
+   * How long it hangs about. This is kept apart from the ring above so that the
+   * timer is owned by the stamp being up rather than by the edge that raised it:
+   * an effect that both rings once and times out cannot survive its own cleanup,
+   * and would leave the stamp on the table for the rest of the hand in dev.
+   * A tap or a keypress lifts it early, so somebody already watching gets the
+   * board straight back.
+   */
+  useEffect(() => {
+    if (!turnPop) return;
+    const hide = (): void => setTurnPop(false);
+    const timer = window.setTimeout(hide, 1600);
+    window.addEventListener('pointerdown', hide, { passive: true });
+    window.addEventListener('keydown', hide);
+    return () => {
+      window.clearTimeout(timer);
+      window.removeEventListener('pointerdown', hide);
+      window.removeEventListener('keydown', hide);
+    };
+  }, [turnPop]);
 
   useEffect(() => {
     if (room.level.index <= seenLevel.current) {
@@ -275,10 +327,29 @@ export function Table({ room, socket }: { room: RoomView; socket: RoomSocket }):
                   Re-buy {fmt(room.settings.chips.buyInChips)} chips
                 </button>
               )}
-              <label className="check" style={{ padding: '0 12px' }}>
-                <input type="checkbox" checked={confirmFold} onChange={(e) => { setConfirmFold(e.target.checked); try { localStorage.setItem('calliope.confirmFold', e.target.checked ? '1' : '0'); } catch { /* ignore */ } }} />
-                Confirm folds
-              </label>
+              {/*
+                * Toggles stay put: closing the menu on this click would unmount
+                * the label before the browser gets to activate the checkbox
+                * inside it, and the tick would never move.
+                */}
+              <div className="menu-checks" onClick={(e) => e.stopPropagation()}>
+                <label className="check">
+                  <input type="checkbox" checked={confirmFold} onChange={(e) => { setConfirmFold(e.target.checked); try { localStorage.setItem('calliope.confirmFold', e.target.checked ? '1' : '0'); } catch { /* ignore */ } }} />
+                  Confirm folds
+                </label>
+                <label className="check">
+                  <input
+                    type="checkbox"
+                    checked={bell}
+                    onChange={(e) => {
+                      setBell(e.target.checked);
+                      setBellOn(e.target.checked);
+                      if (e.target.checked) ringBell(); // so you hear what you just chose
+                    }}
+                  />
+                  Turn bell
+                </label>
+              </div>
               {isHost && (
                 <>
                   <div className="menu-head label">host</div>
@@ -371,6 +442,7 @@ export function Table({ room, socket }: { room: RoomView; socket: RoomSocket }):
             })}
             <Board hand={hand} slots={boardSlots} cardWidth={wide ? 72 : 40} />
             {resultLine && <div className="result-line">{resultLine}</div>}
+            {turnPop && <TurnPop hint={turnHint} />}
             {hand?.stage === 'choosing' && (
               <div className="choose-panel">
                 <div className="label">{hand.chooser === mySeat ? 'your deal. pick the game' : `${actorName ?? 'the dealer'} is choosing the game`}</div>
@@ -398,7 +470,7 @@ export function Table({ room, socket }: { room: RoomView; socket: RoomSocket }):
             )}
           </div>
 
-          <OwnSeat room={room} socket={socket} mySeat={mySeat} toAct={actorSeat !== null && actorSeat === mySeat} winAmount={mySeat !== null ? winAmounts[mySeat] ?? 0 : 0} timerFraction={actorSeat === mySeat ? timerFraction : null} onRebuy={rebuy} selectable={!!myDraw} selected={selected} onToggleCard={toggleCard} />
+          <OwnSeat room={room} socket={socket} mySeat={mySeat} toAct={myTurn} winAmount={mySeat !== null ? winAmounts[mySeat] ?? 0 : 0} timerFraction={actorSeat === mySeat ? timerFraction : null} onRebuy={rebuy} selectable={!!myDraw} selected={selected} onToggleCard={toggleCard} />
 
           {mySeat !== null && (myDraw ? (
             <DrawBar
