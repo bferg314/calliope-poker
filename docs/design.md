@@ -208,14 +208,24 @@ The action arriving is the one event a player may have looked away for, and at a
 kitchen table they usually have. Two things mark it, and both stop by
 themselves:
 
-- **A stamp on the felt.** A paper plate with a hairline rule above and below,
-  "Your turn" in display serif, and one small caps line saying what is being
-  asked: "10 TO CALL", "CHECK OR RAISE", "PICK THE GAME", "THE DRAW". It is
-  pressed onto the table area, not the window, so on desktop it lands on the
-  felt rather than halfway into the hand rail. It holds for 1.6 seconds and then
-  fades, and a tap or a keypress clears it early — somebody already watching
-  gets the board straight back. It never takes pointer events, so it cannot
-  swallow the tap it is asking for.
+- **A stamp on the felt.** A band filled `--red`, with "Your turn" in display
+  serif and, after a middot, one small caps line saying what is being asked:
+  "10 TO CALL", "CHECK OR RAISE", "PICK THE GAME", "THE DRAW". Red because red
+  is already the ink that means "to act" on a seat card (§4.2), so the stamp is
+  that mark written large; the text is `--on-red`, which each theme sets to the
+  one readable ink for its own red.
+
+  It is pressed onto the table area rather than the window, so on desktop it
+  lands on the felt and not halfway into the hand rail, and it sits low, under
+  the board and **clear of the pot**. The pot is the number you want most while
+  you are deciding, and a notice that hides it buys attention at the price of
+  the thing it is calling you to; being low also puts it between the board and
+  your own cards, where you are looking anyway. That is why it is one short band
+  and not a tall plate — a plate does not fit under the pot on a phone.
+
+  It holds for 1.6 seconds and then fades, and a tap or a keypress clears it
+  early, so somebody already watching gets the table straight back. It never
+  takes pointer events, so it cannot swallow the tap it is asking for.
 - **A bell.** One struck note, synthesised from three decaying sine partials
   rather than shipped as a sound file. Off is one tick away in the table menu,
   beside "confirm folds", and the choice is stored per device like the theme.

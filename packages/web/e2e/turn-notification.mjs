@@ -89,16 +89,36 @@ const blocks = await page.evaluate(() => {
 });
 if (blocks) throw new Error('the stamp takes pointer events and can swallow a tap');
 
-// 3. The bell rang, once.
+// 3. It never covers the pot, which is the number you want while deciding.
+const clash = await page.evaluate(() => {
+  const plate = document.querySelector('.turn-pop .plate');
+  if (!plate) return null;
+  const a = plate.getBoundingClientRect();
+  const over = (sel) => {
+    const el = document.querySelector(sel);
+    if (!el) return 0;
+    const b = el.getBoundingClientRect();
+    const w = Math.min(a.right, b.right) - Math.max(a.left, b.left);
+    const h = Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top);
+    return w > 0 && h > 0 ? Math.round(w * h) : 0;
+  };
+  const pot = document.querySelector('.pot');
+  return { pot: over('.pot'), board: over('.board'), gap: pot ? Math.round(a.top - pot.getBoundingClientRect().bottom) : null };
+});
+log('clearance below the pot:', clash.gap, 'px');
+if (clash.pot > 0) throw new Error(`the stamp covers the pot by ${clash.pot}px2`);
+if (clash.board > 0) throw new Error(`the stamp covers the board by ${clash.board}px2`);
+
+// 4. The bell rang, once.
 const after = await rings();
 log('oscillators built:', after - before);
 if (after === before) throw new Error('the bell did not ring when the turn arrived');
 
-// 4. It hangs about for a second or two, then leaves on its own.
+// 5. It hangs about for a second or two, then leaves on its own.
 await page.waitForSelector('.turn-pop', { state: 'detached', timeout: 4000 });
 log('the stamp cleared itself');
 
-// 5. Turning the bell off in the menu keeps it quiet on the next turn.
+// 6. Turning the bell off in the menu keeps it quiet on the next turn.
 const call = page.locator('.action-bar .btn-ink:not([disabled])');
 await call.first().waitFor({ timeout: 15000 });
 await page.locator('.menu-wrap button').first().click();
@@ -123,7 +143,7 @@ else {
   log('switched off, the bell stayed quiet and the stamp still showed');
 }
 
-// 6. Desktop, for the record.
+// 7. Desktop, for the record.
 await page.setViewportSize({ width: 1280, height: 820 });
 await page.waitForTimeout(300);
 log('done');

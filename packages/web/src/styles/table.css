@@ -760,17 +760,23 @@
 
 /* ---------- your turn ---------- */
 /*
- * A printed notice pressed onto the table for a moment and then lifted. It
- * covers the felt rather than the whole window, so on a desktop it lands on the
- * table and not halfway into the hand rail. pointer-events: none, so it can
- * never swallow the tap it is asking for.
+ * A notice stamped in red ink onto the table for a moment and then lifted. Red
+ * is already the ink that means "to act" on a seat card, so the stamp is the
+ * same mark written large.
+ *
+ * It sits in the lower part of the table area, under the board and clear of the
+ * pot: the pot is the number you want most while you are deciding, and a notice
+ * that hides it buys attention at the price of the thing it is calling you to.
+ * Being low also puts it between the board and your own cards, which is where
+ * you are looking anyway. pointer-events: none, so it can never swallow the tap
+ * it is asking for.
  */
 .turn-pop {
   position: absolute;
   inset: 0;
   display: grid;
-  place-items: center;
-  padding: var(--s-4);
+  place-items: end center;
+  padding: var(--s-3) var(--s-4);
   pointer-events: none;
   z-index: 20;
   animation: turn-pop 1600ms var(--ease) both;
@@ -783,14 +789,16 @@
   100% { opacity: 0; }
 }
 
+/* One short band, not a tall plate: it has to fit under the pot on a phone. */
 .turn-pop .plate {
   display: flex;
-  flex-direction: column;
-  align-items: center;
+  align-items: baseline;
+  justify-content: center;
+  flex-wrap: wrap;
   gap: var(--s-2);
-  padding: var(--s-4) var(--s-6);
-  background: var(--paper);
-  border: 1px solid var(--ink);
+  padding: var(--s-2) var(--s-4);
+  background: var(--red);
+  border: 1px solid var(--red-2);
   max-width: 100%;
   text-align: center;
   animation: stamp var(--d-base) var(--ease) both;
@@ -803,35 +811,35 @@
   to { transform: scale(1); }
 }
 
+/* Each theme picks the one readable ink for its own red; see §8 of the design doc. */
 .turn-pop strong {
   font-family: var(--font-display);
   font-variation-settings: 'opsz' 72, 'WONK' 1;
-  font-size: var(--t-h1);
+  font-size: var(--t-h2);
   font-weight: 600;
   line-height: 1;
-  color: var(--ink);
+  color: var(--on-red);
 }
 
 .turn-pop .hint {
   font-family: var(--font-ui);
   font-size: var(--t-small);
   font-variant-numeric: tabular-nums;
-  color: var(--red);
+  color: var(--on-red);
 }
 
-.turn-pop .rule {
-  width: 48px;
-  height: 1px;
-  background: var(--ink-3);
+.turn-pop .sep {
+  color: var(--on-red);
+  opacity: 0.55;
 }
 
-@media (max-width: 899px) {
+@media (min-width: 900px) {
   .turn-pop .plate {
-    padding: var(--s-3) var(--s-5);
+    padding: var(--s-4) var(--s-6);
   }
   .turn-pop strong {
-    font-size: var(--t-h2);
-    font-variation-settings: 'opsz' 36, 'WONK' 1;
+    font-size: var(--t-h1);
+    font-variation-settings: 'opsz' 72, 'WONK' 1;
   }
 }
 
