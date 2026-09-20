@@ -165,7 +165,16 @@ if (await page.locator('dialog.modal[open]').count()) throw new Error('Escape di
 await page.locator('.menu-wrap button').first().click();
 await page.getByRole('button', { name: 'End the night' }).click();
 await confirmModal('End the night');
-await page.waitForSelector('.report-hero', { timeout: 90000 });
+// The night ends when the hand in progress does, and a seat that stops acting
+// moves it along one act clock per street, because a timeout checks rather
+// than folds. So call along until the report is up.
+const endBy = Date.now() + 90000;
+while (Date.now() < endBy && (await page.locator('.report-hero').count()) === 0) {
+  const call = page.locator('.action-bar .btn-ink:not([disabled])');
+  if (await call.count()) await call.first().click({ timeout: 2000 }).catch(() => {});
+  await page.waitForTimeout(250);
+}
+await page.waitForSelector('.report-hero', { timeout: 15000 });
 await page.waitForTimeout(300);
 await page.screenshot({ path: out('15-report.png'), fullPage: true });
 log('done');
