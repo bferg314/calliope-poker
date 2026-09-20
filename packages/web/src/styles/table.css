@@ -671,6 +671,18 @@
   min-width: 240px;
 }
 
+/* The toggles keep the buttons' indent, so the column reads as one list. */
+.menu-checks {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.menu-checks .check {
+  padding: 0 var(--s-3);
+  min-height: 40px;
+}
+
 .menu .btn {
   justify-content: flex-start;
   border-color: transparent;
@@ -744,6 +756,83 @@
 
 .notice-bar.final {
   color: var(--red);
+}
+
+/* ---------- your turn ---------- */
+/*
+ * A printed notice pressed onto the table for a moment and then lifted. It
+ * covers the felt rather than the whole window, so on a desktop it lands on the
+ * table and not halfway into the hand rail. pointer-events: none, so it can
+ * never swallow the tap it is asking for.
+ */
+.turn-pop {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: var(--s-4);
+  pointer-events: none;
+  z-index: 20;
+  animation: turn-pop 1600ms var(--ease) both;
+}
+
+/* Full ink until late, then gone: a notice that fades the whole time reads as
+   broken rather than brief. */
+@keyframes turn-pop {
+  0%, 72% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+.turn-pop .plate {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s-2);
+  padding: var(--s-4) var(--s-6);
+  background: var(--paper);
+  border: 1px solid var(--ink);
+  max-width: 100%;
+  text-align: center;
+  animation: stamp var(--d-base) var(--ease) both;
+}
+
+/* The press of a stamp: settles in, never overshoots. Reduced motion zeroes
+   --d-base, which makes it instant. */
+@keyframes stamp {
+  from { transform: scale(1.03); }
+  to { transform: scale(1); }
+}
+
+.turn-pop strong {
+  font-family: var(--font-display);
+  font-variation-settings: 'opsz' 72, 'WONK' 1;
+  font-size: var(--t-h1);
+  font-weight: 600;
+  line-height: 1;
+  color: var(--ink);
+}
+
+.turn-pop .hint {
+  font-family: var(--font-ui);
+  font-size: var(--t-small);
+  font-variant-numeric: tabular-nums;
+  color: var(--red);
+}
+
+.turn-pop .rule {
+  width: 48px;
+  height: 1px;
+  background: var(--ink-3);
+}
+
+@media (max-width: 899px) {
+  .turn-pop .plate {
+    padding: var(--s-3) var(--s-5);
+  }
+  .turn-pop strong {
+    font-size: var(--t-h2);
+    font-variation-settings: 'opsz' 36, 'WONK' 1;
+  }
 }
 
 /* ---------- which game is being played ---------- */

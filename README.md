@@ -161,6 +161,7 @@ npm run e2e --workspace @calliope/web                  # every screen, screensho
 npm run e2e:dealers-choice --workspace @calliope/web   # regression guard
 npm run e2e:draw-games --workspace @calliope/web       # Pineapple and five-card draw
 npm run e2e:lobby-and-sharing --workspace @calliope/web # unsaved settings, cancelling, the join link
+npm run e2e:turn-notification --workspace @calliope/web # the turn stamp and the bell
 ```
 
 The walkthroughs open tables, so against a host-only server pass the same

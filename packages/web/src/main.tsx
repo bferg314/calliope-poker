@@ -7,9 +7,11 @@ import './styles/tokens.css';
 import './styles/base.css';
 import './styles/table.css';
 import { App } from './app.js';
+import { armBell } from './bell.js';
 import { applyStoredTheme } from './themes.js';
 
 applyStoredTheme();
+armBell();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
