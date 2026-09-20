@@ -110,7 +110,7 @@ Face design:
 - Ace of spades carries a small ornament and the word CALLIOPE in micro small caps. It is the only branded card.
 - Black suits in `--ink`, red suits in `--red`. Two inks only.
 
-Back design: `--card-back` ground with a repeating engraved diamond lattice in `--paper` at 1px, and a small central cartouche. Backs must be obviously "not a face" at 36px.
+Back design: players choose a back independently from the table theme. The choices use repeating, print-like two-ink patterns with a strong border and central ornament; the original engraved diamond lattice remains the default. The preference is local to the device. Backs must be obviously "not a face" at 36px.
 
 Face-down cards belonging to the player are never shown face down; the player always sees their own cards.
 
