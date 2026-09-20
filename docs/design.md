@@ -314,6 +314,8 @@ The QR is drawn as our own SVG from the module matrix, on a card-stock plate wit
 
 A single printed sheet, scrollable. Title "The night of 17 September". Winner at `--t-display`. A ledger table: name, buy-ins, re-buys, final stack, net. Then "Biggest pot", "Most hands won", "Luckiest draw" as three short cards. A footer folio: hands played, duration, variants played.
 
+When the host priced a buy-in, the sheet settles up in real money as well as chips. The viewer's own payout — what the bank counts back for their chips — is printed between the winner and the ledger, ruled above and below. In the ledger, cash is set in `--t-micro` under the chip figure it came from, never in a column of its own: the in, out and net columns each carry their own amount, and a closing "the bank" row totals what was taken and what is owed. Payouts are worked out in cents and the odd cent goes to the largest fraction, so the column adds up to what came in the door. A night played for nothing prints no money at all.
+
 ### Profile
 
 Same ledger style, per night, with lifetime totals at the top.

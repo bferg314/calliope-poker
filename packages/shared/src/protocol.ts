@@ -93,6 +93,29 @@ export interface ReportPlayer {
   showdownsWon: number;
   vpipPct: number;
   biggestPotWon: number;
+  /**
+   * The night in real money, in minor units (cents), and zero throughout when
+   * the report's `cash` is null. `cashOut` is the payout: what the bank counts
+   * back for the chips they finished with.
+   */
+  cashIn: number;
+  cashOut: number;
+  cashNet: number;
+}
+
+/**
+ * What the night came to in real money. Every amount is in minor units
+ * (cents), so the column adds up without a float creeping into it.
+ */
+export interface NightCash {
+  /** The symbol the host typed, printed in front of an amount. */
+  currency: string;
+  /** What one buy-in costs, and the chips it puts on the table. */
+  buyIn: number;
+  chipsPerBuyIn: number;
+  /** Cash taken over the night, and cash handed back at the end. */
+  paidIn: number;
+  paidOut: number;
 }
 
 export interface NightReport {
@@ -110,6 +133,8 @@ export interface NightReport {
   levelsPlayed: number;
   tightest: { name: string; vpipPct: number } | null;
   loosest: { name: string; vpipPct: number } | null;
+  /** Null when the host never priced a buy-in and the night was played for nothing. */
+  cash: NightCash | null;
 }
 
 export interface LevelView {

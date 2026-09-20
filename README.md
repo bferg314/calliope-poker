@@ -40,7 +40,7 @@ hand.
 </p>
 
 <p align="center"><em>Every night ends with a printed report: who won, what everybody put in and
-took out, the biggest pot and the luckiest draw.</em></p>
+took out in chips and in cash, the biggest pot and the luckiest draw.</em></p>
 
 ## What this is, and is not
 
@@ -49,9 +49,10 @@ know each other. It handles **no money**. There is no cashier, no deposits and n
 payment processing of any kind, and none is planned.
 
 Chips are just numbers. The one place real currency appears is the optional
-"a buy-in is worth" setting, which does nothing except print a figure next to the
-chip counts in the end-of-night report, the way somebody would write it on a
-napkin. Settling up happens between people, away from the software.
+"a buy-in is worth" setting, which does nothing except price the chip counts in
+the end-of-night report, so everyone can see what their stack came to, the way
+somebody would work it out on a napkin. Settling up happens between people, away
+from the software.
 
 Rooms are private and unlisted, reachable only by a six-character code or the
 link. Anyone who runs a public instance is responsible for it, including for
@@ -162,6 +163,7 @@ npm run e2e:dealers-choice --workspace @calliope/web   # regression guard
 npm run e2e:draw-games --workspace @calliope/web       # Pineapple and five-card draw
 npm run e2e:lobby-and-sharing --workspace @calliope/web # unsaved settings, cancelling, the join link
 npm run e2e:turn-notification --workspace @calliope/web # the turn stamp and the bell
+npm run e2e:night-report --workspace @calliope/web      # the report, and the payouts on it
 ```
 
 The walkthroughs open tables, so against a host-only server pass the same

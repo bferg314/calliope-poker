@@ -11,6 +11,16 @@ export function fmtMoney(value: number, currency: string): string {
   return `${currency}${s}`;
 }
 
+/** Money kept in minor units: 2480 becomes "$24.80", 2000 becomes "$20". */
+export function fmtCash(minor: number, currency: string): string {
+  return fmtMoney(Math.round(minor) / 100, currency);
+}
+
+export function fmtCashSigned(minor: number, currency: string): string {
+  const s = fmtCash(Math.abs(minor), currency);
+  return minor > 0 ? `+${s}` : minor < 0 ? `-${s}` : s;
+}
+
 /** mm:ss or h:mm:ss for a duration in ms. */
 export function fmtDuration(ms: number): string {
   const total = Math.max(0, Math.floor(ms / 1000));

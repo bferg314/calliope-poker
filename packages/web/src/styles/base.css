@@ -376,6 +376,20 @@ select {
   border-bottom: 0;
 }
 
+/* The cash a chip figure is worth, set under it the way a ledger annotates a column. */
+.ledger .cash {
+  display: block;
+  font-size: var(--t-micro);
+  color: var(--ink-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.ledger tfoot td {
+  border-top: 1px solid var(--ink);
+  border-bottom: 0;
+  padding-top: var(--s-2);
+}
+
 .folio {
   font-family: var(--font-display);
   font-style: italic;
@@ -615,6 +629,22 @@ select {
 .report-card .big {
   font-family: var(--font-display);
   font-size: 1.5rem;
+}
+
+.payout {
+  text-align: center;
+  border-bottom: 1px solid var(--ink-3);
+  padding-bottom: var(--s-3);
+}
+
+.payout .big {
+  font-family: var(--font-display);
+  font-size: var(--t-h1);
+  line-height: 1.1;
+}
+
+.payout p {
+  margin: 0;
 }
 
 .pos {
