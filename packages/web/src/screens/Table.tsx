@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import {
   bestHand, bestHandOmaha, evaluateCards, getVariant, legalActions, type Action, type HandView, type TableState,
 } from '@calliope/engine';
@@ -69,6 +69,29 @@ function useWide(): boolean {
   return wide;
 }
 
+/**
+ * How wide to draw the board's cards on a wide screen. The table grows with the
+ * window, so the board grows with it: about a fifth of the table's height (the
+ * top seats come down into the middle on a short screen), and the whole row no
+ * wider than about 45% of it. Never smaller than it used to be, never huge.
+ */
+function useBoardCardWidth(wide: boolean): [(el: HTMLDivElement | null) => void, number] {
+  const [el, setEl] = useState<HTMLDivElement | null>(null);
+  const [width, setWidth] = useState(72);
+  useEffect(() => {
+    if (!el || !wide) return;
+    const measure = (): void => {
+      const { width: w, height: h } = el.getBoundingClientRect();
+      setWidth(Math.round(Math.min(120, Math.max(72, Math.min(h * 0.185, w * 0.088)))));
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [el, wide]);
+  return [setEl, wide ? width : 40];
+}
+
 function ownHandLabel(hand: HandView | null, seat: number | null): string | null {
   if (!hand || seat === null) return null;
   const p = hand.players[seat];
@@ -92,6 +115,7 @@ export function Table({ room, socket }: { room: RoomView; socket: RoomSocket }):
   const confirm = useConfirm();
   const wide = useWide();
   const seatW = wide ? 140 : 84;
+  const [tableAreaRef, boardCardW] = useBoardCardWidth(wide);
   const table = room.table;
   const hand = table.hand;
   const me = room.me;
@@ -422,7 +446,7 @@ export function Table({ room, socket }: { room: RoomView; socket: RoomSocket }):
 
       <div className="table-layout">
         <div className="table-main">
-          <div className="table-area">
+          <div className="table-area" ref={tableAreaRef} style={{ '--board-card': `${boardCardW}px` } as CSSProperties}>
             <div className="table-surface" aria-hidden="true" />
             {Array.from({ length: n - 1 }, (_, i) => {
               const k = i + 1;
@@ -451,7 +475,7 @@ export function Table({ room, socket }: { room: RoomView; socket: RoomSocket }):
                 </div>
               );
             })}
-            <Board hand={hand} slots={boardSlots} cardWidth={wide ? 72 : 40} />
+            <Board hand={hand} slots={boardSlots} cardWidth={boardCardW} />
             {resultLine && <div className="result-line">{resultLine}</div>}
             {turnPop && <TurnPop hint={turnHint} />}
             {hand?.stage === 'choosing' && (
