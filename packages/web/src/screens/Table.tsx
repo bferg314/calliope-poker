@@ -405,7 +405,18 @@ export function Table({ room, socket }: { room: RoomView; socket: RoomSocket }):
       {room.phase === 'final-hand' && <div className="notice-bar final">Last hand of the night.</div>}
       {room.phase === 'playing' && !hand && (
         <div className="notice-bar">
-          {table.seats.filter((s) => s && s.stack > 0 && !s.sittingOut).length < 2 ? 'Waiting for a second player with chips.' : 'Shuffling…'}
+          {table.seats.filter((s) => s && s.stack > 0 && !s.sittingOut).length < 2
+            ? 'Waiting for a second player with chips.'
+            : room.settings.autoDeal
+              ? 'Shuffling…'
+              : isHost
+                ? (
+                  <>
+                    Ready when you are.{' '}
+                    <button className="btn notice-action" onClick={() => socket.send({ type: 'host', command: { kind: 'deal' } })}>Deal the next hand</button>
+                  </>
+                )
+                : 'Waiting for the host to deal.'}
         </div>
       )}
 
