@@ -2,8 +2,8 @@
   "$schema": "https://raw.githubusercontent.com/bferg314/card-atelier/main/docs/open-playing-cards.schema.json",
   "format": "open-playing-cards",
   "version": 1,
-  "deckId": "81531664-def2-46a4-bbc9-3eae51c90855",
-  "contentHash": "858639220ae4903cedc529f5e6ddf025e42c958a3d70951c81133edf9fd7c283",
+  "deckId": "fb1b260c-9c0c-4a49-8a79-37529e1f252c",
+  "contentHash": "521751167490a9ad024e540bc0f2f911a58186f37596b3de1bcf499aab472299",
   "deckType": "french-52",
   "name": "Classic Deck Large",
   "author": "Bryan Ferguson",
@@ -13,7 +13,7 @@
     "name": "Card Atelier",
     "version": "0.1.0"
   },
-  "createdAt": "2026-09-23T00:35:36.004Z",
+  "createdAt": "2026-09-23T10:18:07.106Z",
   "card": {
     "widthMm": 63.5,
     "heightMm": 88.9,
@@ -56,67 +56,80 @@
     {
       "id": "A",
       "label": "A",
-      "value": 1
+      "value": 1,
+      "indexHeightMm": 10.08
     },
     {
       "id": "2",
       "label": "2",
-      "value": 2
+      "value": 2,
+      "indexHeightMm": 10.08
     },
     {
       "id": "3",
       "label": "3",
-      "value": 3
+      "value": 3,
+      "indexHeightMm": 10.08
     },
     {
       "id": "4",
       "label": "4",
-      "value": 4
+      "value": 4,
+      "indexHeightMm": 10.08
     },
     {
       "id": "5",
       "label": "5",
-      "value": 5
+      "value": 5,
+      "indexHeightMm": 10.08
     },
     {
       "id": "6",
       "label": "6",
-      "value": 6
+      "value": 6,
+      "indexHeightMm": 10.08
     },
     {
       "id": "7",
       "label": "7",
-      "value": 7
+      "value": 7,
+      "indexHeightMm": 10.08
     },
     {
       "id": "8",
       "label": "8",
-      "value": 8
+      "value": 8,
+      "indexHeightMm": 10.08
     },
     {
       "id": "9",
       "label": "9",
-      "value": 9
+      "value": 9,
+      "indexHeightMm": 10.08
     },
     {
       "id": "10",
       "label": "10",
-      "value": 10
+      "value": 10,
+      "indexHeightMm": 8.68
     },
     {
       "id": "J",
       "label": "J",
-      "value": 11
+      "value": 11,
+      "indexHeightMm": 10.08
     },
     {
       "id": "Q",
       "label": "Q",
-      "value": 12
+      "value": 12,
+      "indexHeightMm": 10.08
     },
     {
       "id": "K",
       "label": "K",
-      "value": 13
+      "value": 13,
+      "indexHeightMm": 10.08
     }
   ],
   "back": {

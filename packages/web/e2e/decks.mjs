@@ -8,6 +8,7 @@
 // DPR sets the device pixel ratio (default 2); DPR=1 shows what a standard desktop screen gets.
 import { chromium } from 'playwright';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import path from 'node:path';
 
 const BASE = process.env.BASE ?? 'http://localhost:3000';
@@ -45,7 +46,8 @@ await page.getByRole('button', { name: 'Deal the first hand' }).click();
 await page.waitForSelector('.own-seat .card-art img');
 await page.waitForTimeout(2000);
 
-const STARTER = '81531664-def2-46a4-bbc9-3eae51c90855';
+// The default deck is the first starter, classic; read its id rather than pin it, so swapping the deck needs no edit here.
+const STARTER = JSON.parse(readFileSync(new URL('../public/decks/classic/deck.json', import.meta.url), 'utf8')).deckId;
 const own = page.locator('.own-seat .card-art').first();
 assert.equal(await own.getAttribute('data-deck'), STARTER, 'own card drawn from the starter deck');
 const backs = page.locator('.seat .card-art.card-back');
