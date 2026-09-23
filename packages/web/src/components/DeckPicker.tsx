@@ -119,19 +119,20 @@ function DeckSwatch({ listing, on, onPick, onRemove }: { listing: DeckListing; o
           <span className="micro">{meta.author ? `by ${meta.author}` : origin === 'imported' ? 'imported' : ''}</span>
         </span>
       </button>
-      <div className="deck-foot micro">
-        <span>{meta.license ?? 'no licence stated'}</span>
-        {source && (
-          <a href={meta.source} target="_blank" rel="noreferrer">
-            {source}
-          </a>
-        )}
-        {onRemove && (
-          <button type="button" className="deck-remove" onClick={onRemove}>
-            remove
-          </button>
-        )}
-      </div>
+      {(source || onRemove) && (
+        <div className="deck-foot micro">
+          {source && (
+            <a href={meta.source} target="_blank" rel="noreferrer">
+              {source}
+            </a>
+          )}
+          {onRemove && (
+            <button type="button" className="deck-remove" onClick={onRemove}>
+              remove
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }
