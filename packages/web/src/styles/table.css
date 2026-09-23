@@ -754,6 +754,10 @@
   font-size: var(--t-small);
 }
 
+.notice-bar .notice-action {
+  margin-left: var(--s-2);
+}
+
 .notice-bar.final {
   color: var(--red);
 }
