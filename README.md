@@ -145,6 +145,30 @@ To check what you have before deciding:
 docker compose exec postgres psql -U calliope -d calliope -c   "SELECT (SELECT count(*) FROM users) AS people, (SELECT count(*) FROM rooms WHERE ended_at IS NOT NULL) AS nights, (SELECT count(*) FROM hands) AS hands;"
 ```
 
+## Disk space
+
+Each `docker compose up -d --build` builds a new app image, and Docker keeps the
+old one and the build cache behind it. The images are small (the app's own layer
+is about 60 MB), but after many rebuilds they add up, and a new lockfile adds a few
+hundred megabytes of build cache each time. Container logs are capped at 30 MB per
+service in `docker-compose.yml`. Your data, the Postgres and Redis volumes, stays
+small.
+
+To see where the space went, and to clear what nothing is using:
+
+```bash
+docker system df          # images, containers, volumes and build cache
+docker image prune -f     # old app images left by rebuilds
+docker builder prune -f   # build cache
+```
+
+Neither prune touches a running container or the data volumes.
+
+On Windows and macOS, Docker Desktop keeps everything in one virtual disk that
+grows but never shrinks on its own, so space you prune is only reusable by Docker.
+Set a disk limit in Docker Desktop (Settings → Resources) so Docker runs out of
+room before your drive does.
+
 ## Develop
 
 Requires Node 22+ and Docker (for Postgres and Redis).
