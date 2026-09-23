@@ -119,6 +119,12 @@ jobs:
           OUT: ${{ runner.temp }}/shots
           SECONDS: 25
 
+      - name: Cards draw sharp from the starter deck
+        run: npm run e2e:decks --workspace @calliope/web
+        env:
+          BASE: http://localhost:3000
+          OUT: ${{ runner.temp }}/shots
+
       - name: Keep the screenshots when something fails
         if: failure()
         uses: actions/upload-artifact@v4

@@ -10,18 +10,21 @@
     "build": "vite build",
     "preview": "vite preview",
     "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
     "e2e": "node e2e/walkthrough.mjs",
     "e2e:dealers-choice": "node e2e/dealers-choice.mjs",
     "e2e:draw-games": "node e2e/draw-games.mjs",
     "e2e:lobby-and-sharing": "node e2e/lobby-and-sharing.mjs",
     "e2e:turn-notification": "node e2e/turn-notification.mjs",
-    "e2e:night-report": "node e2e/night-report.mjs"
+    "e2e:night-report": "node e2e/night-report.mjs",
+    "e2e:decks": "node e2e/decks.mjs"
   },
   "dependencies": {
     "@calliope/engine": "*",
     "@calliope/shared": "*",
     "@fontsource-variable/fraunces": "^5.1.0",
     "@fontsource-variable/instrument-sans": "^5.1.0",
+    "fflate": "^0.8.3",
     "qrcode-generator": "^2.0.4",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"

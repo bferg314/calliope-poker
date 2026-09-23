@@ -92,25 +92,28 @@ Durations: `--d-fast: 120ms`, `--d-base: 200ms`, `--d-slow: 360ms`. Easing: `cub
 
 ## 3. Cards
 
-Cards are our own SVG, one file per card, generated from a template script so they are consistent. Ratio 5:7. Rendered sizes:
+Cards come from **Open Playing Cards** decks, the format Card Atelier exports ([spec](https://github.com/bferg314/card-atelier/blob/main/docs/open-playing-cards.md)): a picture per card (an SVG, a PNG, or both), a back, and the facts to play with them. Calliope only reads finished decks; how a deck was designed is not its business. Rendered sizes:
 
 | Context | Width |
 |---|---|
-| Player's own hole cards (phone) | 88px |
+| Player's own hole cards (phone) | 72–88px |
 | Player's own hole cards (desktop) | 112px |
-| Board | 64px phone / 80px desktop |
-| Opponent cards (face down / stud up cards) | 36px phone / 48px desktop |
-| Hand history / report | 28px |
+| Board | 40px phone / 72px desktop |
+| Opponent cards (face down / stud up cards) | 24px phone / 36px desktop |
+| Theme previews | 26px |
 
-Face design:
+Rules:
 
-- Card stock `--card-face`, 6px radius, 1px `--ink-3` hairline edge.
-- **Oversized corner indices**: rank glyph in Fraunces at 34% of card height, suit pip below at 18% of card height. Indices are in the top-left and rotated bottom-right. At 36px wide the top-left index alone is readable, which is why it is so large.
-- Center: a single large suit pip for number cards (no pip-count layout, that is unreadable at small sizes). Court cards (J, Q, K) use a simple two-color line illustration in a woodcut style; if illustration is not ready, a large letter in a decorative frame is acceptable.
-- Ace of spades carries a small ornament and the word CALLIOPE in micro small caps. It is the only branded card.
-- Black suits in `--ink`, red suits in `--red`. Two inks only.
-
-Back design: players choose a back independently from the table theme. The choices use repeating, print-like two-ink patterns with a strong border and central ornament; the original engraved diamond lattice remains the default. The preference is local to the device. Backs must be obviously "not a face" at 36px.
+- **french-52 only.** A deck must say `deckType: "french-52"`; its well-known ids map straight to engine codes (`hearts-K` → `Kh`, `spades-10` → `Ts`). `value` is ignored: Calliope ranks by rank id. Jokers are ignored. Anything else is refused with a plain sentence.
+- **Size from the deck.** Height is width × `heightMm / widthMm`, rounded to a whole pixel; corners follow `cornerRadiusMm`, and bleed is cropped off. Images keep their transparent corners, so any felt shows through.
+- **Vector first.** A card is drawn from its `vector` SVG when the deck has one: the browser rasterises it at exactly the drawn size, so it is sharp on any screen, and the files are a fraction of the PNGs' size. Imported decks keep only the SVG when both are present.
+- **PNGs drawn at exact size.** A deck's PNGs are print-sized, and a browser shrinking one five-fold in a single step leaves it soft on a 1x screen. A PNG-only card is resampled once per session (`createImageBitmap`, high quality) to exactly its on-screen device-pixel size and drawn from that rendition (`renditions.ts`); the original shows for the few milliseconds until it is ready.
+- **Legibility is the deck's.** Calliope draws a card exactly as the deck drew it and adds nothing over it. A print-proportioned index is ~6% of card height, two pixels at 30px, so decks meant for play here are exported with oversized indices (Card Atelier: Artwork → Lettering → Oversize for digital play); the starter decks all are.
+- **One choice, faces and back together.** The back is the deck's; there is no separate back picker. The preference is local to the device, like the theme. Other players never see your deck.
+- **Starter decks** ship unzipped under `packages/web/public/decks/<folder>/` and are served as plain files, fetched once and cached. The build checks each (complete french-52, a licence, every picture present: PNGs at the stated size, SVGs with an `<svg>` root) and fails otherwise. The first folder in `starterDecks({ order })` in `vite.config.ts` is the default.
+- **Imported decks** (Profile → Deck → Import) accept the `.zip` or the single `.cards.json`, are checked the same way, and live in IndexedDB as PNG blobs, drawn from object URLs made once when the deck is chosen. A re-import with the same `deckId` replaces the copy; an imported copy of a starter deck stands in for it until removed.
+- **Fallback.** Before a deck is ready, or if one cannot be read, cards fall back to Calliope's own two-ink SVG (oversized index, single centre pip, lattice back).
+- Backs chosen for starter decks must be obviously "not a face" at 24px.
 
 Face-down cards belonging to the player are never shown face down; the player always sees their own cards.
 

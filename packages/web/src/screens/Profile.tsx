@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api, ApiError } from '../api.js';
+import { DeckPicker } from '../components/DeckPicker.js';
 import { useConfirm } from '../components/Modal.js';
-import { CardBackPicker } from '../components/CardBackPicker.js';
 import { ResumeBanner } from '../components/ResumeBanner.js';
 import { ThemePicker } from '../components/ThemePicker.js';
 import { TopBar } from '../components/TopBar.js';
@@ -89,8 +89,8 @@ export function Profile(): JSX.Element {
         <div className="settings-section">
           <h3>Look</h3>
           <ThemePicker />
-          <h4 className="label card-back-heading">card backs</h4>
-          <CardBackPicker />
+          <h4 className="label deck-heading">deck</h4>
+          <DeckPicker />
         </div>
 
         <div className="settings-section">

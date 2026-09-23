@@ -82,6 +82,14 @@ npx license-checker --summary
 
 ## Card and chip artwork
 
-The playing cards, card backs and chips are original SVG drawn for this project
-(`packages/web/src/components/Card.tsx` and `Chip.tsx`). No third-party card
-deck, image or icon set is used anywhere in the interface.
+Cards are drawn from Open Playing Cards decks. The decks shipped with Calliope
+live under `packages/web/public/decks/`, each with its licence in its own
+`deck.json`; the build refuses a deck that states none. Currently:
+
+| Deck | Author | Licence | Source |
+|---|---|---|---|
+| Classic Deck | Bryan Ferguson | CC0-1.0 | https://card-atelier.tinyibex.com/ |
+
+The fallback card shown before a deck loads, and the chips, are original SVG
+drawn for this project (`packages/web/src/components/Card.tsx` and `Chip.tsx`).
+Decks a player imports stay in that player's browser and are not distributed.
