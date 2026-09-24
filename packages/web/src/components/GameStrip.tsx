@@ -9,8 +9,11 @@ const BETTING: Record<string, string> = {
 /**
  * What game is being played, printed across the table like a chapter heading.
  * In dealer's choice this changes hand to hand, so it is never assumed.
+ *
+ * It also carries what the table is waiting on (the draw, shuffling, a pause,
+ * the last hand), always on one line, so the table under it never moves.
  */
-export function GameStrip({ room, note }: { room: RoomView; note?: string | null }): JSX.Element | null {
+export function GameStrip({ room, note, alert = false }: { room: RoomView; note?: string | null; alert?: boolean }): JSX.Element | null {
   const hand = room.table.hand;
   const mode = room.settings.variantMode;
   const dealersChoice = mode.kind === 'dealers-choice';
@@ -37,7 +40,7 @@ export function GameStrip({ room, note }: { room: RoomView; note?: string | null
   return (
     <div className="game-strip" aria-live="polite">
       <span className="game-name">{title}</span>
-      {(note ?? sub) && <span className="game-sub">{note ?? sub}</span>}
+      {(note ?? sub) && <span className={`game-sub ${note && alert ? 'alert' : ''}`}>{note ?? sub}</span>}
     </div>
   );
 }

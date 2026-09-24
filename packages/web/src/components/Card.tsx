@@ -39,6 +39,27 @@ interface CardProps {
   title?: string;
   /** Draw from this deck instead of the active one (deck pickers). */
   deck?: DeckArt;
+  /**
+   * `auto` (the default) draws the deck's picture when its corner index will be
+   * legible at this size, and an index tile when it will not. `tile` always
+   * draws the tile.
+   */
+  mode?: 'auto' | 'tile';
+}
+
+/**
+ * The smallest corner index, in CSS pixels, a player can be expected to read.
+ * A print-proportioned index is ~6% of card height; decks exported for screen
+ * play say how big theirs is (`indexHeightMm`), and Calliope trusts that.
+ */
+const LEGIBLE_INDEX_PX = 6.5;
+const DEFAULT_INDEX = 0.06;
+
+/** Whether a deck's own picture of a face will be readable at this width. */
+export function pictureLegible(art: DeckArt | null, width: number): boolean {
+  if (!art) return width * (7 / 5) * FALLBACK_INDEX >= LEGIBLE_INDEX_PX;
+  const { aspect, index } = art.meta.geometry;
+  return width * aspect * (index ?? DEFAULT_INDEX) >= LEGIBLE_INDEX_PX;
 }
 
 /**
@@ -47,10 +68,13 @@ interface CardProps {
  * play has oversized indices. While no deck is ready the card falls back to Calliope's own
  * two-ink design.
  */
-export function Card({ card, width = 64, className = '', delay = 0, title, deck }: CardProps): JSX.Element {
+export function Card({ card, width = 64, className = '', delay = 0, title, deck, mode = 'auto' }: CardProps): JSX.Element {
   const active = useActiveDeck();
   const art = deck ?? active;
   const label = card === null ? title ?? 'Face-down card' : title ?? `${RANK_TEXT[rankOf(card)] ?? '?'} of ${SUIT_WORD[suitOf(card)]}`;
+  if (card !== null && (mode === 'tile' || !pictureLegible(art, width))) {
+    return <CardTile card={card} width={width} aspect={art?.meta.geometry.aspect ?? 7 / 5} className={className} delay={delay} label={label} />;
+  }
   const picture = art && (card === null ? art.back : art.faces.get(card));
   if (!art || !picture) return <FallbackCard card={card} width={width} className={className} delay={delay} label={label} />;
   return <DeckCard card={card} picture={picture} art={art} width={width} className={className} delay={delay} label={label} />;
@@ -82,6 +106,35 @@ function DeckCard({ card, picture, art, width, className, delay, label }: { card
     </span>
   );
 }
+
+/**
+ * A card too small for its picture to be read: card stock with the rank and
+ * suit set large in Calliope's own type. Not drawn over the deck's art, but in
+ * place of it, the way a scorer writes "K♥" rather than sketching the card.
+ */
+function CardTile({ card, width, aspect, className, delay, label }: { card: CardCode; width: number; aspect: number; className: string; delay: number; label: string }): JSX.Element {
+  const suit = suitOf(card);
+  const red = suit === 'h' || suit === 'd';
+  const rank = RANK_TEXT[rankOf(card)] ?? '?';
+  // The rank fills the tile's width; never under 12px, which is the point of a tile.
+  const fontSize = Math.max(12, Math.round(width * (rank.length === 2 ? 0.5 : 0.62)));
+  return (
+    <span
+      className={`card card-tile ${red ? 'red' : ''} ${className}`}
+      style={{ width, height: Math.round(width * aspect), animationDelay: `${delay}ms` }}
+      role="img"
+      aria-label={label}
+    >
+      <span className="rank" style={{ fontSize }}>{rank}</span>
+      <svg className="pip" viewBox="0 0 100 100" style={{ width: Math.round(fontSize * 0.8), height: Math.round(fontSize * 0.8) }} aria-hidden="true">
+        <SuitShape suit={suit} />
+      </svg>
+    </span>
+  );
+}
+
+/** The fallback card's corner index, as a fraction of its height (38 units of 140). */
+const FALLBACK_INDEX = 38 / 140;
 
 function CornerIndex({ card, ink }: { card: CardCode; ink: string }): JSX.Element {
   const rankText = RANK_TEXT[rankOf(card)] ?? '?';

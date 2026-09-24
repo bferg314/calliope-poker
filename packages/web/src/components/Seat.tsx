@@ -5,9 +5,8 @@ import { Card } from './Card.js';
 import { ChipStack } from './Chip.js';
 
 interface SeatCardProps {
-  seat: SeatState | null;
+  seat: SeatState;
   player: HandPlayerView | null;
-  index: number;
   isButton: boolean;
   toAct: boolean;
   timerFraction: number | null;
@@ -16,26 +15,26 @@ interface SeatCardProps {
   winAmount: number;
   handLabel: string | null;
   denoms: ChipDenomination[];
+  /** Width of a face-up card's tile. Face-down backs are drawn a little narrower. */
   cardWidth: number;
-  onSit?: () => void;
-  onAddBot?: () => void;
 }
 
+/**
+ * An opponent at the table (docs/design.md §4.2). Name, then stack with this
+ * street's bet beside it, then their cards: face-down ones as a fan of backs,
+ * face-up ones (stud up-cards, a showdown) as index tiles you can read at a glance.
+ */
 export function SeatCard(p: SeatCardProps): JSX.Element {
-  if (!p.seat) {
-    return (
-      <div className="seat-card empty">
-        {p.onSit ? <button onClick={p.onSit}>sit here</button> : p.onAddBot ? <button onClick={p.onAddBot}>+ bot</button> : <span>open</span>}
-      </div>
-    );
-  }
   const s = p.seat;
   const hp = p.player;
   const folded = !!hp?.folded;
   const cls = ['seat-card', p.toAct && 'to-act', folded && 'folded', s.sittingOut && !hp && 'sitting-out', p.isWinner && 'winner']
     .filter(Boolean)
     .join(' ');
-  const cards = hp && !folded ? [...hp.holeDown.map((c, i) => ({ c, k: `d${i}` })), ...hp.holeUp.map((c, i) => ({ c, k: `u${i}` }))] : [];
+  const cards = hp && !folded ? [...hp.holeDown, ...hp.holeUp] : [];
+  const down = cards.filter((c) => c === null).length;
+  const up = cards.filter((c): c is string => c !== null);
+  const backWidth = Math.round(p.cardWidth * 0.8);
   return (
     <div className={cls} aria-label={`${s.name}, ${fmt(s.stack)} chips`}>
       <div className="name">
@@ -50,24 +49,41 @@ export function SeatCard(p: SeatCardProps): JSX.Element {
           <i style={{ width: `${Math.max(0, Math.min(100, p.timerFraction * 100))}%` }} />
         </div>
       )}
-      <div className="stack">
+      <div className="seat-line">
         <span className="num">{fmt(s.stack)}</span>
         {hp?.allIn && <span className="allin">all in</span>}
-        {p.isWinner && p.winAmount > 0 && <span className="win-delta">+{fmt(p.winAmount)}</span>}
+        <span className="grow" />
+        {p.isWinner && p.winAmount > 0 ? (
+          <span className="win-delta">+{fmt(p.winAmount)}</span>
+        ) : p.handLabel ? (
+          <span className="micro italic hand">{p.handLabel}</span>
+        ) : hp && hp.streetBet > 0 ? (
+          <span className="bet">
+            <ChipStack amount={hp.streetBet} denoms={p.denoms} size={14} />
+            <span className="num">{fmt(hp.streetBet)}</span>
+          </span>
+        ) : hp && hp.drew > 0 ? (
+          <span className="micro">drew {hp.drew}</span>
+        ) : null}
       </div>
       {cards.length > 0 && (
         <div className="cards">
-          {cards.map(({ c, k }, i) => (
-            <Card key={k} card={c} width={p.cardWidth} delay={i * 60} />
-          ))}
-        </div>
-      )}
-      {hp && hp.drew > 0 && <div className="micro">drew {hp.drew}</div>}
-      {p.handLabel && <div className="micro italic">{p.handLabel}</div>}
-      {hp && hp.streetBet > 0 && (
-        <div className="bet">
-          <ChipStack amount={hp.streetBet} denoms={p.denoms} size={16} />
-          <span className="num">{fmt(hp.streetBet)}</span>
+          {down > 0 && (
+            <span className="fan" title={`${down} face down`}>
+              {Array.from({ length: down }, (_, i) => (
+                <Card key={`d${i}`} card={null} width={backWidth} delay={i * 60} />
+              ))}
+            </span>
+          )}
+          {up.length > 0 && (
+            <span className="up">
+              {up.map((c, i) => (
+                <span key={c} className="up-slot">
+                  <Card card={c} width={p.cardWidth} delay={(down + i) * 60} mode="tile" />
+                </span>
+              ))}
+            </span>
+          )}
         </div>
       )}
     </div>
