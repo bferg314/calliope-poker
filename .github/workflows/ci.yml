@@ -119,6 +119,16 @@ jobs:
           OUT: ${{ runner.temp }}/shots
           SECONDS: 25
 
+      - name: Every game fits every screen shape
+        run: npm run e2e:layout --workspace @calliope/web
+        env:
+          BASE: http://localhost:3000
+          OUT: ${{ runner.temp }}/shots
+          # A phone, a phone on its side and a laptop, at full tables; the
+          # full matrix is for local runs.
+          COUNTS: '8'
+          VIEWPORTS: 360x640,844x390,1280x800
+
       - name: Cards draw sharp from the starter deck
         run: npm run e2e:decks --workspace @calliope/web
         env:

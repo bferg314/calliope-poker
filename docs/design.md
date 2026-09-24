@@ -14,29 +14,33 @@ Three tests for any new screen or component:
 
 ## 2. Tokens
 
-Tokens are CSS custom properties on `:root`, set by the active theme. Components only use tokens, never raw values. Every theme must define every token.
+Tokens are CSS custom properties on `:root`, set by the active theme, in `packages/web/src/styles/tokens.css`. Components only use tokens, never raw values. Every theme must define every colour token. `packages/web/test/tokens.test.ts` holds these rules: it fails on a missing token, a contrast below the minimums below, a raw font size or colour outside `tokens.css`, or a shadow, blur or gradient.
 
 ### Color
 
-| Token | Paper & ink | Meaning |
-|---|---|---|
-| `--paper` | `#F4EFE3` | Page ground |
-| `--paper-2` | `#EAE3D2` | Slightly deeper ground: panels, the table surface |
-| `--paper-3` | `#DDD4BE` | Pressed/inset surfaces, disabled fills |
-| `--ink` | `#1B1A17` | Primary text, black suits, rules |
-| `--ink-2` | `#5B574D` | Secondary text, hints, folded players |
-| `--ink-3` | `#9A9384` | Tertiary: placeholders, hairlines |
-| `--red` | `#B3261E` | Red suits, the "to act" mark, destructive confirmation |
-| `--red-2` | `#8F1D17` | Red pressed state |
-| `--on-red` | `#FBF8F1` | Text on a red fill. Each theme picks the readable one |
-| `--accent` | `#1F4E5F` | A single cool ink for links and the active tab. Used sparingly |
-| `--field-bg` | `#FBF8F1` | Input and select fill |
-| `--card-face` | `#FBF8F1` | Card stock, slightly whiter than paper |
-| `--card-back` | `#1B1A17` | Card back ink (pattern drawn in `--paper`) |
-| `--felt` | `#EAE3D2` | Table surface. In paper & ink it is just deeper paper |
-| `--focus` | `#1F4E5F` | Keyboard focus ring |
+The names come from the paper & ink theme, where they are literal. Felt is the default theme, so its values are listed first.
 
-Contrast requirements: `--ink` on `--paper` ≥ 12:1, `--ink-2` on `--paper` ≥ 5:1, `--red` on `--paper` ≥ 5.5:1, `--paper` on `--ink` ≥ 12:1.
+| Token | Felt | Paper & ink | Meaning |
+|---|---|---|---|
+| `--paper` | `#1E3A2F` | `#F4EFE3` | Page ground |
+| `--paper-2` | `#183026` | `#EAE3D2` | Slightly deeper ground: panels, the game strip, fields |
+| `--paper-3` | `#12261E` | `#DDD4BE` | Pressed/inset surfaces, disabled fills |
+| `--ink` | `#F4EFE3` | `#1B1A17` | Primary text, rules |
+| `--ink-2` | `#CFC8B5` | `#5B574D` | Secondary text, hints, folded players |
+| `--ink-3` | `#8E9A88` | `#9A9384` | Tertiary: placeholders, hairlines |
+| `--ink-disabled` | `#8E9A88` | `#6F6A5E` | A disabled control's label: faint, but still legible |
+| `--red` | `#EC7A68` | `#B3261E` | Red suits, the "to act" mark, aggressive and destructive actions |
+| `--red-2` | `#D9604C` | `#8F1D17` | Red pressed state |
+| `--on-red` | `#12261E` | `#FBF8F1` | Text on a red fill. Each theme picks the readable one |
+| `--accent` | `#9AC7D6` | `#1F4E5F` | A single cool ink for links and the active tab. Used sparingly |
+| `--focus` | `#9AC7D6` | `#1F4E5F` | Keyboard focus ring |
+| `--felt` | `#1E3A2F` | `#EAE3D2` | Table surface |
+| `--seat-bg` | `#183026` | `#EAE3D2` | An opponent's seat card, so seats read as things set on the felt |
+| `--field-bg` | `#183026` | `#FBF8F1` | Input and select fill |
+| `--card-face` | `#FBF8F1` | `#FBF8F1` | Card stock, the same on every theme |
+| `--card-back` | `#F4EFE3` | `#1B1A17` | The fallback card's back |
+
+Contrast minimums, per theme: `--ink` on `--paper` ≥ 7:1; `--ink-2` on `--paper` ≥ 4.5:1; `--on-red` on `--red` ≥ 4.5:1; `--ink` on `--seat-bg` ≥ 7:1; `--ink-disabled` on `--paper` and on `--paper-3` ≥ 3:1.
 
 Chip colors come from room config, not the theme. The theme provides a chip *style* (see §5), and the default denomination set:
 
@@ -61,24 +65,37 @@ Scale (rem, base 16px):
 | Token | Size | Use |
 |---|---|---|
 | `--t-display` | 3.5 | Landing title, night-report winner |
-| `--t-h1` | 2.25 | Screen titles |
-| `--t-h2` | 1.5 | Section titles, player's own hand label |
+| `--t-h1` | 2.25 | Screen titles, the room code |
+| `--t-h2` | 1.5 | Section titles, the player's own name |
+| `--t-h3` | 1.25 | The player's own stack, the turn stamp on a phone |
+| `--t-lead` | 1.125 | Brand, game strip, seat names in the lobby |
 | `--t-body` | 1.0 | Body |
-| `--t-small` | 0.875 | Hints, seat names |
-| `--t-micro` | 0.75 | Small caps labels, folio |
-| `--t-stack` | 1.125 | Stack numbers on seats |
+| `--t-small` | 0.875 | Hints, opponents' names and stacks on a phone |
+| `--t-seat` | 0.8125 | The smallest seat text on a phone |
+| `--t-micro` | 0.75 | Small caps labels, folio. Nothing is set smaller |
+| `--t-stack` | 1.125 | Stack numbers on wide-screen seats |
 | `--t-pot` | 1.75 | Pot in the middle |
-| `--t-action` | 1.25 | Action bar buttons |
+| `--t-action` | 1.125 | Action bar buttons |
 
 Small caps labels (`font-variant-caps: all-small-caps; letter-spacing: 0.08em`) are the standard way to label a value: "POT", "TO CALL", "DEALER", "BLINDS 5 / 10".
 
 ### Space and rules
 
-Spacing scale: `4, 8, 12, 16, 24, 32, 48, 64` px as `--s-1` … `--s-8`.
+Spacing scale: `4, 8, 12, 16, 24, 32, 48, 64` px as `--s-1` … `--s-8`, and `--s-0` (2px) for hairline offsets only.
 
 Rules are 1px `--ink-3` or 1px `--ink` for emphasis. Double rules (two 1px lines 3px apart) mark section ends, as in a ledger. No box shadows. Panels are distinguished by `--paper-2` fill and a hairline, or by a rule alone.
 
-Corner radius: cards 6px, chips are circles, buttons 4px, panels 0px. Sharp corners are part of the print feel.
+Corner radius: cards 6px (or the deck's own), chips are circles, buttons 4px (`--r-btn`), panels 0px (`--r-panel`). Sharp corners are part of the print feel.
+
+### Controls
+
+`--hit` (44px) is the smallest thing a finger is asked to hit. Every `.btn`, and anything else given the `hit` class, carries a transparent pad that makes its hit area at least `--hit` square however small it is drawn, so a quiet 36px "stand up" is drawn small and hit large. Inputs and selects are 44px tall; a checkbox or radio sits in a 44px label row.
+
+Buttons come in three sizes: the action bar's (64px on a phone, 56px wide), the default (44px), and small (drawn 36px). Four inks: outline (secondary), ink fill (commit), red fill (aggressive or destructive), quiet (text only). Disabled is a `--paper-3` fill with `--ink-disabled` text.
+
+### Icons
+
+Few, and drawn like the rest of the page: `components/Icon.tsx` holds inline SVGs on a 24-unit grid, one 1.5 stroke in the current ink, square ends, no fills (chevrons, close, plus, check, copy, pencil, person). They sit on the text baseline at 16, 20 or 24px. The dealer button stays a printed "D" in a circle, because it is type. Text glyphs (▾ ▸ ×) are not used as icons.
 
 ### Motion
 
@@ -96,10 +113,11 @@ Cards come from **Open Playing Cards** decks, the format Card Atelier exports ([
 
 | Context | Width |
 |---|---|
-| Player's own hole cards (phone) | 72–88px |
-| Player's own hole cards (desktop) | 112px |
-| Board | 40px phone / 72px desktop |
-| Opponent cards (face down / stud up cards) | 24px phone / 36px desktop |
+| Player's own cards, phone | 72–88px for two or three; 64px for four to seven, overlapped only when they will not fit |
+| Player's own cards, wide | 112px for two or three, 88px for four or five, 76px for more |
+| Board | 48–64px on a phone; on a wide screen as large as clears the seats, up to 120px |
+| Opponents' face-up cards (tiles) | 22px phone / 30px wide |
+| Opponents' face-down cards (backs, fanned) | 18px phone / 24px wide |
 | Theme previews | 26px |
 
 Rules:
@@ -108,7 +126,7 @@ Rules:
 - **Size from the deck.** Height is width × `heightMm / widthMm`, rounded to a whole pixel; corners follow `cornerRadiusMm`, and bleed is cropped off. Images keep their transparent corners, so any felt shows through.
 - **Vector first.** A card is drawn from its `vector` SVG when the deck has one: the browser rasterises it at exactly the drawn size, so it is sharp on any screen, and the files are a fraction of the PNGs' size. Imported decks keep only the SVG when both are present.
 - **PNGs drawn at exact size.** A deck's PNGs are print-sized, and a browser shrinking one five-fold in a single step leaves it soft on a 1x screen. A PNG-only card is resampled once per session (`createImageBitmap`, high quality) to exactly its on-screen device-pixel size and drawn from that rendition (`renditions.ts`); the original shows for the few milliseconds until it is ready.
-- **Legibility is the deck's.** Calliope draws a card exactly as the deck drew it and adds nothing over it. A print-proportioned index is ~6% of card height, two pixels at 30px, so decks meant for play here are exported with oversized indices (Card Atelier: Artwork → Lettering → Oversize for digital play); the starter decks all are.
+- **A picture only where it can be read.** Calliope draws a card exactly as the deck drew it and adds nothing over it, but it only uses the picture where the corner index will be legible: at least 6.5px tall on screen. The index height comes from the deck's smallest `ranks[].indexHeightMm` over its `heightMm` (6% when the deck does not say, which is a print-proportioned index). Below that size the card is drawn as an **index tile** instead: card stock with the rank set large (never under 12px) in Instrument Sans and the suit pip under it, in the card inks. The tile is not painted over the deck's art; it stands in place of it, the way a scorer writes "K♥" rather than sketching the card. Opponents' face-up cards are always tiles, because a seat has no room for a card big enough to read. Decks meant for play here are exported with oversized indices (Card Atelier: Artwork → Lettering → Oversize for digital play) so that the board and the player's own cards show the art; the starter deck's index is about 10% of its height, so its pictures are legible from about 48px wide.
 - **One choice, faces and back together.** The back is the deck's; there is no separate back picker. The preference is local to the device, like the theme. Other players never see your deck.
 - **Starter decks** ship unzipped under `packages/web/public/decks/<folder>/` and are served as plain files, fetched once and cached. The build checks each (complete french-52, a licence, every picture present: PNGs at the stated size, SVGs with an `<svg>` root) and fails otherwise. The first folder in `starterDecks({ order })` in `vite.config.ts` is the default.
 - **Imported decks** (Profile → Deck → Import) accept the `.zip` or the single `.cards.json`, are checked the same way, and live in IndexedDB as PNG blobs, drawn from object URLs made once when the deck is chosen. A re-import with the same `deckId` replaces the copy; an imported copy of a starter deck stands in for it until removed.
@@ -119,50 +137,60 @@ Face-down cards belonging to the player are never shown face down; the player al
 
 ## 4. Table layout
 
-The player's seat is always bottom-center. Opponents are arranged on an arc above. Positions are computed from the player's seat index so every player sees themselves at the bottom.
+The player's seat is always bottom-center. Opponents are arranged round the table above it, clockwise from the player, so every player sees themselves at the bottom. Only occupied seats are drawn: an open chair is not worth the room on the felt. The host adds bots from the table menu, and a watcher takes the next open seat from their own panel.
 
-### Phone portrait (≥ 360px wide, the primary layout)
+Every layout is checked by `packages/web/e2e/layout-audit.mjs`, which plays each game at 3, 6 and 8 players and resizes through eight windows from 360×640 to 1920×1080 (§9). No seat may overlap another seat, the board, the pot or the player's own seat; nothing may leave the window; and the table may not move between hands.
+
+Which layout is used is decided once, in `Table.tsx`, and handed to CSS as `data-layout` on the table screen, so the script and the styles cannot disagree.
+
+### Phone portrait (`phone`, the primary layout)
 
 ```
 ┌──────────────────────────────┐
-│ CALLIOPE  ·  Room K7Q2M4   ⋯ │  top bar: 40px, room code, menu
+│ Calliope K7Q2M4       Alice ⌄│  top bar: 44px, room code, menu
+│   Omaha · pot limit          │  game strip: one line, always
 ├──────────────────────────────┤
-│                              │
-│   (opp)   (opp)   (opp)      │  opponents row(s): up to 7 seats
-│ (opp)                 (opp)  │  on an arc; each seat is a
-│   (opp)           (opp)      │  compact "seat card" (§4.2)
-│                              │
-│        ┌──┐┌──┐┌──┐┌──┐┌──┐  │  board, centered
-│        └──┘└──┘└──┘└──┘└──┘  │
-│            POT  1,240        │  pot, small caps label
-│                              │
+│  (opp 3)   (opp 4)   (opp 5) │  across the top
+│   ┌──┐ ┌──┐ ┌──┐ ┌──┐ ┌──┐   │  the board, full width
+│   └──┘ └──┘ └──┘ └──┘ └──┘   │
+│ (opp 2)      POT      (opp 6)│  pot between the side columns,
+│ (opp 1)     1,240     (opp 7)│  the stage under it
 ├──────────────────────────────┤
 │  ┌────┐ ┌────┐   Alice       │  player's own seat: large cards,
 │  │ A♠ │ │ K♥ │   2,450       │  name, stack, hand label
-│  └────┘ └────┘   "Ace high"  │
+│  └────┘ └────┘   Ace high    │
 ├──────────────────────────────┤
-│ [ FOLD ]  [ CALL 40 ]  [ RAISE ▸ ] │  action bar: 64px tall
+│ [ FOLD ] [ CALL 40 ] [RAISE ›]│  action bar: 64px buttons
 └──────────────────────────────┘
 ```
 
-The action bar is fixed to the bottom with safe-area padding. The board and pot are centered in the remaining space. Opponent seats never overlap the board.
+A horseshoe on a grid. Opponents run up the left column, across the top and down the right, clockwise from the player, so the first opponent to the player's left is at the bottom of the left column. Up to two opponents sit across the top; three to five put one in each side column; six or more put two in each. The board spans the row between the top seats and the side columns; the pot sits in the middle column between them, with the **stage** under it. Every seat has its own grid cell, so a seat can never land on the board or on another seat, whatever it holds.
 
-### Desktop (≥ 900px)
+The table takes whatever height is left after the top bar, the strip, the player's own seat and the action bar, and none of those change height during a night (§4.2a, §4.4, §6), so the table does not move between turns or between hands. The board's cards are sized from what is left: 48–64px, smaller when two seats stand in each side column.
 
-Same structure, but the opponent arc is a true ellipse around the table surface and the player's seat sits inside the ellipse at the bottom. The action bar becomes a centered panel 560px wide rather than full width. A hand-history rail (last 5 hands, one line each) sits on the right at ≥ 1200px.
+### Wide (`wide`, 900px and up)
+
+Seats sit on an ellipse round the felt, spread evenly over the players actually seated with the player's own place at the bottom counted as one of the positions. The board sits just above the middle and is sized to clear every seat on the upper half of the ellipse, up to 120px a card; the pot and the stage sit under it in a column no wider than 36% of the table, which keeps them clear of the lower seats. The player's own cards and the action panel (560px) share one centred column under the table. A hand-history rail sits on the right at ≥ 1200px.
+
+### Short (`short`, any window under 520px tall and wider than it is tall)
+
+A phone on its side. The table, laid out as the phone's horseshoe, takes the left of the window; the player's own seat and the action bar stack in a column on the right (at least 18rem, at most 38%). Nothing else changes.
 
 ### 4.2 Seat card
 
-An opponent's seat is a 120×64px (phone) block:
+An opponent's seat, sized by its cell on a phone and 168px wide on the ellipse:
 
 ```
 ┌──────────────────┐
-│ ▮ Bob        D   │   name, dealer button "D" as a printed circle
-│   1,850          │   stack in tabular figures
-│ [▓][▓]           │   face-down cards, or stud up cards face up
-│ bet 40           │   current street bet, shown only when > 0
+│▌Bob            D │   name, dealer button "D" as a printed circle
+│ 1,850      ● 40  │   stack, and this street's bet at the right
+│ ▓▓ [K♥][7♣]      │   face-down cards fanned; face-up ones as tiles
 └──────────────────┘
 ```
+
+The right-hand end of the stack line carries, in order of precedence: the win ("+1,240", while settling), the hand shown at showdown ("Two pair, kings"), this street's bet with its chips, or how many cards were drawn ("drew 3").
+
+Face-down cards are a fan of backs, overlapped: how many, not what. Face-up cards (stud's up-cards, everything at a showdown) are index tiles (§3). When there are more than fit, as at a seven-card stud showdown, they overlap from the right, so every rank stays in view.
 
 States:
 
@@ -170,10 +198,10 @@ States:
 |---|---|
 | To act | Left edge carries a 3px `--red` bar; name in `--red`. A thin timer line under the name drains left to right |
 | Folded | Whole card at `--ink-2`, cards removed, name struck with a single rule |
-| All-in | "ALL IN" small caps under the stack, stack shows 0 |
+| All-in | "ALL IN" small caps beside the stack |
 | Sitting out | `--ink-3`, name in italics |
 | Disconnected | A small "·· ··" morse-style mark after the name; nothing else changes, the seat is held |
-| Winner (settle) | Name and stack in `--ink` bold, a short "+1,240" in `--red` beside the stack for `--d-slow` × 4 |
+| Winner (settle) | Name bold, border in `--ink`, "+1,240" in `--red` at the end of the stack line for `--d-slow` × 4 |
 
 ### 4.2a Which game is being played
 
@@ -188,6 +216,13 @@ Pineapple discard it reads "Pineapple · everyone throws one away". Between hand
 it shows what the table is set to; while the dealer is choosing it says who is
 choosing.
 
+It is also where the table says what it is waiting on: "shuffling", "waiting for
+a second player", "waiting for the host to deal", "paused, and so is the clock",
+and, in `--red`, "last hand of the night" and "stakes are up: 10/20". These used
+to be bars of their own that pushed the table down every hand. The strip is
+always one line, with the note cut short rather than wrapped, so it never
+changes height.
+
 ### 4.2b Throwing cards away
 
 When it is a player's turn to discard, their own cards become the control: tap a
@@ -201,7 +236,7 @@ draw poker that is the only read available.
 
 ### 4.2b The level chip
 
-When the stakes climb, the top bar carries a small caps level number, the current blinds, and how long or how many hands until the next level. It turns `--red` in the last minute. A `notice-bar` announces the change on the first hand at a new level and then gets out of the way.
+When the stakes climb, the top bar carries a small caps level number, the current blinds, and how long or how many hands until the next level. It turns `--red` in the last minute. The game strip announces the change for a few seconds at the first hand at a new level and then gets out of the way.
 
 Stakes never change inside a hand. The clock, and the level with it, freezes while the table is paused, and the paused notice says so.
 
@@ -218,13 +253,14 @@ themselves:
   that mark written large; the text is `--on-red`, which each theme sets to the
   one readable ink for its own red.
 
-  It is pressed onto the table area rather than the window, so on desktop it
-  lands on the felt and not halfway into the hand rail, and it sits low, under
-  the board and **clear of the pot**. The pot is the number you want most while
-  you are deciding, and a notice that hides it buys attention at the price of
-  the thing it is calling you to; being low also puts it between the board and
-  your own cards, where you are looking anyway. That is why it is one short band
-  and not a tall plate — a plate does not fit under the pot on a phone.
+  It is pressed onto the **stage**, the table's own place under the pot
+  (§4), so it lands on the felt and not halfway into the hand rail, it is
+  **clear of the pot**, and it covers no seat. The pot is the number you want
+  most while you are deciding, and a notice that hides it buys attention at the
+  price of the thing it is calling you to; being low also puts it between the
+  board and your own cards, where you are looking anyway. That is why it is one
+  short band and not a tall plate. Between two columns of seats on a phone the
+  stage is narrow, so the band sets smaller and takes two lines there.
 
   It holds for 1.6 seconds and then fades, and a tap or a keypress clears it
   early, so somebody already watching gets the table straight back. It never
@@ -243,7 +279,13 @@ hears it once rather than twice.
 
 ### 4.3 Board and pot
 
-Board cards are dealt left to right into fixed slots (5 for community games; stud shows no board and the slots collapse). Pot is a small caps label above a large tabular number. Side pots are listed under the main pot as "SIDE 320 · 180" in `--t-small`. When betting is open, the current street's bets are shown at each seat and are not yet in the pot; at street end they slide in.
+Board cards are dealt left to right into fixed slots (5 for community games; stud and draw show no board and the row collapses). Between hands the slots follow the game the table is set to, so they do not come and go. Pot is a small caps label above a large tabular number. Side pots are listed under the main pot as "SIDE 320 · 180" in `--t-small`. When betting is open, the current street's bets are shown at each seat and are not yet in the pot; at street end they slide in.
+
+The result of a hand ("Alice wins the pot of 1,240 with two pair, kings and threes") is printed on the stage under the pot while the hand settles, in display italic on a hairline-ruled slip, and clamped to six lines in a narrow stage.
+
+### 4.4 Your own seat
+
+The player's cards and next decision are the loudest things on the screen (§1). The seat is sized for the **most** cards the game can deal the player, not the cards held now, so it keeps one height through the hand and between hands and nothing above it moves. With two cards on a phone, name, stack and hand label sit beside the cards; with three or more, they are one line above the cards, which then get the full width. Seven stud cards overlap only as far as they must, always leaving at least 28px of each card, index side, in view.
 
 ## 5. Chips
 
@@ -266,7 +308,9 @@ The most important component. Three primary controls, always in the same order, 
 
 - Buttons are 64px tall on phone, 56px on desktop, full width split three ways with 8px gaps. Labels at `--t-action`, small caps.
 - Fold is outlined (`--ink` hairline, paper fill). Check/Call is filled `--ink` with paper text. Bet/Raise is filled `--red` with paper text. This encodes cost: quiet, committed, aggressive.
-- When it is not the player's turn, the bar remains visible with the buttons at `--ink-3` outline and the text "Waiting for Bob". Pre-actions ("check/fold", "call any") are shown as small toggles above the bar; if a pre-action is set, the bar shows it as a pressed toggle.
+- When it is not the player's turn, the bar keeps its buttons where they will be, faint, with "Waiting for Bob" printed over them in display italic. It is the same height either way, so nothing above it moves when the action comes round.
+- When there is one thing for the player to do that is not a bet, it takes the bar's place at the bar's height, in `--red`: "Deal the next hand" for the host when dealing is by hand, "Re-buy 1,000 chips" for a player out of chips.
+- The draw bar (§4.2b) is the same height as the action bar: a 20px instruction line over 44px buttons on a phone, the instruction beside the buttons on a wide screen.
 - Tapping Bet/Raise slides up a **bet panel** (not a modal) above the bar:
 
 ```
@@ -307,7 +351,9 @@ Buttons: "Copy", "Save image", "Choose my own words", "Got it". Recovery screen 
 
 ### Lobby
 
-Left: the seat ring as it will appear at the table, with empty seats printed as dotted circles ("open"). Host sees "+ bot" on empty seats. Right (below on phone): settings as a printed form with sections: Game (variant mode, betting, blinds), Chips (buy-in, denominations, starting stack), Re-buys, End of night. A share block shows the room code large, a QR of the join link, and the link itself with a copy button. "Deal the first hand" is the single primary action, `--red`; it is disabled while the settings form has unsaved edits, with the reason and a "Save them" button printed beside it rather than in a tooltip, which a phone has no way to show. Below the form, quietly, "Cancel this table".
+Left: the seats, with empty seats printed with dotted rules ("open"). Host sees "+ bot" on empty seats. Right (below on phone, after the seats and the invitation): settings as a printed form in sections: Game (variant mode, betting, blinds), Chips (buy-in, denominations), Re-buys, Rising stakes, End of the night. Each section folds to one line that says what it is set to ("$20 for 1,000 chips · 6 colours"), so the form reads at a glance and a phone does not scroll past all of it; Game is open for the host. The game picker lists names only, with the chosen game's description printed under it. A share block shows the room code large, a QR of the join link, and the link itself with a copy button.
+
+"Deal the first hand" is the single primary action, `--red`; it is disabled while the settings form has unsaved edits. An unsaved edit brings up a strip along the foot of the window, "You have unsaved settings.", with discard and Save settings, so saving is one tap from wherever the host has scrolled; the note by the Deal button points to it rather than to a tooltip, which a phone has no way to show. Below the form, quietly, "Cancel this table".
 
 ### Table
 
@@ -327,7 +373,7 @@ Same ledger style, per night, with lifetime totals at the top.
 
 ## 8. Theme contract
 
-A theme is a `[data-theme="<id>"]` block in `packages/web/src/styles/tokens.css` that redefines **every** colour token from §2: `color-scheme`, the eleven palette tokens, `--field-bg`, and the six card tokens. Fonts, type scale, spacing, motion and radii are inherited from `:root` and must not be overridden — that is what guarantees the action bar is the same action bar on every theme.
+A theme is a `[data-theme="<id>"]` block in `packages/web/src/styles/tokens.css` that redefines **every** colour token from §2: `color-scheme`, the palette tokens (including `--ink-disabled` and `--seat-bg`), `--field-bg`, and the six card tokens. `test/tokens.test.ts` fails a theme that leaves one out or falls below a contrast minimum. Fonts, type scale, spacing, motion and radii are inherited from `:root` and must not be overridden — that is what guarantees the action bar is the same action bar on every theme.
 
 Each theme also has an entry in `packages/web/src/themes.ts` with its `name`, a one-line `blurb`, and the `themeColor` the browser paints its chrome with.
 
@@ -367,7 +413,8 @@ Dialogs guard: ending the night, standing up, re-buying (which shows the real mo
 
 - Every interactive element is keyboard reachable with a visible `--focus` ring (2px, offset 2px).
 - Suits are never conveyed by color alone: the pip glyph is always present, and the hand label ("Flush, ace high") is text.
-- Minimum tap target 44px.
+- Minimum tap target 44px (`--hit`, §2), however small the control is drawn.
+- `e2e/layout-audit.mjs` checks the tap targets, overlaps and card sizes of every screen at eight window sizes, and fails on any.
 - Live region announces: "Your turn", "Bob raises to 120", "You win 1,240".
 - All text meets WCAG AA at its size against its ground.
 
