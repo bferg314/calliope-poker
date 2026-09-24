@@ -59,7 +59,8 @@ export function SeatCard(p: SeatCardProps): JSX.Element {
           <span className="micro italic hand">{p.handLabel}</span>
         ) : hp && hp.streetBet > 0 ? (
           <span className="bet">
-            <ChipStack amount={hp.streetBet} denoms={p.denoms} size={14} />
+            {/* Two chips at most: a seat's line must not grow taller with the bet. */}
+            <ChipStack amount={hp.streetBet} denoms={p.denoms} size={14} max={2} />
             <span className="num">{fmt(hp.streetBet)}</span>
           </span>
         ) : hp && hp.drew > 0 ? (
