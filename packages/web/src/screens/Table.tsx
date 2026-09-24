@@ -161,6 +161,35 @@ function maxHoleCards(variantId: string | null | undefined): number {
   }
 }
 
+/**
+ * A player's cards in the order they were dealt. Down and up cards are kept
+ * apart, so stud's seventh-street down card would otherwise sit beside the
+ * first two; walking the streets puts each card back where it came.
+ */
+function dealOrder<T>(variantId: string | null | undefined, down: T[], up: T[]): { c: T; k: string }[] {
+  const out: { c: T; k: string }[] = [];
+  let d = 0;
+  let u = 0;
+  const take = (n: number, from: T[], at: number, tag: string): number => {
+    const end = Math.min(from.length, at + n);
+    for (let i = at; i < end; i++) out.push({ c: from[i]!, k: `${tag}${i}` });
+    return end;
+  };
+  try {
+    if (variantId) {
+      for (const s of getVariant(variantId).streets) {
+        d = take(s.deal.holeDown ?? 0, down, d, 'd');
+        u = take(s.deal.holeUp ?? 0, up, u, 'u');
+      }
+    }
+  } catch {
+    // Unknown variant: fall through and show what's left, down then up.
+  }
+  take(Infinity, down, d, 'd');
+  take(Infinity, up, u, 'u');
+  return out;
+}
+
 function ownHandLabel(hand: HandView | null, seat: number | null): string | null {
   if (!hand || seat === null) return null;
   const p = hand.players[seat];
@@ -700,7 +729,7 @@ function OwnSeat({ room, socket, layout, maxCards, mySeat, toAct, winAmount, tim
   }
   const seat = table.seats[mySeat]!;
   const p = hand?.players[mySeat] ?? null;
-  const cards = p && !p.folded ? [...p.holeDown.map((c, i) => ({ c, k: `d${i}` })), ...p.holeUp.map((c, i) => ({ c, k: `u${i}` }))] : [];
+  const cards = p && !p.folded ? dealOrder(hand?.variantId, p.holeDown, p.holeUp) : [];
   const drewNote = p && p.drew > 0 ? `drew ${p.drew}` : null;
   const label = hand?.stage === 'settled' && hand.results?.hands[mySeat] ? hand.results.hands[mySeat]!.label : ownHandLabel(hand, mySeat);
   const { cw, step, beside } = ownCardSize(layout, box.width, Math.max(maxCards, cards.length));
