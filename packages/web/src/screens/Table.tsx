@@ -74,6 +74,11 @@ function useWide(): boolean {
  * window, so the board grows with it: about a fifth of the table's height (the
  * top seats come down into the middle on a short screen), and the whole row no
  * wider than about 45% of it. Never smaller than it used to be, never huge.
+ *
+ * The height is worked out from the width and the window, as the CSS sizes the
+ * table (16:8.5, at most 60vh), rather than measured: the table is a flex item
+ * that gives up a few pixels whenever a notice bar or the action bar changes,
+ * and the cards should not twitch with every turn.
  */
 function useBoardCardWidth(wide: boolean): [(el: HTMLDivElement | null) => void, number] {
   const [el, setEl] = useState<HTMLDivElement | null>(null);
@@ -81,13 +86,18 @@ function useBoardCardWidth(wide: boolean): [(el: HTMLDivElement | null) => void,
   useEffect(() => {
     if (!el || !wide) return;
     const measure = (): void => {
-      const { width: w, height: h } = el.getBoundingClientRect();
+      const w = el.getBoundingClientRect().width;
+      const h = Math.min(w * 8.5 / 16, window.innerHeight * 0.6);
       setWidth(Math.round(Math.min(120, Math.max(72, Math.min(h * 0.185, w * 0.088)))));
     };
     measure();
     const ro = new ResizeObserver(measure);
     ro.observe(el);
-    return () => ro.disconnect();
+    window.addEventListener('resize', measure);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener('resize', measure);
+    };
   }, [el, wide]);
   return [setEl, wide ? width : 40];
 }
