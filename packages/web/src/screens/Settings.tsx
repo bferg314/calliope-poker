@@ -5,6 +5,7 @@ import {
 } from '@calliope/shared';
 import { Chip } from '../components/Chip.js';
 import { fmt, fmtMoney } from '../format.js';
+import { Icon } from '../components/Icon.js';
 
 interface SettingsProps {
   settings: RoomSettings;
@@ -90,7 +91,7 @@ export function Settings({ settings, variants, editable, onSave, onDirtyChange, 
     <div className="stack">
       {summary}
       <details open={editable}>
-        <summary className="label" style={{ cursor: 'pointer' }}>{editable ? 'all settings' : 'details'}</summary>
+        <summary className="label">{editable ? 'all settings' : 'details'}</summary>
 
         <div className="settings-section">
           <h3>Game</h3>
@@ -164,11 +165,11 @@ export function Settings({ settings, variants, editable, onSave, onDirtyChange, 
                 <Chip denom={d} size={26} />
                 {editable ? (
                   <>
-                    <input className="input num" style={{ width: 72, minHeight: 34 }} type="number" min={1} value={d.value} onChange={(e) => {
+                    <input className="input num" style={{ width: 72 }} type="number" min={1} value={d.value} onChange={(e) => {
                       const next = draft.chips.denominations.map((x, k) => (k === i ? { ...x, value: Number(e.target.value) || 1 } : x));
                       set('chips', { ...draft.chips, denominations: next });
                     }} />
-                    <input className="input" style={{ width: 84, minHeight: 34 }} maxLength={12} value={d.label} onChange={(e) => {
+                    <input className="input" style={{ width: 84 }} maxLength={12} value={d.label} onChange={(e) => {
                       const next = draft.chips.denominations.map((x, k) => (k === i ? { ...x, label: e.target.value } : x));
                       set('chips', { ...draft.chips, denominations: next });
                     }} />
@@ -177,7 +178,7 @@ export function Settings({ settings, variants, editable, onSave, onDirtyChange, 
                       set('chips', { ...draft.chips, denominations: next });
                     }} />
                     {draft.chips.denominations.length > 1 && (
-                      <button className="btn btn-quiet btn-small" onClick={() => set('chips', { ...draft.chips, denominations: draft.chips.denominations.filter((_, k) => k !== i) })}>×</button>
+                      <button className="btn btn-quiet btn-small" onClick={() => set('chips', { ...draft.chips, denominations: draft.chips.denominations.filter((_, k) => k !== i) })} aria-label={`Remove the ${d.label} chip`}><Icon name="close" /></button>
                     )}
                   </>
                 ) : (

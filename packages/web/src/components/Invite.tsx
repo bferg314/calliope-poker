@@ -2,6 +2,7 @@ import { useRef, useState } from 'react';
 import { copyText } from '../clipboard.js';
 import { absoluteUrl } from '../format.js';
 import { QrCode } from './QrCode.js';
+import { Icon } from './Icon.js';
 
 type CopyState = 'idle' | 'copied' | 'manual';
 
@@ -55,6 +56,7 @@ export function Invite({ code, joinUrl, hasPassword = false, qrSize = 160 }: Inv
           aria-label="Join link"
         />
         <button className="btn" onClick={() => void copy()}>
+          <Icon name={state === 'copied' ? 'check' : 'copy'} />
           {state === 'copied' ? 'Copied' : state === 'manual' ? 'Copy it now' : 'Copy link'}
         </button>
       </div>
