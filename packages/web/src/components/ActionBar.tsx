@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import type { Action, LegalActions } from '@calliope/engine';
 import { fmt } from '../format.js';
 import { BetPanel } from './BetPanel.js';
@@ -14,9 +15,15 @@ interface ActionBarProps {
    * next hand, buy back in), it takes the bar's place at the bar's height.
    */
   primary?: { label: string; onClick: () => void } | null;
+  /**
+   * Where the bet panel opens: a slot at the foot of the table, so it lies over
+   * the felt like a slip of paper instead of squeezing the table out from
+   * under it. Without one it opens above the buttons.
+   */
+  panelHost?: HTMLElement | null;
 }
 
-export function ActionBar({ legal, waitingFor, onAction, confirmFold, primary }: ActionBarProps): JSX.Element {
+export function ActionBar({ legal, waitingFor, onAction, confirmFold, primary, panelHost }: ActionBarProps): JSX.Element {
   const [betOpen, setBetOpen] = useState(false);
   const [foldArmed, setFoldArmed] = useState(false);
 
@@ -90,13 +97,16 @@ export function ActionBar({ legal, waitingFor, onAction, confirmFold, primary }:
 
   return (
     <div className="action-bar">
-      {betOpen && raise && !raise.fixed && (
-        <BetPanel
-          legal={legal}
-          onConfirm={(to) => { setBetOpen(false); onAction({ type: raise.kind, to }); }}
-          onCancel={() => setBetOpen(false)}
-        />
-      )}
+      {betOpen && raise && !raise.fixed && (() => {
+        const panel = (
+          <BetPanel
+            legal={legal}
+            onConfirm={(to) => { setBetOpen(false); onAction({ type: raise.kind, to }); }}
+            onCancel={() => setBetOpen(false)}
+          />
+        );
+        return panelHost ? createPortal(panel, panelHost) : panel;
+      })()}
       <div className="buttons">
         <button className="btn" onClick={fold} aria-label="Fold">
           <span>{foldArmed ? 'Really fold?' : 'Fold'}</span>

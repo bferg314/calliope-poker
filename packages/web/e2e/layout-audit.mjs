@@ -66,6 +66,8 @@ function probe({ table }) {
   const rect = (el) => el.getBoundingClientRect();
   const shown = (el) => {
     if (!el) return false;
+    // Catches what a box model misses, such as the inside of a closed <details>.
+    if (el.checkVisibility && !el.checkVisibility({ visibilityProperty: true, opacityProperty: true })) return false;
     const r = rect(el);
     if (r.width < 1 || r.height < 1) return false;
     const cs = getComputedStyle(el);
@@ -325,6 +327,18 @@ for (const variant of VARIANTS) {
     const phone = VIEWPORTS[0];
     await page.setViewportSize(phone);
     await page.waitForTimeout(250);
+
+    // The bet panel, opened: it may lie over the table, but must not squeeze it.
+    const raise = page.locator('.action-bar .btn-red:not([disabled])[aria-expanded]');
+    if (await raise.count()) {
+      await raise.first().click();
+      await page.waitForTimeout(300);
+      if (await page.locator('.bet-panel').count()) {
+        await check(`${where} bet panel @${phone.tag}`, { table: true, shot: `bet-${variant}-${players}-${phone.tag}.png` });
+        await page.getByRole('button', { name: 'cancel' }).click();
+        await page.waitForTimeout(200);
+      }
+    }
     const during = await tableRect();
     const until = Date.now() + 60_000;
     while (Date.now() < until && !(await page.locator('.result-line').count())) {

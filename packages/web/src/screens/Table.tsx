@@ -142,7 +142,7 @@ function ownCardSize(layout: TableLayout, width: number, count: number): { cw: n
     const cw = Math.round(Math.min(88, Math.max(72, (avail - 132 - gap * (count - 1)) / count)));
     return { cw, step: cw + gap, beside: true };
   }
-  const max = count >= 4 ? 64 : 76;
+  const max = count >= 4 ? 64 : 72;
   const fit = (avail - gap * (count - 1)) / count;
   if (fit >= 64) {
     const cw = Math.round(Math.min(max, fit));
@@ -185,6 +185,7 @@ export function Table({ room, socket }: { room: RoomView; socket: RoomSocket }):
   const layout = useTableLayout();
   const wide = layout === 'wide';
   const [tableAreaRef, area] = useSize();
+  const [betSlot, setBetSlot] = useState<HTMLDivElement | null>(null);
   const table = room.table;
   const hand = table.hand;
   const me = room.me;
@@ -454,7 +455,8 @@ export function Table({ room, socket }: { room: RoomView; socket: RoomSocket }):
         <span className="micro hand-count">hand {room.handCount + (hand ? 1 : 0)}</span>
         <div className="menu-wrap">
           <button className="btn btn-quiet btn-small" onClick={() => setMenuOpen((o) => !o)} aria-expanded={menuOpen} aria-haspopup="menu">
-            {me?.name ?? 'menu'} <Icon name="chevron-down" />
+            <span className="topbar-name">{me?.name ?? 'menu'}</span>
+            <Icon name="chevron-down" />
           </button>
           {menuOpen && (
             <div className="menu" role="menu" onClick={() => setMenuOpen(false)}>
@@ -577,6 +579,7 @@ export function Table({ room, socket }: { room: RoomView; socket: RoomSocket }):
               </div>
             </div>
             <div className="seats seats-right">{shoe.right.map(seatEl)}</div>
+            <div className="bet-slot" ref={setBetSlot} />
             {hand?.stage === 'choosing' && (
               <div className="choose-panel">
                 <div className="label">{hand.chooser === mySeat ? 'your deal. pick the game' : `${actorName ?? 'the dealer'} is choosing the game`}</div>
@@ -619,6 +622,7 @@ export function Table({ room, socket }: { room: RoomView; socket: RoomSocket }):
               waitingFor={legal ? null : actorName}
               onAction={send}
               confirmFold={confirmFold}
+              panelHost={betSlot}
               primary={
                 canRebuyNow
                   ? { label: `Re-buy ${fmt(chips.buyInChips)} chips`, onClick: () => void rebuy() }

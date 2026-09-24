@@ -149,6 +149,8 @@ await page.goto(`${BASE}/r/${code}`);
 await page.waitForSelector('.table-area');
 await page.setViewportSize({ width: 1280, height: 820 });
 await page.waitForTimeout(1200);
+// Let a turn stamp that has just landed lift again, so the shot shows the table.
+await page.waitForSelector('.turn-pop', { state: 'detached', timeout: 4000 }).catch(() => {});
 await page.screenshot({ path: out('13-table-desktop.png') });
 
 // The stand-up dialog, opened and cancelled.

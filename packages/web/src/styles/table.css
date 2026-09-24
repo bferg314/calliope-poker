@@ -45,6 +45,20 @@
   white-space: nowrap;
 }
 
+/* Squeezed, the player's name in the menu button gives way before the brand does. */
+.table-top .brand {
+  flex-shrink: 0;
+}
+
+.table-top .menu-wrap {
+  flex-shrink: 1;
+  min-width: 0;
+}
+
+.table-top .menu-wrap > .btn {
+  max-width: 100%;
+}
+
 /* On a narrow phone, drop the least useful things rather than overflow. */
 @media (max-width: 540px) {
   .table-top {
@@ -724,6 +738,51 @@
   gap: var(--s-2);
 }
 
+/* Opened over the felt: a slip laid along the foot of the table, above your
+   own cards. The table keeps its layout underneath. */
+.bet-slot {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 25;
+}
+
+.bet-slot .bet-panel {
+  margin: 0;
+  padding: var(--s-2) var(--s-3);
+  border-top: 1px solid var(--ink);
+  border-bottom: 0;
+}
+
+/* Out of the action bar, its buttons keep the bar's small caps. */
+.bet-panel .btn {
+  font-variant-caps: all-small-caps;
+  letter-spacing: 0.06em;
+}
+
+.bet-slot .bet-panel .amount-row input {
+  min-height: var(--hit);
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.bet-slot .bet-panel .confirm-row .btn-red {
+  min-height: var(--hit);
+}
+
+[data-layout='wide'] .bet-slot {
+  left: 50%;
+  right: auto;
+  width: min(560px, 100%);
+  transform: translateX(-50%);
+}
+
+[data-layout='wide'] .bet-slot .bet-panel {
+  border: 1px solid var(--ink);
+  border-bottom: 0;
+}
+
 .bet-panel .amount-row {
   display: flex;
   align-items: center;
@@ -1034,18 +1093,6 @@
 .log-line.result {
   color: var(--ink);
   font-weight: 500;
-}
-
-.notice-bar {
-  text-align: center;
-  padding: var(--s-2) var(--s-3);
-  background: var(--paper-2);
-  border-bottom: 1px solid var(--ink-3);
-  font-size: var(--t-small);
-}
-
-.notice-bar.final {
-  color: var(--red);
 }
 
 /* ---------- your turn ---------- */

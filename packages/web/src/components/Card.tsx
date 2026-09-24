@@ -73,7 +73,7 @@ export function Card({ card, width = 64, className = '', delay = 0, title, deck,
   const art = deck ?? active;
   const label = card === null ? title ?? 'Face-down card' : title ?? `${RANK_TEXT[rankOf(card)] ?? '?'} of ${SUIT_WORD[suitOf(card)]}`;
   if (card !== null && (mode === 'tile' || !pictureLegible(art, width))) {
-    return <CardTile card={card} width={width} aspect={art?.meta.geometry.aspect ?? 7 / 5} className={className} delay={delay} label={label} />;
+    return <CardTile card={card} width={width} className={className} delay={delay} label={label} />;
   }
   const picture = art && (card === null ? art.back : art.faces.get(card));
   if (!art || !picture) return <FallbackCard card={card} width={width} className={className} delay={delay} label={label} />;
@@ -112,7 +112,7 @@ function DeckCard({ card, picture, art, width, className, delay, label }: { card
  * suit set large in Calliope's own type. Not drawn over the deck's art, but in
  * place of it, the way a scorer writes "K♥" rather than sketching the card.
  */
-function CardTile({ card, width, aspect, className, delay, label }: { card: CardCode; width: number; aspect: number; className: string; delay: number; label: string }): JSX.Element {
+function CardTile({ card, width, className, delay, label }: { card: CardCode; width: number; className: string; delay: number; label: string }): JSX.Element {
   const suit = suitOf(card);
   const red = suit === 'h' || suit === 'd';
   const rank = RANK_TEXT[rankOf(card)] ?? '?';
@@ -121,7 +121,8 @@ function CardTile({ card, width, aspect, className, delay, label }: { card: Card
   return (
     <span
       className={`card card-tile ${red ? 'red' : ''} ${className}`}
-      style={{ width, height: Math.round(width * aspect), animationDelay: `${delay}ms` }}
+      // Squarer than a card: it only has to hold a rank and a pip, and a seat has little height to give.
+      style={{ width, height: Math.round(width * 1.2), animationDelay: `${delay}ms` }}
       role="img"
       aria-label={label}
     >
