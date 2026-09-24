@@ -24,22 +24,53 @@ A session is a random token. The browser gets it as an httpOnly cookie `calliope
 | POST | `/api/rooms/:code/join` | `{ password? }` | `{ ok }` |
 | GET | `/api/rooms/:code/report` | | the night report once the night has ended |
 | GET | `/api/health` | | `{ ok, rooms }` |
-| GET | `/api/instance` | | `{ restricted }` — whether opening a table needs the host key. No auth |
-| POST | `/api/auth/claim-host` | `{ key }` | `{ user }` with `canOpenTables: true` (403 on a wrong key, 429 after 10 tries / 15 min) |
+| GET | `/api/instance` | | `{ restricted, limits }`, see below. No auth |
+| POST | `/api/auth/claim-host` | `{ key }` | `{ user }` with `serverRole` `'owner'` (HOST_KEY) or `'admin'` (an admin key). 403 on a wrong key, 429 after 10 tries / 15 min |
+| GET | `/api/server` | | `{ owned, policy, tables }`. Owner or admin |
+| PUT | `/api/server/policy` | `InstancePolicy` | `{ policy }`, applied at once. Owner or admin |
+| POST | `/api/server/rooms/:code/close` | | `{ ok }`. Owner or admin |
+| POST | `/api/server/close-empty` | | `{ closed }`. Closes every table nobody has open. Owner or admin |
+| GET | `/api/server/admins` | | `{ keys }`, never the keys themselves. Owner only |
+| POST | `/api/server/admins` | `{ label }` | `{ id, key }`. The only time the key is sent. Owner only |
+| DELETE | `/api/server/admins/:id` | | `{ ok }`. Revokes one key. Owner only |
+| DELETE | `/api/server/admins` | | `{ revoked }`. Revokes every key. Owner only |
 
 Errors are `{ error: { code, message } }` with a 4xx/5xx status. `message` is safe to show to players.
 
 ## Who may open a table
 
-When the server is started with `HOST_KEY` set, `POST /api/rooms` returns 403
-`not-allowed` unless the caller's identity has claimed that key through
-`POST /api/auth/claim-host`. The permission is stored on the identity, so it
-survives a new device once the five-word ticket is used to recover the name.
+A user's `serverRole` is `'owner'` once they have entered `HOST_KEY`, `'admin'`
+once they have entered a live admin key, and `null` otherwise. The owner role is
+stored as a fingerprint of the key, so changing `HOST_KEY` revokes it; an admin
+key can be revoked from the Server page. Both follow the identity to a new
+device once the five-word ticket is used to recover the name.
+
+Without `HOST_KEY` anyone may open a table and there are no limits. With it, the
+`InstancePolicy` decides (`packages/shared/src/policy.ts`):
+
+- `openTo: 'hosts'` (the default): `POST /api/rooms` returns 403 `not-allowed`
+  unless the caller has a `serverRole`.
+- `openTo: 'anyone'`: anyone may, but a table opened without a role is *public*
+  and counts against the limits. Refusals are 429 `server-full`,
+  `too-many-tables` (per identity or per address) or `too-fast`.
+
+Public tables expire `maxTableMinutes` after they were opened. `RoomView.serverLimit`
+carries `{ expiresAt }` so the client can warn. At that point a lobby is cancelled
+(clients get the fatal error `closed`); a night in progress gets the error
+`closing`, plays out its hand and ends normally. Idle lobbies and tables with
+nobody connected are closed the same way. `abandonedHours` applies to every
+table, exempt or not: one nobody has had open for that long is closed too.
 
 Nothing else is restricted. Anyone may still create an identity, join a room by
-code or link, take a seat and play. `GET /api/instance` lets a client find out
-which kind of server it is talking to before showing a "new table" button, but
-the interface is a convenience: the check that matters is on the server.
+code or link, take a seat and play. `GET /api/instance` returns `restricted`
+(only the owner and admins may open tables) and, on a public server, `limits`
+(`maxTables`, `inUse`, `maxTableMinutes`, `maxTablesPerPerson`) so the client can
+show how busy it is before offering a "new table" button. The interface is a
+convenience: the check that matters is on the server.
+
+Finished rooms are dropped from memory and Redis six hours after they end. A
+socket still open gets the fatal error `no-room`, and the client falls back to
+`GET /api/rooms/:code/report`, which reads Postgres. Room codes are never reused.
 
 ## Websocket `/ws/rooms/:code`
 

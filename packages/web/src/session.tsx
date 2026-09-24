@@ -1,4 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import type { InstanceInfo, ServerRole } from '@calliope/shared';
 import { api } from './api.js';
 
 export interface User {
@@ -6,19 +7,23 @@ export interface User {
   name: string;
   recovered: boolean;
   createdAt: number;
-  /** This identity may open tables on this server. */
-  canOpenTables: boolean;
+  /** Entered HOST_KEY (owner) or an admin key the owner made (admin). */
+  serverRole: ServerRole | null;
 }
 
 interface SessionValue {
   user: User | null;
   loading: boolean;
-  /** This server only lets its owner open tables. */
+  /** This server only lets its owner and admins open tables. */
   restricted: boolean;
+  /** Limits on tables opened by everyone else, when the server is open to them. */
+  limits: InstanceInfo['limits'];
   /** Whether this person can open a table here. */
   canOpenTables: boolean;
-  /** Prove you run this server by entering its host key. */
-  claimHost: (key: string) => Promise<void>;
+  /** Prove you run this server, with its host key or an admin key. */
+  claimHost: (key: string) => Promise<ServerRole>;
+  /** Ask the server again how busy it is. */
+  refreshInstance: () => void;
   /** A phrase that was just created or changed and must be shown once. */
   freshPhrase: string[] | null;
   create: (name?: string) => Promise<void>;
@@ -34,18 +39,22 @@ const SessionContext = createContext<SessionValue | null>(null);
 export function SessionProvider({ children }: { children: ReactNode }): JSX.Element {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [restricted, setRestricted] = useState(false);
+  const [instance, setInstance] = useState<InstanceInfo>({ restricted: false, limits: null });
   const [freshPhrase, setFreshPhrase] = useState<string[] | null>(null);
 
+  const refreshInstance = useCallback(() => {
+    api<InstanceInfo>('GET', '/api/instance')
+      .then(setInstance)
+      .catch(() => setInstance({ restricted: false, limits: null }));
+  }, []);
+
   useEffect(() => {
-    api<{ restricted: boolean }>('GET', '/api/instance')
-      .then((r) => setRestricted(r.restricted))
-      .catch(() => setRestricted(false));
+    refreshInstance();
     api<{ user: User }>('GET', '/api/me')
       .then((r) => setUser(r.user))
       .catch(() => setUser(null))
       .finally(() => setLoading(false));
-  }, []);
+  }, [refreshInstance]);
 
   const create = useCallback(async (name?: string) => {
     const r = await api<{ user: User; phrase: string[] }>('POST', '/api/auth/new', name ? { name } : {});
@@ -73,6 +82,7 @@ export function SessionProvider({ children }: { children: ReactNode }): JSX.Elem
   const claimHost = useCallback(async (key: string) => {
     const r = await api<{ user: User }>('POST', '/api/auth/claim-host', { key });
     setUser(r.user);
+    return r.user.serverRole!;
   }, []);
 
   const acknowledgePhrase = useCallback(() => setFreshPhrase(null), []);
@@ -83,13 +93,14 @@ export function SessionProvider({ children }: { children: ReactNode }): JSX.Elem
     setFreshPhrase(null);
   }, []);
 
-  const canOpenTables = !restricted || !!user?.canOpenTables;
+  const { restricted, limits } = instance;
+  const canOpenTables = !restricted || !!user?.serverRole;
   const value = useMemo(
     () => ({
-      user, loading, restricted, canOpenTables, freshPhrase,
-      create, recover, rename, setPhrase, claimHost, acknowledgePhrase, logout,
+      user, loading, restricted, limits, canOpenTables, freshPhrase,
+      create, recover, rename, setPhrase, claimHost, refreshInstance, acknowledgePhrase, logout,
     }),
-    [user, loading, restricted, canOpenTables, freshPhrase, create, recover, rename, setPhrase, claimHost, acknowledgePhrase, logout],
+    [user, loading, restricted, limits, canOpenTables, freshPhrase, create, recover, rename, setPhrase, claimHost, refreshInstance, acknowledgePhrase, logout],
   );
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;
 }

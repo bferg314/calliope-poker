@@ -86,9 +86,10 @@ HOST_KEY=some-long-random-string
 ```
 
 Put it in `.env` (docker compose passes it through) and restart. Then, once, open
-the site, choose **I run this server** on the landing page and enter the key. That
-identity can open tables from then on, and the permission follows your five-word
-ticket to any other device.
+the site, choose **I help run this server** on the landing page and enter the key.
+That identity is the server's **owner** from then on, and it follows your five-word
+ticket to any other device. Changing `HOST_KEY` later takes that away, from you and
+from anyone else who had the old key, until the new one is entered.
 
 Everyone else is unaffected: they can make a name, follow your room link or type
 your room code, sit down and play. They just cannot open tables of their own. The
@@ -103,6 +104,40 @@ openssl rand -base64 24
 With no `HOST_KEY` set the server logs a warning at startup so an open instance
 is never a surprise. Creating identities is rate limited either way, to 30 per
 address per hour.
+
+## Running a public server
+
+With `HOST_KEY` set, the owner can open the server up so anyone can deal a table,
+within limits. The key icon at the top of the page leads to the **Server** page:
+
+- **Who can open tables.** Only the owner and admins (the default), or anyone.
+- **Limits on public tables.** Tables opened by people without a key count against
+  them; the owner's and admins' tables never do.
+  - *Tables at once* (6), and *tables per person* (1, counted per identity and per
+    address, so a new name does not get around it).
+  - *Each table lasts* (4 hours from when it was opened). Players see a warning
+    in the last ten minutes. When time is up the hand being played finishes and
+    the night ends with its report, as if the host had ended it.
+  - *Unstarted, closes after* (30 minutes) cancels a lobby nobody dealt in.
+  - *Empty, closes after* (15 minutes) ends a table nobody has open in a browser.
+
+  Any of these but tables per person can be switched off. Lowering one applies to
+  tables already open. The settings are kept in Postgres and survive a restart.
+- **Every table.** *Abandoned, ends after* (24 hours) applies to all tables,
+  yours and your admins' included: once nobody has had a table open that long,
+  the night ends with its report. After a restart the count starts again.
+- **Live tables.** Every table on the server, who is at it, how long it has sat
+  empty and when it closes, with a button to close any of them, and one to close
+  every table nobody has open right now.
+- **Admins** (owner only). Admins can do everything above but cannot manage admin
+  keys. Make one key per person, give it a name, and hand it over; it is shown
+  once and only a hash is kept. They enter it under **I help run this server**.
+  Revoking a key takes the role away straight away, on every device. Admins are
+  optional: without any, only the owner runs the server.
+
+Finished tables stay live for six hours so people can read the report, then they
+are cleared from memory and Redis. Their `/r/CODE` link keeps showing the report,
+from Postgres.
 
 ## Starting over
 
@@ -137,7 +172,7 @@ docker compose restart app
 
 After a full wipe everyone's five-word ticket stops working, because the
 identities it pointed at are gone. If you use a `HOST_KEY`, claim it again with
-**I run this server** the first time you visit.
+**I help run this server** the first time you visit.
 
 To check what you have before deciding:
 

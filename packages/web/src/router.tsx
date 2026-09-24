@@ -28,13 +28,14 @@ export function useRouter(): RouterValue {
   return useContext(RouterContext);
 }
 
-export type Route = { name: 'landing' } | { name: 'room'; code: string } | { name: 'me' } | { name: 'not-found' };
+export type Route = { name: 'landing' } | { name: 'room'; code: string } | { name: 'me' } | { name: 'server' } | { name: 'not-found' };
 
 export function parseRoute(path: string): Route {
   if (path === '/' || path === '') return { name: 'landing' };
   const room = /^\/r\/([A-Za-z0-9]{4,8})\/?$/.exec(path);
   if (room) return { name: 'room', code: room[1]!.toUpperCase() };
   if (path === '/me' || path === '/me/') return { name: 'me' };
+  if (path === '/server' || path === '/server/') return { name: 'server' };
   return { name: 'not-found' };
 }
 

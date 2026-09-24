@@ -6,6 +6,7 @@ import { Identity } from './screens/Identity.js';
 import { Landing } from './screens/Landing.js';
 import { Profile } from './screens/Profile.js';
 import { Room } from './screens/Room.js';
+import { Server } from './screens/Server.js';
 
 function Shell(): JSX.Element {
   const { path } = useRouter();
@@ -20,6 +21,8 @@ function Shell(): JSX.Element {
       return <Room code={route.code} />;
     case 'me':
       return <Profile />;
+    case 'server':
+      return <Server />;
     default:
       return (
         <div className="page page-narrow stack">

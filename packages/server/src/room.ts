@@ -61,6 +61,18 @@ export interface RoomRecord {
   lastHand: HandSummary | null;
   endedAt: number | null;
   report: NightReport | null;
+  /**
+   * Set when someone without a server role opened the table, so the server's
+   * limits apply to it. Missing on records from before limits existed, which
+   * reads as exempt.
+   */
+  quota?: RoomQuota | null;
+}
+
+/** Who a public table counts against. Stays put when the host role moves. */
+export interface RoomQuota {
+  openedBy: string;
+  ip: string;
 }
 
 /** Config that is safe to change at any moment, including mid-hand. */
@@ -112,6 +124,7 @@ export function newRoom(opts: {
   name?: string;
   passwordHash?: string | null;
   settings?: Partial<RoomSettings>;
+  quota?: RoomQuota | null;
   now: number;
 }): RoomRecord {
   const settings: RoomSettings = { ...DEFAULT_ROOM_SETTINGS, ...(opts.settings ?? {}) };
@@ -131,6 +144,7 @@ export function newRoom(opts: {
     lastHand: null,
     endedAt: null,
     report: null,
+    quota: opts.quota ?? null,
   };
 }
 

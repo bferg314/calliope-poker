@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
+import type { NightReport } from '@calliope/shared';
 import { api, ApiError } from '../api.js';
 import { TopBar } from '../components/TopBar.js';
 import { useRouter } from '../router.js';
 import { useSession } from '../session.js';
 import { useRoomSocket } from '../ws.js';
 import { Lobby } from './Lobby.js';
-import { Report } from './Report.js';
+import { FiledReport, Report } from './Report.js';
 import { Table } from './Table.js';
 
 interface PublicInfo {
@@ -27,19 +28,38 @@ export function Room({ code }: { code: string }): JSX.Element {
   const [password, setPassword] = useState('');
   const [joinError, setJoinError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  /** The night is over and filed away; this is its report from the database. */
+  const [filed, setFiled] = useState<NightReport | null>(null);
+
+  /** A finished table is let go after a while, but its report link keeps working. */
+  const lookForReport = (fallback: string): void => {
+    api<NightReport>('GET', `/api/rooms/${code}/report`)
+      .then(setFiled)
+      .catch(() => setInfoError(fallback));
+  };
 
   useEffect(() => {
     setInfo(null);
     setMember(false);
+    setFiled(null);
     api<PublicInfo>('GET', `/api/rooms/${code}`)
       .then((r) => {
         setInfo(r);
         setMember(r.isMember);
       })
-      .catch((e) => setInfoError(e instanceof ApiError ? e.message : 'Could not reach the table'));
+      .catch((e) => {
+        const message = e instanceof ApiError ? e.message : 'Could not reach the table';
+        if (e instanceof ApiError && e.status === 404) lookForReport(message);
+        else setInfoError(message);
+      });
   }, [code, user?.id]);
 
   const socket = useRoomSocket(code, member);
+
+  // Filed away while someone was still looking at it.
+  useEffect(() => {
+    if (socket.fatal?.code === 'no-room') lookForReport(socket.fatal.message);
+  }, [socket.fatal?.code]);
 
   const join = async (): Promise<void> => {
     setBusy(true);
@@ -54,6 +74,8 @@ export function Room({ code }: { code: string }): JSX.Element {
     }
   };
 
+  if (filed) return <FiledReport code={code} report={filed} youId={user?.id ?? null} />;
+
   if (infoError) {
     return (
       <div className="page page-narrow stack">
@@ -63,6 +85,24 @@ export function Room({ code }: { code: string }): JSX.Element {
           {infoError} It may have been cancelled by whoever opened it.
         </p>
         <button className="btn" onClick={() => navigate('/')}>Back to the start</button>
+      </div>
+    );
+  }
+
+  if (socket.fatal?.code === 'closed') {
+    return (
+      <div className="page page-narrow stack">
+        <TopBar />
+        <div className="stack" style={{ flex: 1, justifyContent: 'center' }}>
+          <div className="ornament">
+            <span className="italic">called off</span>
+          </div>
+          <h1>The server closed this table</h1>
+          <p className="muted">{socket.fatal.message} Nothing was dealt, so nobody is out of pocket.</p>
+          <div className="row">
+            <button className="btn btn-ink" onClick={() => navigate('/')}>Back to the start</button>
+          </div>
+        </div>
       </div>
     );
   }

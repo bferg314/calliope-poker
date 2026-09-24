@@ -1,16 +1,20 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import { listVariants } from '@calliope/engine';
-import { createRoomSchema, nameSchema, phraseSchema, roomCodeSchema } from '@calliope/shared';
+import { createRoomSchema, instancePolicySchema, nameSchema, phraseSchema, roomCodeSchema } from '@calliope/shared';
 import { hashSecret, verifySecret, type Auth, type PublicUser } from './auth.js';
-import { publicUser } from './auth.js';
 import type { Db } from './db.js';
 import { RoomError, type RoomManager } from './manager.js';
+import { REFUSAL_STATUS, type TablePolicy } from './policy.js';
+import { randomRoomCode } from './room.js';
 
 export interface Services {
   auth: Auth;
   db: Db;
   manager: RoomManager;
+  policy: TablePolicy;
+  /** Run the limits and the clean-up now, after the policy changed. */
+  sweep(): Promise<void>;
 }
 
 declare module 'fastify' {
@@ -28,7 +32,7 @@ export function registerHttp(app: FastifyInstance, s: Services): void {
 
   app.addHook('preHandler', async (request) => {
     const row = await s.auth.userFrom(request);
-    request.user = row ? publicUser(row) : null;
+    request.user = row ? s.auth.publicUser(row) : null;
   });
 
   app.setErrorHandler((err, _request, reply) => {
@@ -43,10 +47,22 @@ export function registerHttp(app: FastifyInstance, s: Services): void {
     return request.user;
   };
 
+  /** The owner or an admin. `ownerOnly` narrows it to whoever holds HOST_KEY. */
+  const requireRole = (request: FastifyRequest, reply: FastifyReply, ownerOnly = false): PublicUser | null => {
+    const user = requireUser(request, reply);
+    if (!user) return null;
+    const ok = ownerOnly ? user.serverRole === 'owner' : user.serverRole !== null;
+    if (!ok) {
+      void fail(reply, 403, 'not-allowed', ownerOnly ? 'Only the owner of this server can do that.' : 'Only the people who run this server can do that.');
+      return null;
+    }
+    return user;
+  };
+
   app.get('/api/health', async () => ({ ok: true, rooms: s.manager.rooms.size }));
 
   /** What a visitor needs to know before signing in. No authentication required. */
-  app.get('/api/instance', async () => ({ restricted: s.auth.restricted }));
+  app.get('/api/instance', async () => s.policy.info(s.manager.rooms.values()));
 
   app.get('/api/variants', async () =>
     listVariants().map((v) => ({
@@ -81,16 +97,18 @@ export function registerHttp(app: FastifyInstance, s: Services): void {
     return result;
   });
 
-  /** Prove you run this server, so you may open tables on it. */
+  /** Prove you run this server, with HOST_KEY or an admin key the owner made. */
   app.post('/api/auth/claim-host', async (request, reply) => {
     const user = requireUser(request, reply);
     if (!user) return;
     const body = z.object({ key: z.string().min(1).max(200) }).parse(request.body ?? {});
-    const result = await s.auth.claimHost(user.id, body.key, request.ip);
+    const result = await s.auth.claimKey(user.id, body.key, request.ip);
     if (result === 'limited') return fail(reply, 429, 'too-many-attempts', 'Too many tries. Wait a few minutes.');
-    if (result === 'wrong') return fail(reply, 403, 'bad-key', 'That is not the host key for this server.');
+    if (result === 'wrong') return fail(reply, 403, 'bad-key', 'That key does not open anything on this server.');
     if (result === 'open') return fail(reply, 400, 'not-restricted', 'This server lets anyone open a table.');
-    return { user: { ...user, canOpenTables: true } };
+    // An owner who also once held an admin key stays the owner.
+    const serverRole = user.serverRole === 'owner' ? 'owner' : result;
+    return { user: { ...user, serverRole } };
   });
 
   app.post('/api/auth/logout', async (request, reply) => {
@@ -144,14 +162,20 @@ export function registerHttp(app: FastifyInstance, s: Services): void {
   app.post('/api/rooms', async (request, reply) => {
     const user = requireUser(request, reply);
     if (!user) return;
-    if (!s.auth.canOpenTables(user)) {
-      return fail(reply, 403, 'not-allowed', 'Only the person who runs this server can open a table here.');
-    }
     const body = createRoomSchema.parse(request.body ?? {});
+    const passwordHash = body.password ? hashSecret(body.password) : null;
+    // Codes are never reused, or a new night would be filed on top of an old one.
+    let code = randomRoomCode();
+    while (s.manager.rooms.has(code) || (await s.db.roomCodeExists(code))) code = randomRoomCode();
+    // No await between admit and create: the limits cannot be raced.
+    const admitted = s.policy.admit(user, request.ip, s.manager.rooms.values());
+    if (typeof admitted === 'string') return fail(reply, REFUSAL_STATUS[admitted], admitted, s.policy.refusalMessage(admitted));
     const record = await s.manager.create(user, {
       name: body.name,
-      passwordHash: body.password ? hashSecret(body.password) : null,
+      passwordHash,
       settings: body.settings,
+      code,
+      quota: admitted.quota,
     });
     return { code: record.code, joinUrl: `${app.publicUrl}/r/${record.code}` };
   });
@@ -179,6 +203,62 @@ export function registerHttp(app: FastifyInstance, s: Services): void {
     }
     s.manager.join(rt, user);
     return { ok: true, code };
+  });
+
+  // ---- running the server ----
+
+  app.get('/api/server', async (request, reply) => {
+    if (!requireRole(request, reply)) return;
+    return { owned: s.policy.owned, policy: s.policy.policy, tables: s.policy.tables(s.manager) };
+  });
+
+  app.put('/api/server/policy', async (request, reply) => {
+    if (!requireRole(request, reply)) return;
+    const policy = instancePolicySchema.parse(request.body ?? {});
+    await s.policy.update(policy);
+    await s.sweep();
+    return { policy: s.policy.policy };
+  });
+
+  app.post('/api/server/rooms/:code/close', async (request, reply) => {
+    if (!requireRole(request, reply)) return;
+    const code = roomCodeSchema.parse((request.params as { code: string }).code);
+    const rt = s.manager.get(code);
+    if (!rt) return fail(reply, 404, 'no-room', 'No table with that code');
+    await s.manager.close(rt, 'admin');
+    return { ok: true };
+  });
+
+  /** Close every table nobody has open right now. */
+  app.post('/api/server/close-empty', async (request, reply) => {
+    if (!requireRole(request, reply)) return;
+    return { closed: await s.policy.closeEmpty(s.manager) };
+  });
+
+  app.get('/api/server/admins', async (request, reply) => {
+    if (!requireRole(request, reply, true)) return;
+    return { keys: await s.db.listAdminKeys() };
+  });
+
+  /** A new admin key. This is the only time its value is ever shown. */
+  app.post('/api/server/admins', async (request, reply) => {
+    if (!requireRole(request, reply, true)) return;
+    const body = z.object({ label: z.string().trim().min(1, 'Give the key a name').max(40) }).parse(request.body ?? {});
+    const { id, key } = await s.auth.createAdminKey(body.label);
+    return { id, key };
+  });
+
+  app.delete('/api/server/admins/:id', async (request, reply) => {
+    if (!requireRole(request, reply, true)) return;
+    const id = z.string().uuid().parse((request.params as { id: string }).id);
+    const revoked = await s.db.revokeAdminKeys(id);
+    if (revoked === 0) return fail(reply, 404, 'no-key', 'No live key with that id');
+    return { ok: true };
+  });
+
+  app.delete('/api/server/admins', async (request, reply) => {
+    if (!requireRole(request, reply, true)) return;
+    return { revoked: await s.db.revokeAdminKeys(null) };
   });
 
   app.get('/api/rooms/:code/report', async (request, reply) => {

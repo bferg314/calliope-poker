@@ -214,6 +214,11 @@ export interface RoomView {
    * against the page address before showing, copying or encoding it.
    */
   joinUrl: string;
+  /**
+   * Set on a table opened under the server's public limits: the wall time the
+   * server closes it. The hand in progress then finishes and the night ends.
+   */
+  serverLimit: { expiresAt: number } | null;
 }
 
 export type ServerMessage =
