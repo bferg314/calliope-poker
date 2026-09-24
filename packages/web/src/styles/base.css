@@ -376,6 +376,7 @@ details > summary {
 }
 
 .ledger th {
+  white-space: nowrap;
   text-align: left;
   font-weight: 500;
   font-variant-caps: all-small-caps;
@@ -432,6 +433,7 @@ details > summary {
 }
 
 .topbar .brand {
+  white-space: nowrap;
   display: inline-flex;
   align-items: center;
   min-height: var(--hit);
@@ -441,6 +443,37 @@ details > summary {
   color: var(--ink);
   text-decoration: none;
   letter-spacing: 0.01em;
+}
+
+/* On a phone the top bar keeps to one line: the brand stays whole and the name gives way. */
+.topbar > .row {
+  flex-wrap: nowrap;
+  min-width: 0;
+}
+
+.topbar > .row > .btn {
+  min-width: 0;
+}
+
+.topbar-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* A ledger too wide for a phone scrolls sideways inside its own box, with the
+   names held at the left edge so every row still says whose it is. */
+.ledger-scroll {
+  overflow-x: auto;
+}
+
+.ledger-scroll .ledger th:first-child,
+.ledger-scroll .ledger td:first-child {
+  position: sticky;
+  left: 0;
+  background: var(--paper);
+  white-space: nowrap;
 }
 
 .ornament {
@@ -610,6 +643,10 @@ details > summary {
 /* The settings form: sections folded to one line each, like a contents page. */
 .settings-section {
   border-top: 1px solid var(--ink-3);
+}
+
+.settings-grid .span-2 {
+  grid-column: span 2;
 }
 
 .settings-form > .settings-section:last-child {

@@ -13,7 +13,7 @@ export function TopBar({ right }: { right?: ReactNode }): JSX.Element {
         {user && (
           <Link to="/me" className="btn btn-quiet btn-small">
             <Icon name="person" />
-            {user.name}
+            <span className="topbar-name">{user.name}</span>
           </Link>
         )}
       </div>

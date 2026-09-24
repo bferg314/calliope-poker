@@ -133,7 +133,7 @@ export function Settings({ settings, variants, editable, onSave, onDirtyChange }
           )}
           {lockedVariant && <p className="micro" style={{ margin: 0 }}>{lockedVariant.description}</p>}
           <div className="settings-grid">
-            <label className="field">
+            <label className="field span-2">
               <span className="label">betting</span>
               <select className="select" disabled={ro} value={draft.betting} onChange={(e) => set('betting', e.target.value as RoomSettings['betting'])}>
                 <option value="variant-default">Usual for each game</option>

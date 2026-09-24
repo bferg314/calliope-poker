@@ -41,7 +41,7 @@ export function ReportSheet({ report, youId }: { report: NightReport; youId: str
           </p>
         </div>
       )}
-      <div style={{ overflowX: 'auto' }}>
+      <div className="ledger-scroll">
         <table className="ledger">
           <thead>
             <tr>
