@@ -46,6 +46,8 @@ async function openTable(p, { buyInValue } = {}) {
   await p.waitForURL(/\/r\/[A-Z0-9]+/);
   await p.waitForSelector('.seat-grid');
   if (buyInValue !== undefined) {
+    // The settings form is folded into sections; open the one with the money in it.
+    await p.locator('.settings-section summary', { hasText: 'Chips' }).click();
     await p.getByLabel('a buy-in is worth').fill(String(buyInValue));
     await p.getByRole('button', { name: 'Save settings' }).click();
     await p.waitForTimeout(400);

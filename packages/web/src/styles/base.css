@@ -607,12 +607,42 @@ details > summary {
   gap: var(--s-3);
 }
 
+/* The settings form: sections folded to one line each, like a contents page. */
 .settings-section {
-  display: flex;
-  flex-direction: column;
-  gap: var(--s-3);
-  padding: var(--s-4) 0;
   border-top: 1px solid var(--ink-3);
+}
+
+.settings-form > .settings-section:last-child {
+  border-bottom: 1px solid var(--ink-3);
+}
+
+.settings-section > summary {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s-3);
+  min-height: var(--hit);
+  padding: var(--s-3) 0;
+  list-style: none;
+}
+
+.settings-section > summary::-webkit-details-marker {
+  display: none;
+}
+
+/* A printed caret: pointing right when folded, down when open. */
+.settings-section > summary::before {
+  content: '';
+  flex-shrink: 0;
+  width: 6px;
+  height: 6px;
+  border-right: 1.5px solid var(--ink-2);
+  border-bottom: 1.5px solid var(--ink-2);
+  transform: translateY(-2px) rotate(-45deg);
+  transition: transform var(--d-fast) var(--ease);
+}
+
+.settings-section[open] > summary::before {
+  transform: translateY(-4px) rotate(45deg);
 }
 
 .settings-section h3 {
@@ -621,7 +651,57 @@ details > summary {
   font-family: var(--font-ui);
   font-weight: 500;
   font-size: var(--t-small);
+  color: var(--ink);
+  flex-shrink: 0;
+}
+
+.settings-section .section-summary {
   color: var(--ink-2);
+  font-size: var(--t-small);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.section-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+  padding: 0 0 var(--s-4);
+}
+
+/* Unsaved settings: a strip along the foot of the window until they are saved. */
+.save-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: var(--s-2) var(--s-3);
+  padding: var(--s-2) var(--s-4) calc(var(--s-2) + env(safe-area-inset-bottom, 0px));
+  background: var(--paper-2);
+  border-top: 1px solid var(--ink);
+}
+
+.save-bar-note {
+  color: var(--ink-2);
+  font-size: var(--t-small);
+  margin-right: auto;
+}
+
+@media (min-width: 900px) {
+  .save-bar-note {
+    margin-right: 0;
+  }
+}
+
+.save-bar-space {
+  height: 72px;
 }
 
 .chip-legend {
@@ -1083,7 +1163,7 @@ details > summary {
 
 .ladder-preview {
   max-height: 260px;
-  overflow-y: auto;
+  overflow: auto;
 }
 
 .ladder-preview tr.now td {

@@ -57,8 +57,10 @@ await page.getByLabel('seconds to act').fill('45');
 await page.waitForTimeout(250);
 check('an unsaved edit disables the deal', !(await deal.isEnabled()));
 check('and says why', await page.getByText('You have unsaved settings.').isVisible());
+check('with the save in view, not at the foot of the form', await page.locator('.save-bar').isVisible()
+  && (await page.locator('.save-bar').boundingBox()).y < page.viewportSize().height);
 
-await page.getByRole('button', { name: 'Save them' }).click();
+await page.getByRole('button', { name: 'Save settings' }).click();
 await page.waitForTimeout(500);
 check('saving re-enables the deal', await deal.isEnabled());
 check('the setting actually reached the server',

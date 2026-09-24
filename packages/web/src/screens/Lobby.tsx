@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { BOT_PERSONALITIES, type RoomView } from '@calliope/shared';
 import { GameStrip } from '../components/GameStrip.js';
 import { Invite } from '../components/Invite.js';
@@ -17,7 +17,6 @@ export function Lobby({ room, socket }: { room: RoomView; socket: RoomSocket }):
   const isHost = !!me?.isHost;
   const [botMenu, setBotMenu] = useState<number | null>(null);
   const [settingsDirty, setSettingsDirty] = useState(false);
-  const saveSettings = useRef<(() => void) | null>(null);
   // Stable, so the effect in Settings that reports it does not loop.
   const onDirtyChange = useCallback((dirty: boolean) => setSettingsDirty(dirty), []);
   const seated = room.table.seats.filter(Boolean).length;
@@ -44,10 +43,7 @@ export function Lobby({ room, socket }: { room: RoomView; socket: RoomSocket }):
                 Deal the first hand
               </button>
               {settingsDirty ? (
-                <div className="row" style={{ gap: 'var(--s-2)' }}>
-                  <span className="micro">You have unsaved settings.</span>
-                  <button className="btn btn-small" onClick={() => saveSettings.current?.()}>Save them</button>
-                </div>
+                <span className="micro">Save the settings first, from the bar below.</span>
               ) : withChips < 2 ? (
                 <span className="micro">Two players with chips are needed.</span>
               ) : null}
@@ -170,7 +166,6 @@ export function Lobby({ room, socket }: { room: RoomView; socket: RoomSocket }):
               variants={room.variants}
               editable={isHost}
               onDirtyChange={onDirtyChange}
-              saveRef={saveSettings}
               onSave={(patch) => socket.send({ type: 'host', command: { kind: 'set-settings', settings: patch } })}
             />
           </div>

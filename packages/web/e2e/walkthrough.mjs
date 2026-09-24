@@ -72,6 +72,7 @@ log('room', code);
 await page.screenshot({ path: out('04-lobby.png'), fullPage: true });
 
 // Rising stakes: a level a minute, so the walkthrough can actually see one land.
+await page.locator('.settings-section summary', { hasText: 'Rising stakes' }).click();
 await page.getByRole('radio', { name: 'Go up on the clock' }).check();
 await page.getByLabel('minutes per level').fill('1');
 await page.waitForSelector('.ladder-preview');

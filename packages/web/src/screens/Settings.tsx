@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import {
   baseStakesOf, BOT_PERSONALITIES, chipUnitOf, DEFAULT_GROWTH, DEFAULT_MAX_LEVEL, ladderOptsOf, levelLadder,
   type LevelSchedule, type RoomSettings, type VariantInfo,
@@ -14,11 +14,25 @@ interface SettingsProps {
   onSave: (patch: Partial<RoomSettings>) => void;
   /** Told whenever there are edits the host has not saved yet. */
   onDirtyChange?: (dirty: boolean) => void;
-  /** Lets the lobby trigger the save from its own button. */
-  saveRef?: { current: (() => void) | null };
 }
 
 const BETTING_LABEL: Record<string, string> = { 'no-limit': 'No limit', 'pot-limit': 'Pot limit', 'fixed-limit': 'Fixed limit' };
+
+/**
+ * One part of the form, folded to a line that says what it is set to, so the
+ * whole form reads at a glance and a phone does not scroll past it all.
+ */
+function Section({ title, summary, open = false, children }: { title: string; summary: string; open?: boolean; children: ReactNode }): JSX.Element {
+  return (
+    <details className="settings-section" open={open}>
+      <summary>
+        <h3>{title}</h3>
+        <span className="section-summary">{summary}</span>
+      </summary>
+      <div className="section-body">{children}</div>
+    </details>
+  );
+}
 
 function Num({ label, value, onChange, min = 0, disabled }: { label: string; value: number; onChange: (n: number) => void; min?: number; disabled: boolean }): JSX.Element {
   return (
@@ -30,7 +44,7 @@ function Num({ label, value, onChange, min = 0, disabled }: { label: string; val
 }
 
 /** The room's settings as a printed form. Host edits; others read. */
-export function Settings({ settings, variants, editable, onSave, onDirtyChange, saveRef }: SettingsProps): JSX.Element {
+export function Settings({ settings, variants, editable, onSave, onDirtyChange }: SettingsProps): JSX.Element {
   const [draft, setDraft] = useState<RoomSettings>(settings);
   const [dirty, setDirty] = useState(false);
 
@@ -49,13 +63,6 @@ export function Settings({ settings, variants, editable, onSave, onDirtyChange, 
     setDirty(false);
   };
 
-  // So the lobby can save from beside its own Deal button.
-  useEffect(() => {
-    if (!saveRef) return undefined;
-    saveRef.current = save;
-    return () => { saveRef.current = null; };
-  });
-
   const set = <K extends keyof RoomSettings>(key: K, value: RoomSettings[K]): void => {
     setDraft((d) => ({ ...d, [key]: value }));
     setDirty(true);
@@ -73,28 +80,23 @@ export function Settings({ settings, variants, editable, onSave, onDirtyChange, 
   // The same pure generator the server uses, so the preview cannot disagree with play.
   const ladder = levelLadder(baseStakesOf(draft), ladderOptsOf(levels, chipUnitOf(draft)), Math.min(maxLevel + 1, 8));
 
-  const summary = (
-    <p className="muted" style={{ margin: 0 }}>
-      {dc ? `Dealer's choice: ${allowed.map((id) => variants.find((v) => v.id === id)?.name ?? id).join(', ')}` : variants.find((v) => v.id === allowed[0])?.name}
-      {' · '}
-      {draft.betting === 'variant-default' ? 'usual betting' : BETTING_LABEL[draft.betting]}
-      {usesBlinds && ` · blinds ${fmt(draft.blinds.small)}/${fmt(draft.blinds.big)}`}
-      {usesAntes && ` · ante ${fmt(draft.ante)}, bring-in ${fmt(draft.bringIn)}`}
-      {' · '}
-      buy-in {fmtMoney(draft.chips.buyInValue, draft.chips.currency)} for {fmt(draft.chips.buyInChips)} chips
-      {draft.levels.kind === 'time' && ` · stakes up every ${draft.levels.everyMinutes} min`}
-      {draft.levels.kind === 'hands' && ` · stakes up every ${draft.levels.everyHands} hands`}
-    </p>
-  );
+  const discard = (): void => {
+    setDraft(settings);
+    setDirty(false);
+  };
+  const gameName = dc ? "Dealer's choice" : variants.find((v) => v.id === allowed[0])?.name ?? allowed[0];
+  const lockedVariant = dc ? null : variants.find((v) => v.id === allowed[0]);
+  const bettingLabel = draft.betting === 'variant-default' ? 'usual betting' : BETTING_LABEL[draft.betting]!.toLowerCase();
+  const rebuysLine = !draft.rebuys.allowed
+    ? 'no re-buys'
+    : `${draft.rebuys.maxCount === null ? 'any number' : `up to ${draft.rebuys.maxCount}`}${draft.rebuys.untilMinutes === null ? '' : ` in the first ${draft.rebuys.untilMinutes} min`}`;
+  const levelsLine = levels.kind === 'off' ? 'the same all night' : levels.kind === 'time' ? `up every ${levels.everyMinutes} min` : `up every ${levels.everyHands} hands`;
+  const endLine = `${draft.end.kind === 'time' ? `after ${draft.end.minutes} minutes` : 'last one standing'} · ${draft.autoDeal ? 'deals itself' : 'the host deals'}`;
 
   return (
     <div className="stack">
-      {summary}
-      <details open={editable}>
-        <summary className="label">{editable ? 'all settings' : 'details'}</summary>
-
-        <div className="settings-section">
-          <h3>Game</h3>
+      <div className="settings-form">
+        <Section title="Game" summary={`${gameName} · ${bettingLabel}${usesBlinds ? ` · blinds ${fmt(draft.blinds.small)}/${fmt(draft.blinds.big)}` : ''}${usesAntes ? ` · ante ${fmt(draft.ante)}` : ''}`} open={editable}>
           <div className="row">
             <label className="check">
               <input type="radio" name="mode" disabled={ro} checked={!dc} onChange={() => set('variantMode', { kind: 'locked', variantId: allowed[0] ?? 'holdem' })} />
@@ -125,10 +127,11 @@ export function Settings({ settings, variants, editable, onSave, onDirtyChange, 
           ) : (
             <select className="select" disabled={ro} value={allowed[0]} onChange={(e) => set('variantMode', { kind: 'locked', variantId: e.target.value })}>
               {variants.map((v) => (
-                <option key={v.id} value={v.id}>{v.name} — {v.description}</option>
+                <option key={v.id} value={v.id}>{v.name}</option>
               ))}
             </select>
           )}
+          {lockedVariant && <p className="micro" style={{ margin: 0 }}>{lockedVariant.description}</p>}
           <div className="settings-grid">
             <label className="field">
               <span className="label">betting</span>
@@ -147,10 +150,9 @@ export function Settings({ settings, variants, editable, onSave, onDirtyChange, 
             <Num label="big bet (fixed limit)" value={draft.fixedLimit.big} min={1} disabled={ro} onChange={(n) => set('fixedLimit', { ...draft.fixedLimit, big: n })} />
             <Num label="seconds to act" value={draft.actionSeconds} min={5} disabled={ro} onChange={(n) => set('actionSeconds', n)} />
           </div>
-        </div>
+        </Section>
 
-        <div className="settings-section">
-          <h3>Chips</h3>
+        <Section title="Chips" summary={`${fmtMoney(draft.chips.buyInValue, draft.chips.currency)} for ${fmt(draft.chips.buyInChips)} chips · ${draft.chips.denominations.length} colours`}>
           <div className="settings-grid">
             <label className="field">
               <span className="label">currency</span>
@@ -192,10 +194,9 @@ export function Settings({ settings, variants, editable, onSave, onDirtyChange, 
               </button>
             )}
           </div>
-        </div>
+        </Section>
 
-        <div className="settings-section">
-          <h3>Re-buys</h3>
+        <Section title="Re-buys" summary={rebuysLine}>
           <label className="check">
             <input type="checkbox" disabled={ro} checked={draft.rebuys.allowed} onChange={(e) => set('rebuys', { ...draft.rebuys, allowed: e.target.checked })} />
             Allow re-buys
@@ -212,10 +213,9 @@ export function Settings({ settings, variants, editable, onSave, onDirtyChange, 
               </label>
             </div>
           )}
-        </div>
+        </Section>
 
-        <div className="settings-section">
-          <h3>Rising stakes</h3>
+        <Section title="Rising stakes" summary={levelsLine}>
           <div className="row">
             <label className="check">
               <input type="radio" name="levels" disabled={ro} checked={levels.kind === 'off'} onChange={() => set('levels', { kind: 'off' })} />
@@ -280,10 +280,9 @@ export function Settings({ settings, variants, editable, onSave, onDirtyChange, 
               </p>
             </>
           )}
-        </div>
+        </Section>
 
-        <div className="settings-section">
-          <h3>End of the night</h3>
+        <Section title="End of the night" summary={endLine}>
           <div className="row">
             <label className="check">
               <input type="radio" name="end" disabled={ro} checked={draft.end.kind === 'last-standing'} onChange={() => set('end', { kind: 'last-standing' })} />
@@ -305,15 +304,24 @@ export function Settings({ settings, variants, editable, onSave, onDirtyChange, 
             </label>
             <Num label="pause between hands (seconds)" value={draft.settleSeconds} min={2} disabled={ro} onChange={(n) => set('settleSeconds', n)} />
           </div>
-        </div>
+        </Section>
+      </div>
 
-        {editable && (
-          <div className="row" style={{ paddingTop: 'var(--s-3)' }}>
-            <button className="btn btn-ink" disabled={!dirty} onClick={save}>Save settings</button>
-            <button className="btn btn-quiet" disabled={!dirty} onClick={() => { setDraft(settings); setDirty(false); }}>discard</button>
+      {/*
+        * Unsaved edits hold up the deal, so the way to save them stays in
+        * view wherever the host has scrolled: a bar along the foot of the
+        * window, there only while there is something to save.
+        */}
+      {editable && dirty && (
+        <>
+          <div className="save-bar-space" aria-hidden="true" />
+          <div className="save-bar" role="region" aria-label="Unsaved settings">
+            <span className="save-bar-note">You have unsaved settings.</span>
+            <button className="btn btn-quiet" onClick={discard}>discard</button>
+            <button className="btn btn-ink" onClick={save}>Save settings</button>
           </div>
-        )}
-      </details>
+        </>
+      )}
     </div>
   );
 }
