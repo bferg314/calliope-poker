@@ -127,7 +127,7 @@ function DeckSwatch({ listing, on, onPick, onRemove }: { listing: DeckListing; o
             </a>
           )}
           {onRemove && (
-            <button type="button" className="deck-remove" onClick={onRemove}>
+            <button type="button" className="deck-remove hit" onClick={onRemove}>
               remove
             </button>
           )}

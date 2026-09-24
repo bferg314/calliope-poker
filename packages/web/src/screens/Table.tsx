@@ -3,8 +3,9 @@ import {
   bestHand, bestHandOmaha, evaluateCards, getVariant, legalActions, type Action, type HandView, type TableState,
 } from '@calliope/engine';
 import { stakesLabel, type RoomView } from '@calliope/shared';
-import { Board } from '../components/Board.js';
+import { Board, Pot } from '../components/Board.js';
 import { Card } from '../components/Card.js';
+import { useActiveDeck } from '../decks.js';
 import { SeatCard } from '../components/Seat.js';
 import { ActionBar } from '../components/ActionBar.js';
 import { DrawBar } from '../components/DrawBar.js';
@@ -19,87 +20,174 @@ import { copyText } from '../clipboard.js';
 import { absoluteUrl, fmt, fmtDuration, fmtMoney } from '../format.js';
 import { Link } from '../router.js';
 import { useNow, type RoomSocket } from '../ws.js';
+import { Icon } from '../components/Icon.js';
 
 /**
- * Where opponent k (1..n-1, clockwise from the viewer) sits in the table area.
- * Phones use fixed slots that leave room for the board between the middle seats;
- * wider screens use an ellipse clamped so seat cards never leave the area.
- */
-function seatPosition(k: number, n: number, phone: boolean, seatW: number): { left: string; top: string } {
-  const half = seatW / 2;
-  if (phone && n === 8) {
-    const slots: Record<number, [string, string]> = {
-      1: [`${half}px`, '84%'],
-      2: [`${half}px`, '48%'],
-      3: ['21%', '15%'],
-      4: ['50%', '10%'],
-      5: ['79%', '15%'],
-      6: [`calc(100% - ${half}px)`, '48%'],
-      7: [`calc(100% - ${half}px)`, '84%'],
-    };
-    const [left, top] = slots[k]!;
-    return { left, top };
-  }
-  const angle = (90 + (360 * k) / n) * (Math.PI / 180);
-  const cos = Math.cos(angle).toFixed(4);
-  const sin = Math.sin(angle).toFixed(4);
-  return { left: `calc(50% + (50% - ${half}px) * ${cos})`, top: `calc(50% + (50% - 44px) * ${sin})` };
-}
-
-/** True on a narrow phone, where the own-seat cards have to give up room. */
-function useNarrow(): boolean {
-  const [narrow, setNarrow] = useState(() => window.matchMedia('(max-width: 400px)').matches);
-  useEffect(() => {
-    const mq = window.matchMedia('(max-width: 400px)');
-    const onChange = (): void => setNarrow(mq.matches);
-    mq.addEventListener('change', onChange);
-    return () => mq.removeEventListener('change', onChange);
-  }, []);
-  return narrow;
-}
-
-function useWide(): boolean {
-  const [wide, setWide] = useState(() => window.matchMedia('(min-width: 900px)').matches);
-  useEffect(() => {
-    const mq = window.matchMedia('(min-width: 900px)');
-    const onChange = (): void => setWide(mq.matches);
-    mq.addEventListener('change', onChange);
-    return () => mq.removeEventListener('change', onChange);
-  }, []);
-  return wide;
-}
-
-/**
- * How wide to draw the board's cards on a wide screen. The table grows with the
- * window, so the board grows with it: about a fifth of the table's height (the
- * top seats come down into the middle on a short screen), and the whole row no
- * wider than about 45% of it. Never smaller than it used to be, never huge.
+ * How the table is laid out, decided once here and handed to CSS as
+ * `data-layout` so the two can never disagree (docs/design.md §4):
  *
- * The height is worked out from the width and the window, as the CSS sizes the
- * table (16:8.5, at most 60vh), rather than measured: the table is a flex item
- * that gives up a few pixels whenever a notice bar or the action bar changes,
- * and the cards should not twitch with every turn.
+ * - `phone`: portrait, narrower than 900px. Seats in a horseshoe grid.
+ * - `short`: a phone on its side or any window under 520px tall. The table on
+ *   the left, your own seat and the action bar in a column on the right.
+ * - `wide`: 900px and up. Seats on an ellipse round the felt.
  */
-function useBoardCardWidth(wide: boolean): [(el: HTMLDivElement | null) => void, number] {
-  const [el, setEl] = useState<HTMLDivElement | null>(null);
-  const [width, setWidth] = useState(72);
+type TableLayout = 'phone' | 'short' | 'wide';
+
+const LAYOUT_QUERIES: [TableLayout, string][] = [
+  ['short', '(max-height: 519px) and (min-aspect-ratio: 1/1)'],
+  ['wide', '(min-width: 900px)'],
+];
+
+function currentLayout(): TableLayout {
+  for (const [layout, q] of LAYOUT_QUERIES) if (window.matchMedia(q).matches) return layout;
+  return 'phone';
+}
+
+function useTableLayout(): TableLayout {
+  const [layout, setLayout] = useState(currentLayout);
   useEffect(() => {
-    if (!el || !wide) return;
+    const mqs = LAYOUT_QUERIES.map(([, q]) => window.matchMedia(q));
+    const onChange = (): void => setLayout(currentLayout());
+    for (const mq of mqs) mq.addEventListener('change', onChange);
+    return () => { for (const mq of mqs) mq.removeEventListener('change', onChange); };
+  }, []);
+  return layout;
+}
+
+/** The size of an element, kept up to date. */
+function useSize(): [(el: HTMLElement | null) => void, { width: number; height: number }] {
+  const [el, setEl] = useState<HTMLElement | null>(null);
+  const [size, setSize] = useState({ width: 0, height: 0 });
+  useEffect(() => {
+    if (!el) return;
     const measure = (): void => {
-      const w = el.getBoundingClientRect().width;
-      const h = Math.min(w * 8.5 / 16, window.innerHeight * 0.6);
-      setWidth(Math.round(Math.min(120, Math.max(72, Math.min(h * 0.185, w * 0.088)))));
+      const r = el.getBoundingClientRect();
+      setSize((s) => (Math.abs(s.width - r.width) < 1 && Math.abs(s.height - r.height) < 1 ? s : { width: r.width, height: r.height }));
     };
     measure();
     const ro = new ResizeObserver(measure);
     ro.observe(el);
-    window.addEventListener('resize', measure);
-    return () => {
-      ro.disconnect();
-      window.removeEventListener('resize', measure);
+    return () => ro.disconnect();
+  }, [el]);
+  return [setEl, size];
+}
+
+/**
+ * Which opponents sit up the left side, across the top and down the right, in
+ * the phone's horseshoe. Clockwise from the player, who is at the bottom: the
+ * first opponent is at the bottom of the left column.
+ */
+function horseshoe(m: number): { left: number; top: number; right: number } {
+  if (m <= 2) return { left: 0, top: m, right: 0 };
+  if (m <= 5) return { left: 1, top: m - 2, right: 1 };
+  return { left: 2, top: m - 4, right: 2 };
+}
+
+/**
+ * Where opponent k of m sits on the wide table's ellipse: evenly round it, with
+ * the player's own place at the bottom counted as one of the positions.
+ */
+function ellipsePosition(k: number, m: number): CSSProperties {
+  const angle = (90 + (360 * k) / (m + 1)) * (Math.PI / 180);
+  return { '--cos': Math.cos(angle).toFixed(4), '--sin': Math.sin(angle).toFixed(4) } as CSSProperties;
+}
+
+/** Board card width: as big as the room allows, never smaller than a card can be read at. */
+function boardCardWidth(layout: TableLayout, area: { width: number; height: number }, slots: number, opponents: number): number {
+  if (!area.width || slots === 0) return layout === 'wide' ? 72 : 48;
+  if (layout === 'wide') {
+    // The biggest board that clears every seat on the upper half of the
+    // ellipse. Mirrors the CSS: seats are --seat-w (168px) by about 2 ×
+    // --seat-hh (104px), inset 8px; the board's bottom edge is at 48%.
+    const { width: W, height: H } = area;
+    const seatHalfW = 84;
+    const seatHalfH = 52;
+    const fits = (cw: number): boolean => {
+      const boardHalfW = (slots * cw + (slots - 1) * 4) / 2;
+      const boardTop = H * 0.48 - cw * 1.4;
+      for (let k = 1; k <= opponents; k++) {
+        const a = ((90 + (360 * k) / (opponents + 1)) * Math.PI) / 180;
+        const cy = H / 2 + (H / 2 - seatHalfH - 8) * Math.sin(a);
+        if (cy + seatHalfH < boardTop - 4) continue; // clear above the board
+        const dx = Math.abs((W / 2 - seatHalfW - 8) * Math.cos(a));
+        if (dx - seatHalfW - 8 < boardHalfW) return false;
+      }
+      return true;
     };
-  }, [el, wide]);
-  return [setEl, wide ? width : 40];
+    let cw = Math.round(Math.min(120, H * 0.18, (W * 0.5) / slots));
+    while (cw > 56 && !fits(cw)) cw -= 2;
+    return cw;
+  }
+  const byWidth = (area.width - 16 - (slots - 1) * 4) / slots;
+  // Two seats stacked in each side column take most of the height a phone has.
+  const crowded = horseshoe(opponents).left >= 2;
+  const byHeight = (area.height * (crowded ? 0.19 : 0.24)) / 1.4;
+  return Math.round(Math.min(64, Math.max(48, Math.min(byWidth, byHeight))));
+}
+
+/**
+ * The player's own cards: the loudest thing on the screen, as big as the seat
+ * allows. Sized for the most cards this game can deal, so they do not shrink
+ * street by street, and overlapped only when even the smallest readable size
+ * will not fit side by side. Returns the width and the step from one card to the next.
+ */
+function ownCardSize(layout: TableLayout, width: number, count: number): { cw: number; step: number; beside: boolean } {
+  const gap = 6;
+  if (layout === 'wide') {
+    const cw = count <= 3 ? 112 : count <= 5 ? 88 : 76;
+    return { cw, step: cw + gap, beside: true };
+  }
+  const avail = Math.max(0, width - 24);
+  if (count <= 2) {
+    const cw = Math.round(Math.min(88, Math.max(72, (avail - 132 - gap * (count - 1)) / count)));
+    return { cw, step: cw + gap, beside: true };
+  }
+  const max = count >= 4 ? 64 : 72;
+  const fit = (avail - gap * (count - 1)) / count;
+  if (fit >= 64) {
+    const cw = Math.round(Math.min(max, fit));
+    return { cw, step: cw + gap, beside: false };
+  }
+  return { cw: 64, step: Math.floor((avail - 64) / (count - 1)), beside: false };
+}
+
+/** The most cards a player holds in this game, face up and down together. */
+function maxHoleCards(variantId: string | null | undefined): number {
+  if (!variantId) return 2;
+  try {
+    return getVariant(variantId).streets.reduce((a, s) => a + (s.deal.holeDown ?? 0) + (s.deal.holeUp ?? 0), 0) || 2;
+  } catch {
+    return 2;
+  }
+}
+
+/**
+ * A player's cards in the order they were dealt. Down and up cards are kept
+ * apart, so stud's seventh-street down card would otherwise sit beside the
+ * first two; walking the streets puts each card back where it came.
+ */
+function dealOrder<T>(variantId: string | null | undefined, down: T[], up: T[]): { c: T; k: string }[] {
+  const out: { c: T; k: string }[] = [];
+  let d = 0;
+  let u = 0;
+  const take = (n: number, from: T[], at: number, tag: string): number => {
+    const end = Math.min(from.length, at + n);
+    for (let i = at; i < end; i++) out.push({ c: from[i]!, k: `${tag}${i}` });
+    return end;
+  };
+  try {
+    if (variantId) {
+      for (const s of getVariant(variantId).streets) {
+        d = take(s.deal.holeDown ?? 0, down, d, 'd');
+        u = take(s.deal.holeUp ?? 0, up, u, 'u');
+      }
+    }
+  } catch {
+    // Unknown variant: fall through and show what's left, down then up.
+  }
+  take(Infinity, down, d, 'd');
+  take(Infinity, up, u, 'u');
+  return out;
 }
 
 function ownHandLabel(hand: HandView | null, seat: number | null): string | null {
@@ -123,9 +211,10 @@ function ownHandLabel(hand: HandView | null, seat: number | null): string | null
 export function Table({ room, socket }: { room: RoomView; socket: RoomSocket }): JSX.Element {
   const now = useNow(250) + socket.skew;
   const confirm = useConfirm();
-  const wide = useWide();
-  const seatW = wide ? 140 : 84;
-  const [tableAreaRef, boardCardW] = useBoardCardWidth(wide);
+  const layout = useTableLayout();
+  const wide = layout === 'wide';
+  const [tableAreaRef, area] = useSize();
+  const [betSlot, setBetSlot] = useState<HTMLDivElement | null>(null);
   const table = room.table;
   const hand = table.hand;
   const me = room.me;
@@ -155,7 +244,11 @@ export function Table({ room, socket }: { room: RoomView; socket: RoomSocket }):
   // In dealer's choice the hand exists before anyone has picked a game, and
   // variantId is empty until they do. Asking the engine for '' throws.
   const variant = hand && hand.variantId ? getVariant(hand.variantId) : null;
-  const boardSlots = variant ? variant.streets.reduce((a, s) => a + (s.deal.community ?? 0), 0) : 5;
+  // Between hands the table still shows the game it is set to, so the board
+  // keeps its slots (or has none, for stud and draw) and nothing moves.
+  const mode = room.settings.variantMode;
+  const tableVariant = variant ?? (mode.kind === 'locked' ? getVariant(mode.variantId) : null);
+  const boardSlots = tableVariant ? tableVariant.streets.reduce((a, s) => a + (s.deal.community ?? 0), 0) : 5;
   const drawSpec = variant && hand?.stage === 'discarding' ? variant.streets[hand.streetIndex]?.draw ?? null : null;
   const myDraw = drawSpec && hand?.round.actor === mySeat && mySeat !== null ? drawSpec : null;
   const actorSeat = hand?.stage === 'betting' || hand?.stage === 'discarding'
@@ -282,16 +375,81 @@ export function Table({ room, socket }: { room: RoomView; socket: RoomSocket }):
   const level = room.level;
   const msToLevel = level.nextAt !== null ? level.nextAt - now : level.msUntilNext;
 
+  // Everyone else at the table, clockwise from the player. Empty seats are not
+  // drawn: the host adds bots from the menu, and a watcher takes the next seat
+  // from their own panel, so an open chair is not worth the room on the felt.
+  const opponents: number[] = [];
+  for (let k = mySeat === null ? 0 : 1; k < n; k++) {
+    const idx = (viewer + k) % n;
+    if (table.seats[idx]) opponents.push(idx);
+  }
+  const m = opponents.length;
+  const split = wide ? { left: 0, top: m, right: 0 } : horseshoe(m);
+  const shoe = {
+    // The left column is filled bottom to top, so it is listed top first.
+    left: opponents.slice(0, split.left).reverse(),
+    top: opponents.slice(split.left, split.left + split.top),
+    right: opponents.slice(split.left + split.top),
+  };
+  const sides = split.left + split.right > 0;
+  const boardCardW = boardCardWidth(layout, area, boardSlots, m);
+  const seatCardW = wide ? 30 : 22;
+  const seatEl = (idx: number): JSX.Element => {
+    const seat = table.seats[idx]!;
+    const member = room.members.find((mm) => mm.id === seat.playerId);
+    return (
+      <div key={idx} className="seat" style={wide ? ellipsePosition(opponents.indexOf(idx) + 1, m) : undefined}>
+        <SeatCard
+          seat={seat}
+          player={hand?.players[idx] ?? null}
+          isButton={!!hand && hand.button === idx}
+          toAct={actorSeat === idx}
+          timerFraction={actorSeat === idx ? timerFraction : null}
+          connected={member?.connected ?? true}
+          isWinner={winners.has(idx)}
+          winAmount={winAmounts[idx] ?? 0}
+          handLabel={settled && hand!.results!.hands[idx] ? hand!.results!.hands[idx]!.label : null}
+          denoms={denoms}
+          cardWidth={seatCardW}
+        />
+      </div>
+    );
+  };
+
+  // The strip under the top bar carries whatever the table is waiting on, in
+  // place of the notice bars that used to push the table down every hand.
+  const seatedWithChips = table.seats.filter((st) => st && st.stack > 0 && !st.sittingOut).length;
+  // Out of chips, the next thing to do is buy back in, so it goes where the
+  // buttons are rather than in a corner of the seat.
+  const canRebuyNow = !!me?.canRebuy && mySeat !== null && table.seats[mySeat]?.stack === 0 && !legal;
+  const canDeal = isHost && room.phase === 'playing' && !hand && !room.settings.autoDeal && seatedWithChips >= 2;
+  const stripNote = hand?.stage === 'discarding'
+    ? (drawSpec?.replace ? 'the draw' : 'everyone throws one away')
+    : levelUp
+      ? `stakes are up: ${levelUp}`
+      : room.phase === 'final-hand'
+        ? 'last hand of the night'
+        : room.phase === 'paused'
+          ? isHost ? 'paused. resume from the menu' : 'paused, and so is the clock'
+          : room.phase === 'playing' && !hand
+            ? seatedWithChips < 2
+              ? 'waiting for a second player'
+              : room.settings.autoDeal
+                ? 'shuffling'
+                : isHost ? 'deal when you are ready' : 'waiting for the host to deal'
+            : null;
+  const stripAlert = !!levelUp || room.phase === 'final-hand';
+
   const resultLine = settled
     ? hand!.log.filter((l) => l.kind === 'result').map((l) => l.text).join(' · ')
     : null;
 
   return (
-    <div className="table-screen">
+    <div className="table-screen" data-layout={layout}>
       <header className="table-top">
         <Link to="/" className="brand">Calliope</Link>
         <button
-          className="room-code smallcaps room-code-button"
+          className="room-code smallcaps room-code-button hit"
           onClick={() => void copyLink()}
           title="Copy the join link"
           aria-label={`Room ${room.code}. Copy the join link.`}
@@ -326,7 +484,8 @@ export function Table({ room, socket }: { room: RoomView; socket: RoomSocket }):
         <span className="micro hand-count">hand {room.handCount + (hand ? 1 : 0)}</span>
         <div className="menu-wrap">
           <button className="btn btn-quiet btn-small" onClick={() => setMenuOpen((o) => !o)} aria-expanded={menuOpen} aria-haspopup="menu">
-            {me?.name ?? 'menu'} ▾
+            <span className="topbar-name">{me?.name ?? 'menu'}</span>
+            <Icon name="chevron-down" />
           </button>
           {menuOpen && (
             <div className="menu" role="menu" onClick={() => setMenuOpen(false)}>
@@ -428,66 +587,28 @@ export function Table({ room, socket }: { room: RoomView; socket: RoomSocket }):
         </div>
       </header>
 
-      <GameStrip
-        room={room}
-        note={hand?.stage === 'discarding'
-          ? (drawSpec?.replace ? 'the draw' : 'everyone throws one away')
-          : null}
-      />
-      {levelUp && <div className="notice-bar final">Stakes are up: {levelUp}</div>}
-      {room.phase === 'paused' && <div className="notice-bar">Dealing is paused, and so is the clock. {isHost ? 'Resume from the menu.' : 'The host will resume.'}</div>}
-      {room.phase === 'final-hand' && <div className="notice-bar final">Last hand of the night.</div>}
-      {room.phase === 'playing' && !hand && (
-        <div className="notice-bar">
-          {table.seats.filter((s) => s && s.stack > 0 && !s.sittingOut).length < 2
-            ? 'Waiting for a second player with chips.'
-            : room.settings.autoDeal
-              ? 'Shuffling…'
-              : isHost
-                ? (
-                  <>
-                    Ready when you are.{' '}
-                    <button className="btn notice-action" onClick={() => socket.send({ type: 'host', command: { kind: 'deal' } })}>Deal the next hand</button>
-                  </>
-                )
-                : 'Waiting for the host to deal.'}
-        </div>
-      )}
+      <GameStrip room={room} note={stripNote} alert={stripAlert} />
 
       <div className="table-layout">
-        <div className="table-main">
-          <div className="table-area" ref={tableAreaRef} style={{ '--board-card': `${boardCardW}px` } as CSSProperties}>
+        <div className={`table-main ${layout === 'short' ? 'side-by-side' : ''}`}>
+          <div
+            className={`table-area ${sides ? 'has-sides' : ''}`}
+            ref={tableAreaRef}
+            style={{ '--board-card': `${boardCardW}px`, '--seat-card': `${seatCardW}px` } as CSSProperties}
+          >
             <div className="table-surface" aria-hidden="true" />
-            {Array.from({ length: n - 1 }, (_, i) => {
-              const k = i + 1;
-              const idx = (viewer + k) % n;
-              const seat = table.seats[idx] ?? null;
-              const player = hand?.players[idx] ?? null;
-              const member = seat ? room.members.find((m) => m.id === seat.playerId) : undefined;
-              return (
-                <div key={idx} className="seat" style={seatPosition(k, n, !wide, seatW)}>
-                  <SeatCard
-                    seat={seat}
-                    player={player}
-                    index={idx}
-                    isButton={!!hand && hand.button === idx}
-                    toAct={actorSeat === idx}
-                    timerFraction={actorSeat === idx ? timerFraction : null}
-                    connected={member?.connected ?? true}
-                    isWinner={winners.has(idx)}
-                    winAmount={winAmounts[idx] ?? 0}
-                    handLabel={settled && hand!.results!.hands[idx] ? hand!.results!.hands[idx]!.label : null}
-                    denoms={denoms}
-                    cardWidth={wide ? 36 : 24}
-                    onSit={me && mySeat === null && room.phase !== 'ended' ? () => socket.send({ type: 'sit', seat: idx }) : undefined}
-                    onAddBot={isHost && !seat ? () => socket.send({ type: 'host', command: { kind: 'add-bot', seat: idx } }) : undefined}
-                  />
-                </div>
-              );
-            })}
+            <div className="seats seats-top">{shoe.top.map(seatEl)}</div>
             <Board hand={hand} slots={boardSlots} cardWidth={boardCardW} />
-            {resultLine && <div className="result-line">{resultLine}</div>}
-            {turnPop && <TurnPop hint={turnHint} />}
+            <div className="seats seats-left">{shoe.left.map(seatEl)}</div>
+            <div className="middle">
+              <Pot hand={hand} />
+              <div className="stage">
+                {resultLine && <div className="result-line">{resultLine}</div>}
+                {turnPop && <TurnPop hint={turnHint} />}
+              </div>
+            </div>
+            <div className="seats seats-right">{shoe.right.map(seatEl)}</div>
+            <div className="bet-slot" ref={setBetSlot} />
             {hand?.stage === 'choosing' && (
               <div className="choose-panel">
                 <div className="label">{hand.chooser === mySeat ? 'your deal. pick the game' : `${actorName ?? 'the dealer'} is choosing the game`}</div>
@@ -515,7 +636,7 @@ export function Table({ room, socket }: { room: RoomView; socket: RoomSocket }):
             )}
           </div>
 
-          <OwnSeat room={room} socket={socket} mySeat={mySeat} toAct={myTurn} winAmount={mySeat !== null ? winAmounts[mySeat] ?? 0 : 0} timerFraction={actorSeat === mySeat ? timerFraction : null} onRebuy={rebuy} selectable={!!myDraw} selected={selected} onToggleCard={toggleCard} />
+          <OwnSeat room={room} socket={socket} layout={layout} maxCards={maxHoleCards(tableVariant?.id)} mySeat={mySeat} toAct={myTurn} winAmount={mySeat !== null ? winAmounts[mySeat] ?? 0 : 0} timerFraction={actorSeat === mySeat ? timerFraction : null} selectable={!!myDraw} selected={selected} onToggleCard={toggleCard} />
 
           {mySeat !== null && (myDraw ? (
             <DrawBar
@@ -525,7 +646,20 @@ export function Table({ room, socket }: { room: RoomView; socket: RoomSocket }):
               onConfirm={(cards) => socket.send({ type: 'discard', cards })}
             />
           ) : (
-            <ActionBar legal={legal} waitingFor={legal ? null : actorName} onAction={send} confirmFold={confirmFold} />
+            <ActionBar
+              legal={legal}
+              waitingFor={legal ? null : actorName}
+              onAction={send}
+              confirmFold={confirmFold}
+              panelHost={betSlot}
+              primary={
+                canRebuyNow
+                  ? { label: `Re-buy ${fmt(chips.buyInChips)} chips`, onClick: () => void rebuy() }
+                  : canDeal
+                    ? { label: 'Deal the next hand', onClick: () => socket.send({ type: 'host', command: { kind: 'deal' } }) }
+                    : null
+              }
+            />
           ))}
         </div>
 
@@ -560,14 +694,16 @@ export function Table({ room, socket }: { room: RoomView; socket: RoomSocket }):
   );
 }
 
-function OwnSeat({ room, socket, mySeat, toAct, winAmount, timerFraction, onRebuy, selectable, selected, onToggleCard }: {
+function OwnSeat({ room, socket, layout, maxCards, mySeat, toAct, winAmount, timerFraction, selectable, selected, onToggleCard }: {
   room: RoomView;
   socket: RoomSocket;
+  layout: TableLayout;
+  /** The most cards this game deals a player, which is what the seat is sized for. */
+  maxCards: number;
   mySeat: number | null;
   toAct: boolean;
   winAmount: number;
   timerFraction: number | null;
-  onRebuy: () => Promise<void>;
   selectable: boolean;
   selected: string[];
   onToggleCard: (card: string) => void;
@@ -575,10 +711,12 @@ function OwnSeat({ room, socket, mySeat, toAct, winAmount, timerFraction, onRebu
   const table = room.table;
   const hand = table.hand;
   const me = room.me;
+  const art = useActiveDeck();
+  const [seatRef, box] = useSize();
   if (mySeat === null) {
     const open = table.seats.findIndex((s) => s === null);
     return (
-      <div className="own-seat">
+      <div className="own-seat watching">
         <div className="who">
           <div className="name">{me?.name ?? 'Watching'}</div>
           <div className="muted">You're watching.</div>
@@ -591,19 +729,40 @@ function OwnSeat({ room, socket, mySeat, toAct, winAmount, timerFraction, onRebu
   }
   const seat = table.seats[mySeat]!;
   const p = hand?.players[mySeat] ?? null;
-  const cards = p && !p.folded ? [...p.holeDown.map((c, i) => ({ c, k: `d${i}` })), ...p.holeUp.map((c, i) => ({ c, k: `u${i}` }))] : [];
+  const cards = p && !p.folded ? dealOrder(hand?.variantId, p.holeDown, p.holeUp) : [];
   const drewNote = p && p.drew > 0 ? `drew ${p.drew}` : null;
   const label = hand?.stage === 'settled' && hand.results?.hands[mySeat] ? hand.results.hands[mySeat]!.label : ownHandLabel(hand, mySeat);
-  const wide = useWide();
-  const narrow = useNarrow();
-  const many = cards.length >= 5;
-  const cw = many
-    ? (wide ? 64 : narrow ? 40 : 44)
-    : cards.length > 2
-      ? (wide ? 84 : narrow ? 52 : 60)
-      : wide ? 112 : narrow ? 72 : 88;
+  const { cw, step, beside } = ownCardSize(layout, box.width, Math.max(maxCards, cards.length));
+  const cardH = Math.round(cw * (art?.meta.geometry.aspect ?? 7 / 5));
+  const status = p?.folded ? 'Folded' : seat.sittingOut && !p ? 'Sitting out' : label ?? (seat.stack === 0 ? 'Out of chips' : '');
   return (
-    <div className={`own-seat ${toAct ? 'to-act' : ''} ${many ? 'many-cards' : ''}`}>
+    <div
+      ref={seatRef}
+      className={`own-seat ${toAct ? 'to-act' : ''} ${beside ? 'beside' : 'above'}`}
+      data-max-cards={Math.max(maxCards, cards.length)}
+      style={{ '--own-card-h': `${cardH}px` } as CSSProperties}
+    >
+      <div className="who">
+        <div className="name">
+          <span className="who-name">{seat.name}</span>
+          {hand && hand.button === mySeat && <span className="dealer-button" title="Dealer">D</span>}
+          {p?.allIn && <span className="allin">all in</span>}
+        </div>
+        {toAct && timerFraction !== null && (
+          <div className="timer" aria-hidden="true">
+            <i style={{ width: `${Math.max(0, Math.min(100, timerFraction * 100))}%` }} />
+          </div>
+        )}
+        <div className="own-stack num">
+          {fmt(seat.stack)}
+          {winAmount > 0 && <span className="win-delta"> +{fmt(winAmount)}</span>}
+          {p && p.streetBet > 0 && <span className="micro"> · bet {fmt(p.streetBet)}</span>}
+        </div>
+        <div className="hand-label">
+          {status}
+          {drewNote && <span className="micro"> · {drewNote}</span>}
+        </div>
+      </div>
       <div className={`cards ${selectable ? 'selectable' : ''}`}>
         {cards.map(({ c, k }, i) => (
           <button
@@ -612,38 +771,13 @@ function OwnSeat({ room, socket, mySeat, toAct, winAmount, timerFraction, onRebu
             disabled={!selectable || !c}
             className={`card-pick ${c && selected.includes(c) ? 'tossed' : ''}`}
             aria-pressed={!!c && selected.includes(c)}
+            style={i > 0 ? { marginLeft: step - cw } : undefined}
             onClick={() => c && onToggleCard(c)}
           >
             <Card card={c} width={cw} delay={i * 60} />
             {selectable && <span className="toss-mark" aria-hidden="true">throw</span>}
           </button>
         ))}
-      </div>
-      <div className="who">
-        <div className="name">
-          {seat.name}
-          {hand && hand.button === mySeat && <span className="dealer-button" title="Dealer">D</span>}
-          {p?.allIn && <span className="allin">all in</span>}
-        </div>
-        {toAct && timerFraction !== null && (
-          <div className="timer" style={{ maxWidth: 200 }} aria-hidden="true">
-            <i style={{ width: `${Math.max(0, Math.min(100, timerFraction * 100))}%` }} />
-          </div>
-        )}
-        <div className="stack num">
-          {fmt(seat.stack)}
-          {winAmount > 0 && <span className="win-delta"> +{fmt(winAmount)}</span>}
-          {p && p.streetBet > 0 && <span className="micro"> · {fmt(p.streetBet)} in</span>}
-        </div>
-        <div className="hand-label">
-          {p?.folded ? 'Folded' : seat.sittingOut && !p ? 'Sitting out' : label ?? (seat.stack === 0 ? 'Out of chips' : '')}
-          {drewNote && <span className="micro"> · {drewNote}</span>}
-        </div>
-      </div>
-      <div className="side-actions">
-        {me?.canRebuy && seat.stack === 0 && (
-          <button className="btn btn-red btn-small" onClick={() => void onRebuy()}>Re-buy</button>
-        )}
       </div>
     </div>
   );

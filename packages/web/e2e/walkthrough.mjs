@@ -72,6 +72,7 @@ log('room', code);
 await page.screenshot({ path: out('04-lobby.png'), fullPage: true });
 
 // Rising stakes: a level a minute, so the walkthrough can actually see one land.
+await page.locator('.settings-section summary', { hasText: 'Rising stakes' }).click();
 await page.getByRole('radio', { name: 'Go up on the clock' }).check();
 await page.getByLabel('minutes per level').fill('1');
 await page.waitForSelector('.ladder-preview');
@@ -148,6 +149,8 @@ await page.goto(`${BASE}/r/${code}`);
 await page.waitForSelector('.table-area');
 await page.setViewportSize({ width: 1280, height: 820 });
 await page.waitForTimeout(1200);
+// Let a turn stamp that has just landed lift again, so the shot shows the table.
+await page.waitForSelector('.turn-pop', { state: 'detached', timeout: 4000 }).catch(() => {});
 await page.screenshot({ path: out('13-table-desktop.png') });
 
 // The stand-up dialog, opened and cancelled.

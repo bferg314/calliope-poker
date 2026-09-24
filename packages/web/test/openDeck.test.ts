@@ -19,6 +19,16 @@ describe('checkOpenDeck', () => {
     expect(check.meta.id).toBe('81531664-def2-46a4-bbc9-3eae51c90855');
     expect(check.meta.license).toBe('CC0-1.0');
     expect(check.meta.geometry.aspect).toBeCloseTo(88.9 / 63.5);
+    // This fixture predates indexHeightMm, so the legibility rule falls back to its default.
+    expect(check.meta.geometry.index).toBeUndefined();
+  });
+
+  it('keeps the smallest corner index, so cards too small to read it are drawn as tiles', () => {
+    const ranks = (classic().ranks as Record<string, unknown>[] | undefined) ?? [{ id: 'A' }, { id: 'K' }];
+    const deck = { ...classic(), ranks: ranks.map((r, i) => ({ ...r, indexHeightMm: i === 0 ? 8.89 : 10 })) };
+    const check = checkOpenDeck(deck);
+    if (!check.ok) throw new Error(check.error);
+    expect(check.meta.geometry.index).toBeCloseTo(0.1);
   });
 
   it('refuses what Calliope cannot deal from', () => {

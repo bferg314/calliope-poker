@@ -14,6 +14,8 @@
   --accent: #9ac7d6;
   --felt: #1e3a2f;
   --focus: #9ac7d6;
+  --ink-disabled: #8e9a88;
+  --seat-bg: #183026;
 
   /* Cards keep their own inks so they read as printed stock on any ground. */
   --field-bg: #183026;
@@ -30,13 +32,17 @@
   --t-display: 3.5rem;
   --t-h1: 2.25rem;
   --t-h2: 1.5rem;
+  --t-h3: 1.25rem;
+  --t-lead: 1.125rem;
   --t-body: 1rem;
   --t-small: 0.875rem;
+  --t-seat: 0.8125rem;
   --t-micro: 0.75rem;
   --t-stack: 1.125rem;
   --t-pot: 1.75rem;
   --t-action: 1.125rem;
 
+  --s-0: 2px; /* hairline offsets only */
   --s-1: 4px;
   --s-2: 8px;
   --s-3: 12px;
@@ -53,6 +59,10 @@
 
   --r-card: 6px;
   --r-btn: 4px;
+  --r-panel: 0;
+
+  /* The smallest thing a finger can be asked to hit. */
+  --hit: 44px;
 }
 
 [data-theme='paper-ink'] {
@@ -69,6 +79,8 @@
   --accent: #1f4e5f;
   --felt: #eae3d2;
   --focus: #1f4e5f;
+  --ink-disabled: #6f6a5e;
+  --seat-bg: #eae3d2;
   --field-bg: #fbf8f1;
   --card-face: #fbf8f1;
   --card-ink: #1b1a17;
@@ -93,6 +105,8 @@
   --accent: #c9a227;
   --felt: #12141a;
   --focus: #c9a227;
+  --ink-disabled: #86806f;
+  --seat-bg: #191c24;
   --field-bg: #191c24;
   --card-face: #fbf8f1;
   --card-ink: #1b1a17;
@@ -113,10 +127,12 @@
   --ink-3: #6e6e6e;
   --red: #e5342a;
   --red-2: #c4221a;
-  --on-red: #fbf8f1;
+  --on-red: #0a0a0a;
   --accent: #9fb8c4;
   --felt: #0a0a0a;
   --focus: #9fb8c4;
+  --ink-disabled: #808080;
+  --seat-bg: #151515;
   --field-bg: #151515;
   --card-face: #fbf8f1;
   --card-ink: #1b1a17;
@@ -141,6 +157,8 @@
   --accent: #d4af37;
   --felt: #241416;
   --focus: #d4af37;
+  --ink-disabled: #9a8474;
+  --seat-bg: #2e1a1c;
   --field-bg: #2e1a1c;
   --card-face: #fbf8f1;
   --card-ink: #1b1a17;

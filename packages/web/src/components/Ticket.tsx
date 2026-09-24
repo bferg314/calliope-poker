@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { copyText } from '../clipboard.js';
 import { saveBlob } from '../download.js';
 import { ticketFileName, ticketImage } from '../ticketImage.js';
+import { Icon } from './Icon.js';
 
 export function Ticket({ words, name }: { words: string[]; name: string }): JSX.Element {
   const [state, setState] = useState<'idle' | 'copied' | 'manual'>('idle');
@@ -38,6 +39,7 @@ export function Ticket({ words, name }: { words: string[]; name: string }): JSX.
       </p>
       <div className="row">
         <button className="btn btn-small" onClick={() => void copy()}>
+          <Icon name={state === 'copied' ? 'check' : 'copy'} />
           {state === 'copied' ? 'Copied' : 'Copy'}
         </button>
         <button className="btn btn-small" disabled={save === 'saving'} onClick={() => void download()}>

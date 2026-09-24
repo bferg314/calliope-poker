@@ -50,7 +50,7 @@ h2 {
 }
 
 h3 {
-  font-size: 1.125rem;
+  font-size: var(--t-lead);
 }
 
 p {
@@ -165,6 +165,25 @@ select {
   transition: background var(--d-fast) var(--ease), color var(--d-fast) var(--ease), border-color var(--d-fast) var(--ease);
   user-select: none;
   -webkit-tap-highlight-color: transparent;
+  position: relative;
+}
+
+/*
+ * However small a control is drawn, a finger gets a --hit square to aim at:
+ * an invisible pad around it that only grows the side that is short.
+ */
+.btn::before,
+.hit::before {
+  content: '';
+  position: absolute;
+  top: min(0px, calc((100% - var(--hit)) / 2));
+  bottom: min(0px, calc((100% - var(--hit)) / 2));
+  left: min(0px, calc((100% - var(--hit)) / 2));
+  right: min(0px, calc((100% - var(--hit)) / 2));
+}
+
+.hit {
+  position: relative;
 }
 
 .btn:hover {
@@ -228,7 +247,7 @@ select {
 .btn[disabled],
 .btn:disabled {
   border-color: var(--ink-3);
-  color: var(--ink-3);
+  color: var(--ink-disabled);
   background: transparent;
   cursor: default;
 }
@@ -237,7 +256,7 @@ select {
 .btn-red[disabled] {
   background: var(--paper-3);
   border-color: var(--paper-3);
-  color: var(--ink-3);
+  color: var(--ink-disabled);
 }
 
 .btn kbd {
@@ -279,6 +298,11 @@ select {
   padding-right: var(--s-6);
 }
 
+details > summary {
+  cursor: pointer;
+  padding: var(--s-3) 0;
+}
+
 .field {
   display: flex;
   flex-direction: column;
@@ -293,13 +317,13 @@ select {
   display: inline-flex;
   align-items: center;
   gap: var(--s-2);
-  min-height: 32px;
+  min-height: var(--hit);
   cursor: pointer;
 }
 
 .check input {
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
   accent-color: var(--ink);
   margin: 0;
 }
@@ -352,6 +376,7 @@ select {
 }
 
 .ledger th {
+  white-space: nowrap;
   text-align: left;
   font-weight: 500;
   font-variant-caps: all-small-caps;
@@ -408,12 +433,47 @@ select {
 }
 
 .topbar .brand {
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--hit);
   font-family: var(--font-display);
-  font-size: 1.125rem;
+  font-size: var(--t-lead);
   font-variation-settings: 'opsz' 36;
   color: var(--ink);
   text-decoration: none;
   letter-spacing: 0.01em;
+}
+
+/* On a phone the top bar keeps to one line: the brand stays whole and the name gives way. */
+.topbar > .row {
+  flex-wrap: nowrap;
+  min-width: 0;
+}
+
+.topbar > .row > .btn {
+  min-width: 0;
+}
+
+.topbar-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* A ledger too wide for a phone scrolls sideways inside its own box, with the
+   names held at the left edge so every row still says whose it is. */
+.ledger-scroll {
+  overflow-x: auto;
+}
+
+.ledger-scroll .ledger th:first-child,
+.ledger-scroll .ledger td:first-child {
+  position: sticky;
+  left: 0;
+  background: var(--paper);
+  white-space: nowrap;
 }
 
 .ornament {
@@ -491,7 +551,7 @@ select {
 
 .ticket .words {
   font-family: var(--font-display);
-  font-size: 1.375rem;
+  font-size: var(--t-h3);
   font-variation-settings: 'opsz' 36;
   display: flex;
   flex-wrap: wrap;
@@ -514,7 +574,7 @@ select {
 .word-slots input {
   text-align: center;
   font-family: var(--font-display);
-  font-size: 1.125rem;
+  font-size: var(--t-lead);
   text-transform: lowercase;
 }
 
@@ -549,7 +609,7 @@ select {
 
 .seat-slot .name {
   font-family: var(--font-display);
-  font-size: 1.125rem;
+  font-size: var(--t-lead);
 }
 
 .seat-slot .host-mark {
@@ -561,7 +621,7 @@ select {
 
 .code-big {
   font-family: var(--font-display);
-  font-size: 2.5rem;
+  font-size: var(--t-h1);
   letter-spacing: 0.18em;
   font-variation-settings: 'opsz' 72;
 }
@@ -570,7 +630,7 @@ select {
   text-transform: uppercase;
   letter-spacing: 0.3em;
   font-family: var(--font-display);
-  font-size: 1.5rem;
+  font-size: var(--t-h2);
   text-align: center;
 }
 
@@ -580,12 +640,46 @@ select {
   gap: var(--s-3);
 }
 
+/* The settings form: sections folded to one line each, like a contents page. */
 .settings-section {
-  display: flex;
-  flex-direction: column;
-  gap: var(--s-3);
-  padding: var(--s-4) 0;
   border-top: 1px solid var(--ink-3);
+}
+
+.settings-grid .span-2 {
+  grid-column: span 2;
+}
+
+.settings-form > .settings-section:last-child {
+  border-bottom: 1px solid var(--ink-3);
+}
+
+.settings-section > summary {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s-3);
+  min-height: var(--hit);
+  padding: var(--s-3) 0;
+  list-style: none;
+}
+
+.settings-section > summary::-webkit-details-marker {
+  display: none;
+}
+
+/* A printed caret: pointing right when folded, down when open. */
+.settings-section > summary::before {
+  content: '';
+  flex-shrink: 0;
+  width: 6px;
+  height: 6px;
+  border-right: 1.5px solid var(--ink-2);
+  border-bottom: 1.5px solid var(--ink-2);
+  transform: translateY(-2px) rotate(-45deg);
+  transition: transform var(--d-fast) var(--ease);
+}
+
+.settings-section[open] > summary::before {
+  transform: translateY(-4px) rotate(45deg);
 }
 
 .settings-section h3 {
@@ -594,13 +688,73 @@ select {
   font-family: var(--font-ui);
   font-weight: 500;
   font-size: var(--t-small);
+  color: var(--ink);
+  flex-shrink: 0;
+}
+
+.settings-section .section-summary {
   color: var(--ink-2);
+  font-size: var(--t-small);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.section-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+  padding: 0 0 var(--s-4);
+}
+
+/* Unsaved settings: a strip along the foot of the window until they are saved. */
+.save-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: var(--s-2) var(--s-3);
+  padding: var(--s-2) var(--s-4) calc(var(--s-2) + env(safe-area-inset-bottom, 0px));
+  background: var(--paper-2);
+  border-top: 1px solid var(--ink);
+}
+
+.save-bar-note {
+  color: var(--ink-2);
+  font-size: var(--t-small);
+  margin-right: auto;
+}
+
+@media (min-width: 900px) {
+  .save-bar-note {
+    margin-right: 0;
+  }
+}
+
+.save-bar-space {
+  height: 72px;
 }
 
 .chip-legend {
   display: flex;
   flex-wrap: wrap;
   gap: var(--s-3);
+}
+
+.chip-legend input[type='color'] {
+  width: var(--hit);
+  height: var(--hit);
+  padding: var(--s-0);
+  border: 1px solid var(--ink-3);
+  border-radius: var(--r-btn);
+  background: var(--field-bg);
+  cursor: pointer;
 }
 
 .chip-legend .item {
@@ -628,7 +782,7 @@ select {
 
 .report-card .big {
   font-family: var(--font-display);
-  font-size: 1.5rem;
+  font-size: var(--t-h2);
 }
 
 .payout {
@@ -751,7 +905,7 @@ select {
   cursor: pointer;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--s-0);
   padding: var(--s-2);
   border: 1px solid var(--ink-3);
 }
@@ -763,7 +917,7 @@ select {
 
 .theme-swatch .name {
   font-family: var(--font-display);
-  font-size: 1rem;
+  font-size: var(--t-body);
   margin-top: var(--s-1);
 }
 
@@ -777,9 +931,9 @@ select {
 .theme-swatch .felt-strip {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--s-1);
   background: var(--felt);
-  padding: 4px;
+  padding: var(--s-1);
 }
 
 .theme-swatch .pot-mark {
@@ -791,17 +945,17 @@ select {
 
 .theme-swatch .chips {
   display: flex;
-  gap: 4px;
-  margin-top: 4px;
+  gap: var(--s-1);
+  margin-top: var(--s-1);
 }
 
 .theme-swatch .swatch-btn {
   flex: 1;
   text-align: center;
-  font-size: 9px;
+  font-size: var(--t-micro);
   font-variant-caps: all-small-caps;
   letter-spacing: 0.06em;
-  padding: 2px 0;
+  padding: var(--s-0) 0;
   border-radius: 2px;
 }
 
@@ -817,13 +971,15 @@ select {
 
 .theme-dots {
   display: flex;
-  gap: 6px;
-  padding: 4px var(--s-3);
+  /* Dots are drawn small, but each gets a --hit square, so space them to match. */
+  gap: calc(var(--hit) - 22px);
+  padding: var(--s-1) var(--s-3);
   align-items: center;
 }
 
 .theme-dot {
   all: unset;
+  position: relative;
   cursor: pointer;
   width: 22px;
   height: 22px;
@@ -849,12 +1005,6 @@ select {
 }
 
 /* ---------- cards from a deck ---------- */
-/* The fallback card's back, drawn only while no deck is ready. */
-:root {
-  --card-back: #f4efe3;
-  --card-back-ink: #1e3a2f;
-}
-
 .card-art {
   position: relative;
   overflow: hidden;
@@ -909,7 +1059,7 @@ select {
 .deck-preview {
   flex: 0 0 auto;
   display: flex;
-  gap: 4px;
+  gap: var(--s-1);
   min-width: 100px;
 }
 
@@ -939,6 +1089,7 @@ select {
 
 .deck-remove {
   appearance: none;
+  position: relative;
   margin-left: auto;
   padding: 0;
   border: 0;
@@ -998,14 +1149,14 @@ select {
 .resume-card .what {
   display: flex;
   flex-direction: column;
-  gap: 1px;
+  gap: var(--s-0);
   min-width: 0;
   flex: 1;
 }
 
 .resume-card .headline {
   font-family: var(--font-display);
-  font-size: 1.125rem;
+  font-size: var(--t-lead);
   font-variation-settings: 'opsz' 36;
   line-height: 1.15;
 }
@@ -1027,7 +1178,7 @@ select {
 .level-chip {
   display: inline-flex;
   align-items: baseline;
-  gap: 6px;
+  gap: var(--s-1);
   font-size: var(--t-small);
   white-space: nowrap;
 }
@@ -1049,7 +1200,7 @@ select {
 
 .ladder-preview {
   max-height: 260px;
-  overflow-y: auto;
+  overflow: auto;
 }
 
 .ladder-preview tr.now td {
@@ -1101,4 +1252,12 @@ select {
 
 .invite-link .btn {
   flex-shrink: 0;
+}
+
+/* ---------- icons ---------- */
+/* Drawn in the current ink and set on the text baseline, like a glyph. */
+.icon {
+  display: inline-block;
+  flex-shrink: 0;
+  vertical-align: -0.125em;
 }

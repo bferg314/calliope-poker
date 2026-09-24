@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { ApiError } from '../api.js';
 import { Ticket, WordSlots } from '../components/Ticket.js';
 import { useSession } from '../session.js';
+import { Icon } from '../components/Icon.js';
 
 /**
  * First visit: a name for the evening and the five-word ticket.
@@ -40,7 +41,7 @@ export function Identity(): JSX.Element {
           {editingName ? (
             <input
               className="input"
-              style={{ display: 'inline-block', width: 220, fontFamily: 'var(--font-display)', fontSize: '1.5rem' }}
+              style={{ display: 'inline-block', width: 220, fontFamily: 'var(--font-display)', fontSize: 'var(--t-h2)' }}
               value={newName}
               autoFocus
               onChange={(e) => setNewName(e.target.value)}
@@ -58,7 +59,7 @@ export function Identity(): JSX.Element {
               onClick={() => { setNewName(user.name); setEditingName(true); }}
               title="Change your name"
             >
-              {user.name} ✎
+              {user.name} <Icon name="pencil" size={20} />
             </button>
           )}
         </h1>

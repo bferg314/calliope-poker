@@ -17,7 +17,8 @@
     "e2e:lobby-and-sharing": "node e2e/lobby-and-sharing.mjs",
     "e2e:turn-notification": "node e2e/turn-notification.mjs",
     "e2e:night-report": "node e2e/night-report.mjs",
-    "e2e:decks": "node e2e/decks.mjs"
+    "e2e:decks": "node e2e/decks.mjs",
+    "e2e:layout": "node e2e/layout-audit.mjs"
   },
   "dependencies": {
     "@calliope/engine": "*",

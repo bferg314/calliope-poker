@@ -1,16 +1,29 @@
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import type { Action, LegalActions } from '@calliope/engine';
 import { fmt } from '../format.js';
 import { BetPanel } from './BetPanel.js';
+import { Icon } from './Icon.js';
 
 interface ActionBarProps {
   legal: LegalActions | null;
   waitingFor: string | null;
   onAction: (a: Action) => void;
   confirmFold: boolean;
+  /**
+   * When it is not your turn but there is one thing for you to do (deal the
+   * next hand, buy back in), it takes the bar's place at the bar's height.
+   */
+  primary?: { label: string; onClick: () => void } | null;
+  /**
+   * Where the bet panel opens: a slot at the foot of the table, so it lies over
+   * the felt like a slip of paper instead of squeezing the table out from
+   * under it. Without one it opens above the buttons.
+   */
+  panelHost?: HTMLElement | null;
 }
 
-export function ActionBar({ legal, waitingFor, onAction, confirmFold }: ActionBarProps): JSX.Element {
+export function ActionBar({ legal, waitingFor, onAction, confirmFold, primary, panelHost }: ActionBarProps): JSX.Element {
   const [betOpen, setBetOpen] = useState(false);
   const [foldArmed, setFoldArmed] = useState(false);
 
@@ -48,14 +61,29 @@ export function ActionBar({ legal, waitingFor, onAction, confirmFold }: ActionBa
   });
 
   if (!legal) {
-    return (
-      <div className="action-bar">
-        <div className="buttons" aria-hidden="true">
-          <button className="btn" disabled>Fold</button>
-          <button className="btn" disabled>Check</button>
-          <button className="btn" disabled>Bet</button>
+    if (primary) {
+      return (
+        <div className="action-bar">
+          <div className="buttons single">
+            <button className="btn btn-red primary-action" onClick={primary.onClick}>
+              <span>{primary.label}</span>
+            </button>
+          </div>
         </div>
-        <div className="waiting">{waitingFor ? `Waiting for ${waitingFor}` : 'Waiting for the next hand'}</div>
+      );
+    }
+    // The buttons stay where they will be, faint, with the reason printed over
+    // them: the bar is the same height whoever is acting, so nothing above it moves.
+    return (
+      <div className="action-bar waiting-bar">
+        <div className="buttons" aria-hidden="true">
+          <button className="btn" disabled tabIndex={-1}>Fold</button>
+          <button className="btn" disabled tabIndex={-1}>Check</button>
+          <button className="btn" disabled tabIndex={-1}>Bet</button>
+        </div>
+        <div className="waiting">
+          <span>{waitingFor ? `Waiting for ${waitingFor}` : 'Waiting for the next hand'}</span>
+        </div>
       </div>
     );
   }
@@ -69,13 +97,16 @@ export function ActionBar({ legal, waitingFor, onAction, confirmFold }: ActionBa
 
   return (
     <div className="action-bar">
-      {betOpen && raise && !raise.fixed && (
-        <BetPanel
-          legal={legal}
-          onConfirm={(to) => { setBetOpen(false); onAction({ type: raise.kind, to }); }}
-          onCancel={() => setBetOpen(false)}
-        />
-      )}
+      {betOpen && raise && !raise.fixed && (() => {
+        const panel = (
+          <BetPanel
+            legal={legal}
+            onConfirm={(to) => { setBetOpen(false); onAction({ type: raise.kind, to }); }}
+            onCancel={() => setBetOpen(false)}
+          />
+        );
+        return panelHost ? createPortal(panel, panelHost) : panel;
+      })()}
       <div className="buttons">
         <button className="btn" onClick={fold} aria-label="Fold">
           <span>{foldArmed ? 'Really fold?' : 'Fold'}</span>
@@ -86,7 +117,7 @@ export function ActionBar({ legal, waitingFor, onAction, confirmFold }: ActionBa
           <kbd>c</kbd>
         </button>
         <button className="btn btn-red" onClick={betRaise} disabled={!raise} aria-expanded={betOpen}>
-          <span>{raiseLabel}{raise && !raise.fixed ? ' ▸' : ''}</span>
+          <span>{raiseLabel}{raise && !raise.fixed && <Icon name="chevron-right" />}</span>
           <kbd>r</kbd>
         </button>
       </div>

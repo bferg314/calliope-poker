@@ -24,7 +24,7 @@ export function ThemePicker({ compact = false }: { compact?: boolean }): JSX.Ele
             aria-checked={theme === t.id}
             aria-label={t.name}
             title={t.name}
-            className={`theme-dot ${theme === t.id ? 'on' : ''}`}
+            className={`theme-dot hit ${theme === t.id ? 'on' : ''}`}
             data-theme={t.id}
             onClick={() => pick(t.id)}
           >

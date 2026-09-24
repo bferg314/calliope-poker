@@ -38,9 +38,10 @@ export function chipsFor(amount: number, denoms: ChipDenomination[], max = 6): C
   return out;
 }
 
-export function ChipStack({ amount, denoms, size = 22 }: { amount: number; denoms: ChipDenomination[]; size?: number }): JSX.Element | null {
+/** A small pile for an amount. `max` caps how tall it gets; the number is always printed beside it. */
+export function ChipStack({ amount, denoms, size = 22, max = 5 }: { amount: number; denoms: ChipDenomination[]; size?: number; max?: number }): JSX.Element | null {
   if (amount <= 0) return null;
-  const chips = chipsFor(amount, denoms, 5);
+  const chips = chipsFor(amount, denoms, max);
   return (
     <span className="chip-stack" style={{ height: size + (chips.length - 1) * 3, width: size }} aria-hidden="true">
       {chips.map((c, i) => (

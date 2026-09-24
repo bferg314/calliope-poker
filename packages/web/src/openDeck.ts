@@ -54,6 +54,11 @@ export interface DeckGeometry {
   bleed: number;
   /** Pixel width of every PNG, bleed included. */
   pixelWidth?: number;
+  /**
+   * The smallest corner index, as a fraction of the trimmed card height, from
+   * the ranks' `indexHeightMm`. Absent when the deck does not say.
+   */
+  index?: number;
 }
 
 /** The facts Calliope keeps about a deck, without its images. */
@@ -193,6 +198,10 @@ export function checkOpenDeck(raw: unknown): DeckCheck {
     return { ok: false, error: `The deck has ${faces.size} of the 52 standard cards.` };
   }
 
+  const indexHeights = (Array.isArray(raw.ranks) ? raw.ranks : [])
+    .map((r) => (isObject(r) && positive(r.indexHeightMm) ? r.indexHeightMm : null))
+    .filter((h): h is number => h !== null);
+
   const name = optionalString(raw.name) ?? 'Untitled deck';
   const contentHash = optionalString(raw.contentHash);
   const meta: DeckMeta = {
@@ -208,6 +217,7 @@ export function checkOpenDeck(raw: unknown): DeckCheck {
       radius: cornerMm / card.widthMm,
       bleed: bleedMm / card.widthMm,
       ...(positive(card.imageWidth) ? { pixelWidth: card.imageWidth } : {}),
+      ...(indexHeights.length ? { index: Math.min(...indexHeights) / card.heightMm } : {}),
     },
   };
   return { ok: true, deck: raw as unknown as OpenDeck, meta, faces, back };

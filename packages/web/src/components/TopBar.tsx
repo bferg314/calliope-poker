@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { Link } from '../router.js';
 import { useSession } from '../session.js';
+import { Icon } from './Icon.js';
 
 export function TopBar({ right }: { right?: ReactNode }): JSX.Element {
   const { user } = useSession();
@@ -11,7 +12,8 @@ export function TopBar({ right }: { right?: ReactNode }): JSX.Element {
         {right}
         {user && (
           <Link to="/me" className="btn btn-quiet btn-small">
-            {user.name}
+            <Icon name="person" />
+            <span className="topbar-name">{user.name}</span>
           </Link>
         )}
       </div>
