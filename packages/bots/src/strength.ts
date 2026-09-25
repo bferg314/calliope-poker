@@ -1,5 +1,5 @@
 import {
-  bestHand, bestHandOmaha, evaluateCards, getVariant, rankOf, suitOf,
+  bestHand, bestHandOmaha, evaluateCards, evaluateThree, getVariant, rankOf, suitOf,
   type Card, type HandRank, type TableState,
 } from '@calliope/engine';
 
@@ -110,6 +110,22 @@ function studEarlyBonus(hole: readonly Card[]): number {
   return bonus;
 }
 
+/**
+ * A three-card hand, by three-card order: trips and straights are the monsters,
+ * a pair is well above the middle, and a queen high is about average.
+ */
+function threeStrength(hole: readonly Card[]): number {
+  const made = evaluateThree(hole);
+  switch (made.category) {
+    case 8: return 0.98;
+    case 3: return 0.95;
+    case 4: return 0.86;
+    case 5: return 0.76;
+    case 1: return 0.45 + ((made.ranks[0]! - 2) / 12) * 0.25;
+    default: return 0.04 + ((made.ranks[0]! - 2) / 12) * 0.3;
+  }
+}
+
 /** 0..1 estimate of how strong the seat's hand is right now, from what the bot can see. */
 export function estimateStrength(state: TableState, seat: number): number {
   const h = state.hand;
@@ -121,6 +137,10 @@ export function estimateStrength(state: TableState, seat: number): number {
   const board = h.board;
   const community = v.streets.some((s) => (s.deal.community ?? 0) > 0);
   if (community && board.length === 0) return preflopStrength(hole, v.id);
+  // Three-card games: no board, no up cards, three in the hand.
+  if (!community && hole.length === 3 && p.holeUp.length === 0 && v.streets.every((s) => (s.deal.holeUp ?? 0) === 0)) {
+    return threeStrength(hole);
+  }
 
   const all = [...hole, ...board];
   let made: HandRank;

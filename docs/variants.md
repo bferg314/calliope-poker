@@ -81,6 +81,15 @@ For split-pot or lowball games you would add a new evaluator alongside these in 
 | `stud7` | Seven-card Stud | antes and a bring-in, no board |
 | `stud5` | Five-card Stud | 1 down, 4 up |
 | `draw5` | Five-card Draw | 5 down, one draw, at most six players |
+| `three` | Three-card Poker | 3 down, one round of betting; three-card ranks |
+| `draw3` | Three-card Draw | 3 down, one draw of up to three; three-card ranks |
+
+Three-card games rank hands with `evaluateThree`: straight flush, three of a
+kind, straight, flush, pair, high card. With three cards a straight is rarer
+than a flush and trips rarer than a straight, so they rank the other way round
+from five-card poker. A-2-3 is the lowest straight. A variant's `evaluate` is
+the one place its ranking lives: the showdown, the bots and the hand label on
+the player's own seat all go through it.
 
 ## Registering
 

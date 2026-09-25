@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import {
-  bestHand, bestHandOmaha, evaluateCards, getVariant, legalActions, type Action, type HandView, type TableState,
+  getVariant, legalActions, type Action, type HandView, type TableState,
 } from '@calliope/engine';
 import { SERVER_LIMIT_WARNING_MINUTES, stakesLabel, type RoomView } from '@calliope/shared';
 import { Board, Pot } from '../components/Board.js';
@@ -212,13 +212,10 @@ function ownHandLabel(hand: HandView | null, seat: number | null): string | null
   if (!p || p.folded) return null;
   const hole = [...p.holeDown.filter((c): c is string => c !== null), ...p.holeUp];
   if (hole.length === 0) return null;
+  // The game's own rules, so three-card hands rank as three-card hands. A game
+  // that cannot rank yet (Omaha before the flop) throws, and shows nothing.
   try {
-    if (hand.variantId === 'omaha') {
-      if (hand.board.length < 3) return null;
-      return bestHandOmaha(hole, hand.board).label;
-    }
-    const all = [...hole, ...hand.board];
-    return all.length <= 5 ? evaluateCards(all).label : bestHand(all).label;
+    return getVariant(hand.variantId).evaluate(hole, hand.board).label;
   } catch {
     return null;
   }

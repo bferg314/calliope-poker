@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createTable, legalActions, mulberry32, reduce, seededDeck, type TableState } from '@calliope/engine';
 import { BOT_PERSONALITIES } from '@calliope/shared';
-import { chenStrength, chooseDiscards, decideAction, drawKeep, estimateStrength } from '../src/index.js';
+import { chenStrength, chooseDiscards, decideAction, drawKeep, drawKeepThree, estimateStrength } from '../src/index.js';
 
 function table(names: string[], config = {}): TableState {
   let s = createTable(config);
@@ -29,7 +29,7 @@ describe('strength', () => {
 });
 
 describe('decideAction', () => {
-  for (const variantId of ['holdem', 'omaha', 'stud7', 'stud5', 'pineapple', 'draw5']) {
+  for (const variantId of ['holdem', 'omaha', 'stud7', 'stud5', 'pineapple', 'draw5', 'three', 'draw3']) {
     for (const personality of BOT_PERSONALITIES) {
       it(`plays ${variantId} legally as ${personality}`, () => {
         const r = mulberry32(7);
@@ -63,6 +63,21 @@ describe('decideAction', () => {
       });
     }
   }
+});
+
+describe('drawKeepThree', () => {
+  const hand = (t: string): string[] => t.split(' ');
+  it('stands pat on a flush or better', () => {
+    expect(drawKeepThree(hand('Kh 9h 2h'))).toHaveLength(3);
+    expect(drawKeepThree(hand('9h 8d 7s'))).toHaveLength(3);
+    expect(drawKeepThree(hand('7h 7d 7s'))).toHaveLength(3);
+  });
+  it('keeps a pair, two to a straight flush, or a queen or better', () => {
+    expect(drawKeepThree(hand('Jh Jd 4s'))).toEqual(['Jh', 'Jd']);
+    expect(drawKeepThree(hand('8s 9s 2d'))).toEqual(['8s', '9s']);
+    expect(drawKeepThree(hand('Ks 7d 2c'))).toEqual(['Ks']);
+    expect(drawKeepThree(hand('Ts 7d 2c'))).toEqual([]);
+  });
 });
 
 describe('drawKeep', () => {

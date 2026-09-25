@@ -126,6 +126,45 @@ export function bestHandOmaha(hole: readonly Card[], board: readonly Card[]): Ha
   return best!;
 }
 
+/**
+ * Three-card poker order, strongest last. With three cards a straight is rarer
+ * than a flush and trips rarer than a straight, so they rank the other way round
+ * from five-card poker. Each maps to the five-card category of the same name,
+ * which is what the hand is called; `value` carries this order.
+ */
+const THREE_CARD_ORDER: readonly HandCategory[] = [0, 1, 5, 4, 3, 8];
+
+/**
+ * Evaluate exactly three cards by three-card rules: straight flush, three of a
+ * kind, straight, flush, pair, high card. A-2-3 is the lowest straight, A-K-Q
+ * the highest. Values compare only with other three-card hands.
+ */
+export function evaluateThree(cards: readonly Card[]): HandRank {
+  if (cards.length !== 3) throw new Error('evaluateThree takes exactly 3 cards');
+  const ranks = cards.map(rankOf).sort((a, b) => b - a);
+  const flush = cards.every((c) => suitOf(c) === suitOf(cards[0]!));
+  const distinct = new Set(ranks).size;
+  let straightHigh = 0;
+  if (distinct === 3) {
+    if (ranks[0]! - ranks[2]! === 2) straightHigh = ranks[0]!;
+    else if (ranks[0] === 14 && ranks[1] === 3 && ranks[2] === 2) straightHigh = 3;
+  }
+  let category: HandCategory;
+  let tb: number[];
+  if (straightHigh && flush) { category = 8; tb = [straightHigh]; }
+  else if (distinct === 1) { category = 3; tb = [ranks[0]!]; }
+  else if (straightHigh) { category = 4; tb = [straightHigh]; }
+  else if (flush) { category = 5; tb = ranks; }
+  else if (distinct === 2) {
+    const pair = ranks[0] === ranks[1] ? ranks[0]! : ranks[1]!;
+    category = 1;
+    tb = [pair, ranks.find((r) => r !== pair)!];
+  } else { category = 0; tb = ranks; }
+  // A straight flush that is the top of the deck is not "royal" with three cards.
+  const label = category === 8 ? `Straight flush, ${RANK_NAMES[tb[0]!]} high` : handLabel(category, tb);
+  return { category, ranks: tb, value: encode(THREE_CARD_ORDER.indexOf(category), tb), label, cards: [...cards] };
+}
+
 /** Positive if a beats b, negative if b beats a, zero on a tie. */
 export function compareHands(a: HandRank, b: HandRank): number {
   return a.value - b.value;

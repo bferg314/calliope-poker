@@ -695,6 +695,10 @@ details > summary {
 .settings-section .section-summary {
   color: var(--ink-2);
   font-size: var(--t-small);
+  /* A long game name must not widen the page: take the room that is left,
+     and let nothing inside push the column wider than the screen. */
+  flex: 1 1 0;
+  contain: inline-size;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;

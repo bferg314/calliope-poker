@@ -35,8 +35,8 @@ const out = (n) => path.join(OUT, n);
 const log = (...a) => console.log(new Date().toISOString().slice(11, 19), ...a);
 const list = (v, d) => (v ? v.split(',').map((s) => s.trim()).filter(Boolean) : d);
 
-const MAX_PLAYERS = { holdem: 8, omaha: 8, pineapple: 8, stud5: 8, stud7: 8, draw5: 6 };
-const VARIANTS = list(process.env.VARIANTS, ['holdem', 'omaha', 'pineapple', 'stud5', 'stud7', 'draw5']);
+const MAX_PLAYERS = { holdem: 8, omaha: 8, pineapple: 8, stud5: 8, stud7: 8, draw5: 6, three: 8, draw3: 8 };
+const VARIANTS = list(process.env.VARIANTS, ['holdem', 'omaha', 'pineapple', 'stud5', 'stud7', 'draw5', 'three', 'draw3']);
 const COUNTS = list(process.env.COUNTS, ['3', '6', '8']).map(Number);
 const VIEWPORTS = list(process.env.VIEWPORTS, ['360x640', '390x844', '412x915', '768x1024', '844x390', '1280x800', '1440x900', '1920x1080'])
   .map((s) => { const [width, height] = s.split('x').map(Number); return { width, height, tag: s }; });
@@ -251,7 +251,8 @@ async function lateEnough(variant) {
     const drew = /drew \d/.test(document.querySelector('.own-seat')?.textContent ?? '');
     if (v === 'stud7') return own >= 6;
     if (v === 'stud5') return own >= 4;
-    if (v === 'draw5') return drew;
+    if (v === 'draw5' || v === 'draw3') return drew;
+    if (v === 'three') return own >= 3;
     return board >= 4;
   }, variant);
 }
