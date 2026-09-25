@@ -10,10 +10,12 @@ import { App } from './app.js';
 import { armBell } from './bell.js';
 import { initDecks } from './decks.js';
 import { applyStoredTheme } from './themes.js';
+import { startGamepad } from './gamepad.js';
 
 applyStoredTheme();
 void initDecks();
 armBell();
+startGamepad();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

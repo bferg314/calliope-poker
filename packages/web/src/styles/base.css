@@ -259,6 +259,23 @@ select {
   color: var(--ink-disabled);
 }
 
+/* The controller's buttons, listed. */
+.pad-map {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: var(--s-1) var(--s-3);
+  margin: 0;
+}
+
+.pad-map dt {
+  font-weight: 600;
+}
+
+.pad-map dd {
+  margin: 0;
+  color: var(--ink-2);
+}
+
 /* ---------- the keys that act at the table ---------- */
 .keys-picker {
   display: flex;
@@ -563,6 +580,21 @@ details > summary {
 .error {
   color: var(--red);
   font-size: var(--t-small);
+}
+
+/*
+ * A controller is in use: whatever has focus is where A will press, so it is
+ * ringed boldly on every control, not only where the browser thinks a
+ * keyboard is.
+ */
+html[data-input='pad'] :focus {
+  outline: 3px solid var(--focus);
+  outline-offset: 3px;
+}
+
+/* A value picked up with A to change: the ring turns to the red of "to act". */
+html[data-input='pad'] [data-pad-editing]:focus {
+  outline-color: var(--red);
 }
 
 .toast {
