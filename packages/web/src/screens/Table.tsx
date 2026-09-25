@@ -12,6 +12,7 @@ import { DrawBar } from '../components/DrawBar.js';
 import { GameStrip } from '../components/GameStrip.js';
 import { Invite } from '../components/Invite.js';
 import { HandReview } from '../components/HandReview.js';
+import { useGameGuide } from '../components/GameGuide.js';
 import { useConfirm } from '../components/Modal.js';
 import { ThemePicker } from '../components/ThemePicker.js';
 import { Toast } from '../components/Toast.js';
@@ -400,6 +401,12 @@ export function Table({ room, socket }: { room: RoomView; socket: RoomSocket }):
     });
   };
 
+  // The game in hand, or the table's; in dealer's choice, every game the dealer may call.
+  const openGuide = useGameGuide();
+  const guideGames = (mode.kind === 'dealers-choice' ? mode.allowed : [mode.variantId])
+    .map((id) => ({ id, name: room.variants.find((v) => v.id === id)?.name ?? id }));
+  const howToPlay = (): void => openGuide(guideGames, hand?.variantId || guideGames[0]?.id, hand?.wild ?? room.settings.wild);
+
   /** The last settled hand, laid out to be read: the payout that went by too fast. */
   const reviewLastHand = (): void => {
     const last = room.lastHand;
@@ -599,6 +606,7 @@ export function Table({ room, socket }: { room: RoomView; socket: RoomSocket }):
               {room.lastHand && (
                 <button className="btn" onClick={reviewLastHand}>Review the last hand</button>
               )}
+              <button className="btn" onClick={howToPlay}>How to play</button>
               {me?.canRebuy && (
                 <button className="btn" onClick={() => void rebuy()}>
                   Re-buy {fmt(room.settings.chips.buyInChips)} chips
@@ -702,6 +710,9 @@ export function Table({ room, socket }: { room: RoomView; socket: RoomSocket }):
             {hand?.stage === 'choosing' && (
               <div className="choose-panel">
                 <div className="label">{hand.chooser === mySeat ? 'your deal. pick the game' : `${actorName ?? 'the dealer'} is choosing the game`}</div>
+                {hand.chooser === mySeat && (
+                  <button type="button" className="btn btn-quiet btn-small" onClick={howToPlay}>How to play these</button>
+                )}
                 {hand.chooser === mySeat && (
                   <label className="field">
                     <span className="label">wild cards</span>
