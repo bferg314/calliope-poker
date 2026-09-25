@@ -45,4 +45,10 @@ export interface VariantDefinition {
    * 'left-of-button' for blind games, 'best-showing' for stud.
    */
   firstToAct: 'left-of-button' | 'best-showing';
+  /**
+   * Blind Man's Bluff: face-up cards are shown to everyone except the player
+   * holding them, until the showdown. The cards are dealt as ordinary up cards;
+   * only the view each player is sent changes (see viewFor).
+   */
+  ownUpCardsHidden?: boolean;
 }

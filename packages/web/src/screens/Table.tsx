@@ -177,6 +177,16 @@ function dealsUpCards(variantId: string | null | undefined): boolean {
   }
 }
 
+/** Blind Man's Bluff and the like: your own up cards are the ones you cannot see. */
+function hidesOwnUpCards(variantId: string | null | undefined): boolean {
+  if (!variantId) return false;
+  try {
+    return !!getVariant(variantId).ownUpCardsHidden;
+  } catch {
+    return false;
+  }
+}
+
 /**
  * A player's cards in the order they were dealt. Down and up cards are kept
  * apart, so stud's seventh-street down card would otherwise sit beside the
@@ -210,7 +220,7 @@ function ownHandLabel(hand: HandView | null, seat: number | null): string | null
   if (!hand || seat === null) return null;
   const p = hand.players[seat];
   if (!p || p.folded) return null;
-  const hole = [...p.holeDown.filter((c): c is string => c !== null), ...p.holeUp];
+  const hole = [...p.holeDown, ...p.holeUp].filter((c): c is string => c !== null);
   if (hole.length === 0) return null;
   // The game's own rules, so three-card hands rank as three-card hands. A game
   // that cannot rank yet (Omaha before the flop) throws, and shows nothing.
@@ -785,11 +795,17 @@ function OwnSeat({ room, socket, layout, maxCards, mySeat, toAct, winAmount, tim
   const p = hand?.players[mySeat] ?? null;
   const cards = p && !p.folded ? dealOrder(hand?.variantId, p.holeDown, p.holeUp) : [];
   const markDown = !!p && !p.revealed && dealsUpCards(hand?.variantId);
+  // In Blind Man's Bluff your own card is face down to you and up to everyone else.
+  const blind = !!p && hidesOwnUpCards(hand?.variantId);
   const drewNote = p && p.drew > 0 ? `drew ${p.drew}` : null;
   const label = hand?.stage === 'settled' && hand.results?.hands[mySeat] ? hand.results.hands[mySeat]!.label : ownHandLabel(hand, mySeat);
   const { cw, step, beside } = ownCardSize(layout, box.width, Math.max(maxCards, cards.length));
   const cardH = Math.round(cw * (art?.meta.geometry.aspect ?? 7 / 5));
-  const status = p?.folded ? 'Folded' : seat.sittingOut && !p ? 'Sitting out' : label ?? (seat.stack === 0 ? 'Out of chips' : '');
+  const status = p?.folded
+    ? 'Folded'
+    : seat.sittingOut && !p
+      ? 'Sitting out'
+      : label ?? (blind && !p!.revealed ? 'Everyone sees your card but you' : seat.stack === 0 ? 'Out of chips' : '');
   return (
     <div
       ref={seatRef}
@@ -822,7 +838,8 @@ function OwnSeat({ room, socket, layout, maxCards, mySeat, toAct, winAmount, tim
       <div className={`cards ${selectable ? 'selectable' : ''} ${step < cw ? 'overlapped' : ''}`}>
         {cards.map(({ c, k, down }, i) => (
           <button
-            key={`${hand?.number ?? 0}-${k}`}
+            // A blind card shown at the end is a new card to draw: it turns over.
+            key={`${hand?.number ?? 0}-${k}${blind && !down && c ? '-shown' : ''}`}
             type="button"
             disabled={!selectable || !c}
             className={`card-pick ${c && selected.includes(c) ? 'tossed' : ''}`}
@@ -830,7 +847,19 @@ function OwnSeat({ room, socket, layout, maxCards, mySeat, toAct, winAmount, tim
             style={i > 0 ? { marginLeft: step - cw } : undefined}
             onClick={() => c && onToggleCard(c)}
           >
-            <Card card={c} width={cw} delay={i * 60} />
+            <Card
+              card={c}
+              width={cw}
+              delay={i * 60}
+              className={blind && !down && c ? 'flip-in' : ''}
+              title={blind && !down && !c ? 'Your card, which everyone else can see' : undefined}
+            />
+            {blind && !down && !c && (
+              <span className="down-mark" style={{ animationDelay: `${i * 60}ms` }}>
+                <Icon name="eye" />
+                <span className="smallcaps">they see it</span>
+              </span>
+            )}
             {markDown && down && (
               <span className="down-mark" style={{ animationDelay: `${i * 60}ms` }}>
                 <Icon name="eye-off" />

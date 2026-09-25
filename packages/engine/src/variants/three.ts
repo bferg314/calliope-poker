@@ -14,7 +14,7 @@ export const three: VariantDefinition = {
   forcedBets: 'blinds',
   defaultBetting: 'no-limit',
   streets: [
-    { name: 'deal', deal: { holeDown: 3 }, bet: true, fixedLimitTier: 'small' },
+    { name: 'first', deal: { holeDown: 3 }, bet: true, fixedLimitTier: 'small' },
   ],
   evaluate: (hole) => evaluateThree(hole),
   firstToAct: 'left-of-button',
