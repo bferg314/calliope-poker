@@ -80,6 +80,7 @@ export function nonStakeConfigFrom(settings: RoomSettings): Partial<TableConfig>
   return {
     maxSeats: 8,
     variantMode: settings.variantMode,
+    wild: settings.wild ?? { kind: 'none' },
     betting: settings.betting,
     actionSeconds: settings.actionSeconds,
   };

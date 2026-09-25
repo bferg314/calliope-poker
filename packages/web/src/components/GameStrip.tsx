@@ -1,3 +1,4 @@
+import { wildLabel } from '@calliope/engine';
 import type { RoomView } from '@calliope/shared';
 
 const BETTING: Record<string, string> = {
@@ -22,9 +23,13 @@ export function GameStrip({ room, note, alert = false }: { room: RoomView; note?
   let title: string;
   let sub: string | null;
 
+  // The wild cards go right after the game: they change what every hand is worth.
+  const withWild = (betting: string | null, wild = wildLabel(hand?.wild ?? room.settings.wild)): string | null =>
+    wild ? (betting ? `${wild} · ${betting}` : wild) : betting;
+
   if (hand && hand.variantId) {
     title = nameOf(hand.variantId);
-    sub = BETTING[hand.betting] ?? hand.betting;
+    sub = withWild(BETTING[hand.betting] ?? hand.betting, wildLabel(hand.wild));
   } else if (hand && hand.stage === 'choosing') {
     const chooser = hand.chooser !== null ? room.table.seats[hand.chooser]?.name : null;
     title = "Dealer's choice";
@@ -34,7 +39,7 @@ export function GameStrip({ room, note, alert = false }: { room: RoomView; note?
     sub = mode.allowed.map(nameOf).join(' · ');
   } else {
     title = nameOf(mode.variantId);
-    sub = BETTING[room.settings.betting] ?? null;
+    sub = withWild(BETTING[room.settings.betting] ?? null);
   }
 
   return (

@@ -1,4 +1,5 @@
-import { isFullDeck, mulberry32, rankOf, shuffle, SUIT_ORDER, suitOf, type Card } from './cards.js';
+import { isFullDeck, isJoker, mulberry32, rankOf, shuffle, SUIT_ORDER, suitOf, type Card } from './cards.js';
+import { dealsJokers, isWildSpec, NO_WILD, type Wild, wildLabel, wildTest } from './wild.js';
 import { bestHand, evaluateCards, type HandRank } from './evaluator.js';
 import {
   bettingLabel, legalActions, minBet, playersInHand, playersWhoCanAct, resolveBetting,
@@ -31,6 +32,7 @@ export const DEFAULT_CONFIG: TableConfig = {
   fixedLimit: { small: 10, big: 20 },
   fixedLimitRaiseCap: 4,
   actionSeconds: 30,
+  wild: NO_WILD,
 };
 
 export function createTable(config: Partial<TableConfig> = {}): TableState {
@@ -63,7 +65,7 @@ export function reduce(state: TableState, event: TableEvent): ReduceResult {
     case 'rename': rename(s, event.seat, event.name); break;
     case 'set-config': setConfig(s, event.config); break;
     case 'start-hand': startHand(s, event.deck, event.variantId, effects); break;
-    case 'choose-variant': chooseVariant(s, event.seat, event.variantId, effects); break;
+    case 'choose-variant': chooseVariant(s, event.seat, event.variantId, event.wild, effects); break;
     case 'action': applyAction(s, event.seat, event.action, effects); break;
     case 'discard': applyDiscard(s, event.seat, event.cards, effects); break;
     case 'timeout': timeout(s, event.seat, effects); break;
@@ -217,6 +219,7 @@ function setConfig(s: TableState, patch: Partial<TableConfig>): void {
     if (!Number.isInteger(v) || v < 0) throw new EngineError('bad-config', `${k} must be a whole number`);
   }
   if (next.blinds.big <= 0 || next.fixedLimit.small <= 0) throw new EngineError('bad-config', 'Bets must be positive');
+  if (next.wild !== undefined && !isWildSpec(next.wild)) throw new EngineError('bad-config', 'Those are not wild cards Calliope knows');
   s.config = next;
 }
 
@@ -231,7 +234,8 @@ function startHand(s: TableState, deck: string[], variantId: string | undefined,
   let button: SeatIndex;
   if (s.button === -1 || !s.seats[s.button]) {
     // First hand: "deal for the button" using the shuffled deck's top card.
-    button = s.button === -1 ? eligible[rankOf(deck[0]!) % eligible.length]! : nextSeat(s, s.button, (i) => eligible.includes(i));
+    const first = deck.find((c) => !isJoker(c))!;
+    button = s.button === -1 ? eligible[rankOf(first) % eligible.length]! : nextSeat(s, s.button, (i) => eligible.includes(i));
   } else {
     button = nextSeat(s, s.button, (i) => eligible.includes(i));
   }
@@ -269,9 +273,9 @@ function startHand(s: TableState, deck: string[], variantId: string | undefined,
   const mode = s.config.variantMode;
   if (variantId) {
     if (!allowedVariants(s).includes(variantId)) throw new EngineError('bad-variant', 'That game is not allowed at this table');
-    deal(s, variantId, effects);
+    deal(s, variantId, s.config.wild, effects);
   } else if (mode.kind === 'locked') {
-    deal(s, mode.variantId, effects);
+    deal(s, mode.variantId, s.config.wild, effects);
   } else {
     hand.chooser = button;
     log(hand, 'info', button, `${nameOf(s, hand, button)} has the deal and chooses the game`);
@@ -279,18 +283,19 @@ function startHand(s: TableState, deck: string[], variantId: string | undefined,
   }
 }
 
-function chooseVariant(s: TableState, seat: SeatIndex, variantId: string, effects: TableEffect[]): void {
+function chooseVariant(s: TableState, seat: SeatIndex, variantId: string, wild: Wild | undefined, effects: TableEffect[]): void {
   const h = s.hand;
   if (!h || h.stage !== 'choosing') throw new EngineError('not-choosing', 'No game to choose right now');
   if (h.chooser !== seat) throw new EngineError('not-your-turn', 'It is not your choice');
   if (!allowedVariants(s).includes(variantId)) throw new EngineError('bad-variant', 'That game is not allowed at this table');
-  deal(s, variantId, effects);
+  if (wild !== undefined && !isWildSpec(wild)) throw new EngineError('bad-wild', 'Those are not wild cards Calliope knows');
+  deal(s, variantId, wild ?? NO_WILD, effects);
 }
 
 function autoChoose(s: TableState, effects: TableEffect[]): void {
   const allowed = allowedVariants(s);
   const id = s.lastVariantId && allowed.includes(s.lastVariantId) ? s.lastVariantId : allowed[0]!;
-  deal(s, id, effects);
+  deal(s, id, s.config.wild, effects);
 }
 
 function postStreetBet(s: TableState, h: HandState, seat: SeatIndex, amount: number): number {
@@ -303,7 +308,7 @@ function postStreetBet(s: TableState, h: HandState, seat: SeatIndex, amount: num
   return a;
 }
 
-function deal(s: TableState, variantId: string, effects: TableEffect[]): void {
+function deal(s: TableState, variantId: string, wild: Wild | undefined, effects: TableEffect[]): void {
   const h = s.hand!;
   const v = getVariant(variantId);
   const cfg = s.config;
@@ -317,6 +322,12 @@ function deal(s: TableState, variantId: string, effects: TableEffect[]): void {
   h.chooser = null;
   s.lastVariantId = variantId;
   log(h, 'info', null, `Hand #${h.number}: ${v.name}, ${bettingLabel(h.betting)}`);
+  // Jokers are shuffled in every time, and only stay when they are wild. Taking
+  // them out of a shuffled deck leaves the rest of it as random as it was.
+  h.wild = wild ?? NO_WILD;
+  if (!dealsJokers(h.wild)) h.deck = h.deck.filter((c) => !isJoker(c));
+  const wilds = wildLabel(h.wild);
+  if (wilds) log(h, 'info', null, cap(wilds));
 
   const ante = v.forcedBets === 'antes-bringin' ? Math.max(cfg.ante, 0) : cfg.ante;
   if (ante > 0) {
@@ -361,7 +372,8 @@ function bringInSeat(s: TableState, h: HandState): SeatIndex {
   for (const p of playersInHand(h)) {
     const up = p.holeUp[p.holeUp.length - 1];
     if (!up) continue;
-    const key = rankOf(up) * 4 + SUIT_ORDER[suitOf(up)];
+    // A wild card showing is as good as an ace, so it never brings it in.
+    const key = wildTest(h.wild)?.(up) ? 15 * 4 : rankOf(up) * 4 + SUIT_ORDER[suitOf(up)];
     if (key < bestKey) { bestKey = key; best = p.seat; }
   }
   if (best === -1) best = nextSeat(s, h.button, (i) => inHand(h, i));
@@ -441,11 +453,12 @@ function autoDiscard(h: HandState, v: VariantDefinition, p: HandPlayer): Card[] 
   const spec = drawSpecOf(h, v);
   if (!spec || spec.min === 0) return []; // draw poker: stand pat
   const hole = p.holeDown;
+  const isWild = wildTest(h.wild);
   let best: { cards: Card[]; value: number } | null = null;
   for (let i = 0; i < hole.length; i++) {
     const kept = hole.filter((_, k) => k !== i);
     const pool = [...kept, ...h.board];
-    const value = pool.length > 0 ? bestHand(pool).value : -rankOf(hole[i]!);
+    const value = pool.length > 0 ? bestHand(pool, isWild).value : isWild?.(hole[i]!) ? -15 : -rankOf(hole[i]!);
     if (!best || value > best.value) best = { cards: [hole[i]!], value };
   }
   return best ? best.cards : hole.slice(0, spec.min);
@@ -530,16 +543,21 @@ function dealStreet(s: TableState, h: HandState, v: VariantDefinition, idx: numb
     // Stud with a full table can run out of cards: the last card is dealt shared.
     const c = h.deck.shift()!;
     h.board.push(c);
-    log(h, 'street', null, `Not enough cards for everyone; a shared card is dealt: ${c}`);
+    log(h, 'street', null, `Not enough cards for everyone; a shared card is dealt: ${logCard(c)}`);
   } else {
     for (let c = 0; c < down; c++) for (const p of order) p.holeDown.push(h.deck.shift()!);
     for (let c = 0; c < up; c++) for (const p of order) p.holeUp.push(h.deck.shift()!);
     const dealt: string[] = [];
     for (let c = 0; c < community; c++) { const card = h.deck.shift()!; h.board.push(card); dealt.push(card); }
-    if (community > 0) log(h, 'street', null, `${cap(spec.name)}: ${dealt.join(' ')}`);
+    if (community > 0) log(h, 'street', null, `${cap(spec.name)}: ${dealt.map(logCard).join(' ')}`);
     else log(h, 'street', null, `${cap(spec.name)} street dealt`);
   }
   effects.push({ type: 'street', streetIndex: idx, name: spec.name });
+}
+
+/** A card as the log writes it: its code, except a joker, which is named. */
+function logCard(c: Card): string {
+  return isJoker(c) ? 'Joker' : c;
 }
 
 function cap(x: string): string {
@@ -557,7 +575,7 @@ function startRound(s: TableState, h: HandState, v: VariantDefinition): void {
       const i = (h.button + k) % s.config.maxSeats;
       if (!inHand(h, i)) continue;
       const up = h.players[i]!.holeUp.slice(-5);
-      const val = up.length ? evaluateCards(up).value : 0;
+      const val = up.length ? evaluateCards(up, wildTest(h.wild)).value : 0;
       if (val > bestVal) { bestVal = val; first = i; }
     }
     if (first !== -1) log(h, 'info', first, `${nameOf(s, h, first)} shows the best hand and acts first`);
@@ -764,7 +782,7 @@ function settle(s: TableState, h: HandState, showdown: boolean, effects: TableEf
   if (showdown) {
     for (const p of contenders) {
       p.revealed = true;
-      ranks.set(p.seat, v.evaluate([...p.holeDown, ...p.holeUp], h.board));
+      ranks.set(p.seat, v.evaluate([...p.holeDown, ...p.holeUp], h.board, wildTest(h.wild)));
     }
   } else {
     for (const p of contenders) ranks.set(p.seat, { category: 0, ranks: [], value: 0, label: '', cards: [] });

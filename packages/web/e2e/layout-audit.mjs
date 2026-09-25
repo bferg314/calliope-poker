@@ -96,11 +96,13 @@ function probe({ table }) {
     const r = rect(target);
     const cx = r.left + r.width / 2;
     const cy = r.top + r.height / 2;
-    if (cx < 0 || cy < 0 || cx > W || cy > H) continue; // scrolled away; checked when scrolled to
+    // Scrolled away; checked when scrolled to. The window's last pixel counts as
+    // away too: elementFromPoint rounds a point there onto the edge and finds nothing.
+    if (cx < 0 || cy < 0 || cx > W - 1 || cy > H - 1) continue;
     const hits = [[0, 0], [-21, 0], [21, 0], [0, -21], [0, 21]].every(([dx, dy]) => {
       const x = cx + dx;
       const y = cy + dy;
-      if (x < 0 || y < 0 || x >= W || y >= H) return true;
+      if (x < 0 || y < 0 || x > W - 1 || y > H - 1) return true;
       const hit = document.elementFromPoint(x, y);
       return !!hit && target.contains(hit);
     });

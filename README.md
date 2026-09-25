@@ -1,6 +1,6 @@
 # Calliope Poker
 
-Self-hosted poker for a table of friends. Room codes and join links, dealer's choice between Hold'em, Omaha, Pineapple, seven-card stud, five-card stud, five-card draw, three-card poker, three-card draw and blind man's bluff, buy-ins and re-buys, blinds and antes that climb on a schedule, rule-based bots, five themes, and a printed night report at the end.
+Self-hosted poker for a table of friends. Room codes and join links, dealer's choice between Hold'em, Omaha, Pineapple, seven-card stud, five-card stud, five-card draw, three-card poker, three-card draw and blind man's bluff, wild cards (jokers, deuces, one-eyed jacks or any rank), buy-ins and re-buys, blinds and antes that climb on a schedule, rule-based bots, five themes, and a printed night report at the end.
 
 No accounts. Everyone gets a name for the evening and a five-word ticket that brings their record back another night, which they can copy or save to their phone as an image.
 

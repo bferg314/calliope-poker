@@ -46,12 +46,29 @@ describe('checkOpenDeck', () => {
     }
   });
 
-  it('ignores jokers and falls back to the name for decks without a deckId', () => {
+  it('falls back to the name for decks without a deckId', () => {
     const deck = classic();
     delete deck.deckId;
-    (deck.cards as unknown[]).push({ id: 'joker-1', kind: 'joker', suit: null, rank: null, image: 'cards/joker-1.png' });
     const check = checkOpenDeck(deck);
     expect(check.ok && check.meta.id).toBe('name:Classic Deck');
+  });
+
+  it('keeps the first two jokers as *1 and *2, and leaves a third in the box', () => {
+    const deck = classic();
+    for (const n of [1, 2, 3]) {
+      (deck.cards as unknown[]).push({ id: `joker-${n}`, kind: 'joker', suit: null, rank: null, image: `cards/joker-${n}.png` });
+    }
+    const check = checkOpenDeck(deck);
+    expect(check.ok).toBe(true);
+    if (!check.ok) return;
+    expect(check.faces.get('*1')).toEqual({ image: 'cards/joker-1.png' });
+    expect(check.faces.get('*2')).toEqual({ image: 'cards/joker-2.png' });
+    expect(check.faces.size).toBe(54);
+  });
+
+  it('is complete without jokers', () => {
+    const check = checkOpenDeck(classic());
+    expect(check.ok && check.faces.has('*1')).toBe(false);
   });
 });
 

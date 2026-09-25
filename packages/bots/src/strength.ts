@@ -1,9 +1,18 @@
 import {
-  bestHand, bestHandOmaha, evaluateCards, evaluateThree, fullDeck, getVariant, rankOf, suitOf,
-  type Card, type HandRank, type TableState,
+  bestHand, bestHandOmaha, dealsJokers, evaluateCards, evaluateThree, fullDeck, getVariant, rankOf, suitOf, wildTest,
+  type Card, type HandRank, type TableState, type WildTest,
 } from '@calliope/engine';
 
 const clamp = (x: number): number => Math.max(0, Math.min(1, x));
+
+/**
+ * The rule-of-thumb helpers below read ranks and suits, and a joker has
+ * neither. To them a wild card is an ace of spades: a fair guess at what it
+ * will be, and never an error. The hand itself is still ranked properly.
+ */
+function natural(cards: readonly Card[], isWild: WildTest | undefined): Card[] {
+  return isWild ? cards.map((c) => (isWild(c) ? 'As' : c)) : [...cards];
+}
 
 /** Chen formula for two hold'em cards, mapped to 0..1. */
 export function chenStrength(a: Card, b: Card): number {
@@ -114,8 +123,8 @@ function studEarlyBonus(hole: readonly Card[]): number {
  * A three-card hand, by three-card order: trips and straights are the monsters,
  * a pair is well above the middle, and a queen high is about average.
  */
-function threeStrength(hole: readonly Card[]): number {
-  const made = evaluateThree(hole);
+function threeStrength(hole: readonly Card[], isWild?: WildTest): number {
+  const made = evaluateThree(hole, isWild);
   switch (made.category) {
     case 8: return 0.98;
     case 3: return 0.95;
@@ -136,18 +145,21 @@ function threeStrength(hole: readonly Card[]): number {
 export function blindStrength(state: TableState, seat: number): number {
   const h = state.hand;
   if (!h) return 0;
+  // A wild card on a forehead plays as an ace.
+  const isWild = wildTest(h.wild);
+  const rank = (c: Card): number => (isWild?.(c) ? 14 : rankOf(c));
   const seen = new Set<Card>(h.board);
   let best = 0;
   for (const p of h.players) {
     if (!p || p.seat === seat) continue;
     for (const c of p.holeUp) seen.add(c);
-    if (!p.folded) for (const c of p.holeUp) best = Math.max(best, rankOf(c));
+    if (!p.folded) for (const c of p.holeUp) best = Math.max(best, rank(c));
   }
-  const pool = fullDeck().filter((c) => !seen.has(c));
+  const pool = fullDeck(dealsJokers(h.wild) ? 2 : 0).filter((c) => !seen.has(c));
   if (pool.length === 0) return 0.5;
   let wins = 0;
   for (const c of pool) {
-    const r = rankOf(c);
+    const r = rank(c);
     if (r > best) wins += 1;
     else if (r === best) wins += 0.5;
   }
@@ -162,20 +174,23 @@ export function estimateStrength(state: TableState, seat: number): number {
   if (!p) return 0;
   const v = getVariant(h.variantId);
   if (v.ownUpCardsHidden) return blindStrength(state, seat);
-  const hole = [...p.holeDown, ...p.holeUp];
-  const board = h.board;
+  const isWild = wildTest(h.wild);
+  const realHole = [...p.holeDown, ...p.holeUp];
+  const hole = natural(realHole, isWild);
+  const board = natural(h.board, isWild);
   const community = v.streets.some((s) => (s.deal.community ?? 0) > 0);
   if (community && board.length === 0) return preflopStrength(hole, v.id);
   // Three-card games: no board, no up cards, three in the hand.
   if (!community && hole.length === 3 && p.holeUp.length === 0 && v.streets.every((s) => (s.deal.holeUp ?? 0) === 0)) {
-    return threeStrength(hole);
+    return threeStrength(realHole, isWild);
   }
 
-  const all = [...hole, ...board];
+  const all = [...realHole, ...h.board];
   let made: HandRank;
-  if (v.id === 'omaha' && board.length >= 3) made = bestHandOmaha(hole, board);
-  else if (all.length <= 5) made = evaluateCards(all);
-  else made = bestHand(all);
+  if (v.id === 'omaha' && board.length >= 3) made = bestHandOmaha(realHole, h.board, isWild);
+  else if (all.length <= 5) made = evaluateCards(all, isWild);
+  else made = bestHand(all, isWild);
+  made = { ...made, cards: natural(made.cards, isWild) };
 
   let s = madeStrength(made, hole, board);
   const streetsLeft = v.streets.length - 1 - h.streetIndex;

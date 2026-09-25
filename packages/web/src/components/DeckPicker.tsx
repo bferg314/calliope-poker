@@ -122,7 +122,7 @@ function DeckSwatch({ listing, on, onPick, onRemove }: { listing: DeckListing; o
       {(source || onRemove) && (
         <div className="deck-foot micro">
           {source && (
-            <a href={meta.source} target="_blank" rel="noreferrer">
+            <a className="hit" href={meta.source} target="_blank" rel="noreferrer">
               {source}
             </a>
           )}

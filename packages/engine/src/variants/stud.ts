@@ -15,7 +15,7 @@ export const stud7: VariantDefinition = {
     { name: 'sixth', deal: { holeUp: 1 }, bet: true, fixedLimitTier: 'big' },
     { name: 'seventh', deal: { holeDown: 1 }, bet: true, fixedLimitTier: 'big' },
   ],
-  evaluate: (hole, board) => bestHand([...hole, ...board]),
+  evaluate: (hole, board, isWild) => bestHand([...hole, ...board], isWild),
   firstToAct: 'best-showing',
 };
 
@@ -32,6 +32,6 @@ export const stud5: VariantDefinition = {
     { name: 'fourth', deal: { holeUp: 1 }, bet: true, fixedLimitTier: 'big' },
     { name: 'fifth', deal: { holeUp: 1 }, bet: true, fixedLimitTier: 'big' },
   ],
-  evaluate: (hole, board) => bestHand([...hole, ...board]),
+  evaluate: (hole, board, isWild) => bestHand([...hole, ...board], isWild),
   firstToAct: 'best-showing',
 };

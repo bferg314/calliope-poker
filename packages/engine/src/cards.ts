@@ -1,6 +1,8 @@
 /**
  * Cards are two-character strings: rank then suit.
  * Ranks: 2-9, T, J, Q, K, A. Suits: c, d, h, s. Example: "As", "Td", "9c".
+ * The two jokers are "*1" and "*2"; they have no rank or suit, and are only
+ * ever dealt when jokers are wild (see wild.ts).
  * Strings keep snapshots small and JSON-friendly; helpers below decode them.
  */
 export type Suit = 'c' | 'd' | 'h' | 's';
@@ -22,7 +24,14 @@ export const RANK_PLURALS: Record<number, string> = {
 export const SUIT_NAMES: Record<Suit, string> = { c: 'clubs', d: 'diamonds', h: 'hearts', s: 'spades' };
 export const SUIT_SYMBOLS: Record<Suit, string> = { c: '♣', d: '♦', h: '♥', s: '♠' };
 
+export const JOKERS: readonly Card[] = ['*1', '*2'];
+
+export function isJoker(card: Card): boolean {
+  return card === '*1' || card === '*2';
+}
+
 export function isCard(x: unknown): x is Card {
+  if (typeof x === 'string' && isJoker(x)) return true;
   return (
     typeof x === 'string' &&
     x.length === 2 &&
@@ -49,19 +58,25 @@ export function makeCard(rank: number, suit: Suit): Card {
 }
 
 export function cardLabel(card: Card): string {
+  if (isJoker(card)) return 'Joker';
   const name = RANK_NAMES[rankOf(card)] ?? '';
   return `${name.charAt(0).toUpperCase()}${name.slice(1)} of ${SUIT_NAMES[suitOf(card)]}`;
 }
 
-/** The 52-card deck in a fixed order (clubs 2..A, diamonds, hearts, spades). */
-export function fullDeck(): Card[] {
+/**
+ * The 52-card deck in a fixed order (clubs 2..A, diamonds, hearts, spades),
+ * with up to two jokers after it.
+ */
+export function fullDeck(jokers = 0): Card[] {
   const deck: Card[] = [];
   for (const s of SUITS) for (let r = 2; r <= 14; r++) deck.push(makeCard(r, s));
+  deck.push(...JOKERS.slice(0, jokers));
   return deck;
 }
 
+/** A whole pack: all 52 cards once each, and at most the two jokers. */
 export function isFullDeck(cards: readonly unknown[]): cards is Card[] {
-  if (cards.length !== 52) return false;
+  if (cards.length < 52 || cards.length > 52 + JOKERS.length) return false;
   const seen = new Set<string>();
   for (const c of cards) {
     if (!isCard(c) || seen.has(c)) return false;

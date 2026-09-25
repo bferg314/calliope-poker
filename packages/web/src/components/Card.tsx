@@ -1,4 +1,4 @@
-import { rankOf, suitOf, type Card as CardCode, type Suit } from '@calliope/engine';
+import { isJoker, rankOf, suitOf, type Card as CardCode, type Suit } from '@calliope/engine';
 import { useActiveDeck, type DeckArt } from '../decks.js';
 import type { Picture } from '../openDeck.js';
 import { useRendition } from '../renditions.js';
@@ -7,6 +7,11 @@ const RANK_TEXT: Record<number, string> = {
   2: '2', 3: '3', 4: '4', 5: '5', 6: '6', 7: '7', 8: '8', 9: '9', 10: '10', 11: 'J', 12: 'Q', 13: 'K', 14: 'A',
 };
 const SUIT_WORD: Record<Suit, string> = { c: 'clubs', d: 'diamonds', h: 'hearts', s: 'spades' };
+
+/** A joker's star, in the same 100×100 box as the suits. */
+function JokerStar(): JSX.Element {
+  return <path d="M50 4l13.5 29.5 32.5 3.5-24 22 7 32L50 75 20.5 91l7-32-24-22 32.5-3.5z" />;
+}
 
 /** Suit shapes in a 100×100 box. */
 export function SuitShape({ suit }: { suit: Suit }): JSX.Element {
@@ -45,6 +50,8 @@ interface CardProps {
    * draws the tile.
    */
   mode?: 'auto' | 'tile';
+  /** A wild card this hand: ringed, so it reads as more than its face. */
+  wild?: boolean;
 }
 
 /**
@@ -68,16 +75,18 @@ export function pictureLegible(art: DeckArt | null, width: number): boolean {
  * play has oversized indices. While no deck is ready the card falls back to Calliope's own
  * two-ink design.
  */
-export function Card({ card, width = 64, className = '', delay = 0, title, deck, mode = 'auto' }: CardProps): JSX.Element {
+export function Card({ card, width = 64, className = '', delay = 0, title, deck, mode = 'auto', wild = false }: CardProps): JSX.Element {
   const active = useActiveDeck();
   const art = deck ?? active;
-  const label = card === null ? title ?? 'Face-down card' : title ?? `${RANK_TEXT[rankOf(card)] ?? '?'} of ${SUIT_WORD[suitOf(card)]}`;
+  const name = card === null ? 'Face-down card' : isJoker(card) ? 'Joker' : `${RANK_TEXT[rankOf(card)] ?? '?'} of ${SUIT_WORD[suitOf(card)]}`;
+  const label = title ?? (wild ? `${name}, wild` : name);
+  const cls = wild ? `${className} wild` : className;
   if (card !== null && (mode === 'tile' || !pictureLegible(art, width))) {
-    return <CardTile card={card} width={width} className={className} delay={delay} label={label} />;
+    return <CardTile card={card} width={width} className={cls} delay={delay} label={label} />;
   }
   const picture = art && (card === null ? art.back : art.faces.get(card));
-  if (!art || !picture) return <FallbackCard card={card} width={width} className={className} delay={delay} label={label} />;
-  return <DeckCard card={card} picture={picture} art={art} width={width} className={className} delay={delay} label={label} />;
+  if (!art || !picture) return <FallbackCard card={card} width={width} className={cls} delay={delay} label={label} />;
+  return <DeckCard card={card} picture={picture} art={art} width={width} className={cls} delay={delay} label={label} />;
 }
 
 function DeckCard({ card, picture, art, width, className, delay, label }: { card: CardCode | null; picture: Picture; art: DeckArt; width: number; className: string; delay: number; label: string }): JSX.Element {
@@ -113,6 +122,7 @@ function DeckCard({ card, picture, art, width, className, delay, label }: { card
  * place of it, the way a scorer writes "K♥" rather than sketching the card.
  */
 function CardTile({ card, width, className, delay, label }: { card: CardCode; width: number; className: string; delay: number; label: string }): JSX.Element {
+  if (isJoker(card)) return <JokerTile width={width} className={className} delay={delay} label={label} />;
   const suit = suitOf(card);
   const red = suit === 'h' || suit === 'd';
   const rank = RANK_TEXT[rankOf(card)] ?? '?';
@@ -129,6 +139,24 @@ function CardTile({ card, width, className, delay, label }: { card: CardCode; wi
       <span className="rank" style={{ fontSize }}>{rank}</span>
       <svg className="pip" viewBox="0 0 100 100" style={{ width: Math.round(fontSize * 0.8), height: Math.round(fontSize * 0.8) }} aria-hidden="true">
         <SuitShape suit={suit} />
+      </svg>
+    </span>
+  );
+}
+
+/** A joker too small for its picture, or from a deck that has none: "JK" over a star. */
+function JokerTile({ width, className, delay, label }: { width: number; className: string; delay: number; label: string }): JSX.Element {
+  const fontSize = Math.max(12, Math.round(width * 0.5));
+  return (
+    <span
+      className={`card card-tile red ${className}`}
+      style={{ width, height: Math.round(width * 1.2), animationDelay: `${delay}ms` }}
+      role="img"
+      aria-label={label}
+    >
+      <span className="rank" style={{ fontSize }}>JK</span>
+      <svg className="pip" viewBox="0 0 100 100" style={{ width: Math.round(fontSize * 0.8), height: Math.round(fontSize * 0.8) }} aria-hidden="true">
+        <JokerStar />
       </svg>
     </span>
   );
@@ -166,6 +194,22 @@ function FallbackCard({ card, width, className, delay, label }: { card: CardCode
         <rect x="8" y="8" width="84" height="124" rx="3" fill="url(#card-fallback-lattice)" stroke="var(--card-back-ink)" strokeWidth="1" />
         <rect x="34" y="58" width="32" height="24" rx="2" fill="var(--card-back)" stroke="var(--card-back-ink)" strokeWidth="1" />
         <text x="50" y="74" textAnchor="middle" fontSize="9" fontFamily="var(--font-display)" fill="var(--card-back-ink)" fontStyle="italic">C</text>
+      </svg>
+    );
+  }
+  if (isJoker(card)) {
+    // Calliope's own joker, for a deck that brought none: a star, and the word.
+    return (
+      <svg className={`card card-face ${className}`} style={style} viewBox="0 0 100 140" role="img" aria-label={label}>
+        <rect x="1" y="1" width="98" height="138" rx="6" fill="var(--card-face)" stroke="var(--card-edge)" strokeWidth="1" />
+        <g fill="var(--card-red)">
+          <text x="8" y="30" fontSize="24" fontFamily="var(--font-display)" fontWeight="600">JK</text>
+          <g transform="translate(9 36) scale(0.2)"><JokerStar /></g>
+          <g transform="translate(26 36) scale(0.48)"><JokerStar /></g>
+        </g>
+        <text x="50" y="118" textAnchor="middle" fontSize="17" fontFamily="var(--font-display)" fontStyle="italic" fill="var(--card-ink)" style={{ fontVariationSettings: '"opsz" 72' }}>
+          Joker
+        </text>
       </svg>
     );
   }

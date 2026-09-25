@@ -20,7 +20,7 @@ export const bluff: VariantDefinition = {
   streets: [
     { name: 'first', deal: { holeUp: 1 }, bet: true, fixedLimitTier: 'small' },
   ],
-  evaluate: (hole) => evaluateCards(hole),
+  evaluate: (hole, _board, isWild) => evaluateCards(hole, isWild),
   firstToAct: 'left-of-button',
   ownUpCardsHidden: true,
 };

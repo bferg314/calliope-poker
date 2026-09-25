@@ -4,6 +4,7 @@ registerBuiltinVariants();
 
 export * from './cards.js';
 export * from './evaluator.js';
+export * from './wild.js';
 export * from './betting.js';
 export * from './pots.js';
 export * from './registry.js';

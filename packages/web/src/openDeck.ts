@@ -102,6 +102,12 @@ export type DeckCheck =
     }
   | { ok: false; error: string };
 
+/**
+ * The engine's two joker codes. Spelled out here rather than imported: the
+ * build runs this file under plain Node, where only the engine's types resolve.
+ */
+const JOKERS: readonly Card[] = ['*1', '*2'];
+
 /** The well-known ids of a french-52 deck, mapped to the engine's card codes. */
 const SUIT_CODE: Record<string, Suit> = { spades: 's', hearts: 'h', diamonds: 'd', clubs: 'c' };
 const RANK_CODE: Record<string, string> = {
@@ -155,7 +161,11 @@ export function isSvg(bytes: Uint8Array): boolean {
   return /^\s*(<\?xml[^>]*\?>\s*)?(<!--[\s\S]*?-->\s*)*(<!DOCTYPE[^>]*>\s*)?(<!--[\s\S]*?-->\s*)*<svg[\s>]/i.test(head);
 }
 
-/** Check a parsed deck file and map it onto the 52 cards Calliope deals. */
+/**
+ * Check a parsed deck file and map it onto the 52 cards Calliope deals, plus
+ * the deck's first two jokers as *1 and *2, for when jokers are wild. A deck
+ * without jokers is still complete: Calliope draws its own.
+ */
 export function checkOpenDeck(raw: unknown): DeckCheck {
   if (!isObject(raw) || raw.format !== 'open-playing-cards') {
     return { ok: false, error: 'This is not an Open Playing Cards deck.' };
@@ -181,8 +191,16 @@ export function checkOpenDeck(raw: unknown): DeckCheck {
   }
 
   const faces = new Map<Card, PictureRefs>();
+  let jokers = 0;
   for (const c of raw.cards) {
-    if (!isObject(c) || c.kind !== 'standard') continue; // jokers are not dealt
+    if (isObject(c) && c.kind === 'joker') {
+      const refs = pictureRefs(c);
+      if (refs === 'bad') return { ok: false, error: `Card ${String(c.id)} has a picture Calliope cannot read.` };
+      // Two jokers are all a game deals; a third is left in the box.
+      if (refs && jokers < JOKERS.length) faces.set(JOKERS[jokers++]!, refs);
+      continue;
+    }
+    if (!isObject(c) || c.kind !== 'standard') continue;
     const code = typeof c.suit === 'string' && typeof c.rank === 'string' ? cardCodeFor(c.suit, c.rank) : null;
     if (!code) return { ok: false, error: `Card ${String(c.id)} is not part of a standard deck.` };
     if (faces.has(code)) return { ok: false, error: `Card ${String(c.id)} appears twice.` };
@@ -194,8 +212,8 @@ export function checkOpenDeck(raw: unknown): DeckCheck {
   if (hasPng && (!positive(card.imageWidth) || !positive(card.imageHeight))) {
     return { ok: false, error: 'The deck does not say how many pixels its PNGs are.' };
   }
-  if (faces.size !== 52) {
-    return { ok: false, error: `The deck has ${faces.size} of the 52 standard cards.` };
+  if (faces.size - jokers !== 52) {
+    return { ok: false, error: `The deck has ${faces.size - jokers} of the 52 standard cards.` };
   }
 
   const indexHeights = (Array.isArray(raw.ranks) ? raw.ranks : [])

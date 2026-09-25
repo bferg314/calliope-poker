@@ -8,7 +8,7 @@
 // DPR sets the device pixel ratio (default 2); DPR=1 shows what a standard desktop screen gets.
 import { chromium } from 'playwright';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 
 const BASE = process.env.BASE ?? 'http://localhost:3000';
@@ -48,6 +48,8 @@ await page.waitForTimeout(2000);
 
 // The default deck is the first starter, classic; read its id rather than pin it, so swapping the deck needs no edit here.
 const STARTER = JSON.parse(readFileSync(new URL('../public/decks/classic/deck.json', import.meta.url), 'utf8')).deckId;
+// Every folder under public/decks is a starter deck.
+const STARTERS = readdirSync(new URL('../public/decks/', import.meta.url), { withFileTypes: true }).filter((d) => d.isDirectory()).length;
 const own = page.locator('.own-seat .card-art').first();
 assert.equal(await own.getAttribute('data-deck'), STARTER, 'own card drawn from the starter deck');
 const backs = page.locator('.seat .card-art.card-back');
@@ -104,7 +106,7 @@ await page.goto(BASE + '/me');
 await page.waitForSelector('.deck-grid .deck-swatch.on');
 await page.locator('.deck-grid').scrollIntoViewIfNeeded();
 await page.screenshot({ path: out('decks-03-picker.png') });
-assert.equal(await page.locator('.deck-swatch').count(), 1, 'one starter deck listed');
+assert.equal(await page.locator('.deck-swatch').count(), STARTERS, 'every starter deck listed');
 
 const input = page.locator('input[type=file]');
 if (process.env.BAD) {
@@ -116,8 +118,8 @@ if (process.env.EMBEDDED) {
   await input.setInputFiles(process.env.EMBEDDED);
   await page.waitForSelector('[role=status]');
   log('embedded:', await page.locator('[role=status]').textContent());
-  assert.equal(await page.locator('.deck-swatch').count(), 2, 'imported deck listed beside the starter');
-  assert.equal(await page.locator('.deck-swatch.on .name').textContent(), await page.locator('.deck-swatch').nth(1).locator('.name').textContent(), 'imported deck becomes active');
+  assert.equal(await page.locator('.deck-swatch').count(), STARTERS + 1, 'imported deck listed after the starters');
+  assert.equal(await page.locator('.deck-swatch.on .name').textContent(), await page.locator('.deck-swatch').nth(STARTERS).locator('.name').textContent(), 'imported deck becomes active');
   await page.screenshot({ path: out('decks-04-imported.png') });
   await page.goto(room);
   await page.waitForSelector('.own-seat .card-art img');

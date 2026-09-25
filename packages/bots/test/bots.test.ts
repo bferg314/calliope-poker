@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createTable, legalActions, mulberry32, reduce, seededDeck, type TableState } from '@calliope/engine';
+import { createTable, fullDeck, legalActions, mulberry32, reduce, seededDeck, shuffle, type TableState, type Wild } from '@calliope/engine';
 import { BOT_PERSONALITIES } from '@calliope/shared';
 import { blindStrength, chenStrength, chooseDiscards, decideAction, drawKeep, drawKeepThree, estimateStrength } from '../src/index.js';
 
@@ -29,15 +29,20 @@ describe('strength', () => {
 });
 
 describe('decideAction', () => {
+  const wilds: Wild[] = [{ kind: 'none' }, { kind: 'jokers' }, { kind: 'deuces' }];
+  const cases = BOT_PERSONALITIES.flatMap((personality) => wilds.map((wild) => [personality, wild] as const));
   for (const variantId of ['holdem', 'omaha', 'stud7', 'stud5', 'pineapple', 'draw5', 'three', 'draw3', 'bluff']) {
-    for (const personality of BOT_PERSONALITIES) {
-      it(`plays ${variantId} legally as ${personality}`, () => {
+    for (const [personality, wild] of cases) {
+      const named = wild.kind === 'none' ? '' : ` with ${wild.kind} wild`;
+      it(`plays ${variantId} legally as ${personality}${named}`, () => {
         const r = mulberry32(7);
         const rng = () => r(1_000_000) / 1_000_000;
-        let s = table(['A', 'B', 'C', 'D'], { variantMode: { kind: 'locked', variantId }, ante: 1 });
+        let s = table(['A', 'B', 'C', 'D'], { variantMode: { kind: 'locked', variantId }, ante: 1, wild });
         for (let hand = 0; hand < 15; hand++) {
           if (s.seats.filter((x) => x && x.stack > 0).length < 2) break;
-          s = reduce(s, { type: 'start-hand', deck: seededDeck(100 + hand) }).state;
+          // The server always shuffles both jokers in; the engine keeps them only when they are wild.
+          const deck = wild.kind === 'none' ? seededDeck(100 + hand) : shuffle(fullDeck(2), mulberry32(100 + hand));
+          s = reduce(s, { type: 'start-hand', deck }).state;
           let guard = 0;
           while ((s.hand!.stage === 'betting' || s.hand!.stage === 'discarding') && guard++ < 300) {
             const seat = s.hand!.round.actor!;
@@ -63,6 +68,19 @@ describe('decideAction', () => {
       });
     }
   }
+});
+
+describe('wild cards', () => {
+  it('are never thrown away in a draw', () => {
+    let s = table(['A', 'B'], { variantMode: { kind: 'locked', variantId: 'draw5' }, wild: { kind: 'deuces' } });
+    s = reduce(s, { type: 'start-hand', deck: seededDeck(3) }).state;
+    const h = s.hand!;
+    for (const p of h.players) if (p) p.holeDown = ['2c', '7d', '9h', 'Js', '4c'];
+    h.stage = 'discarding';
+    h.streetIndex = 1;
+    const toss = chooseDiscards(s, h.players.find(Boolean)!.seat);
+    expect(toss).not.toContain('2c');
+  });
 });
 
 describe("Blind Man's Bluff", () => {

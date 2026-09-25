@@ -176,7 +176,7 @@ export class RoomManager {
       }
       case 'choose-variant': {
         const seat = this.requireSeat(r, userId);
-        this.dispatch(rt, { type: 'choose-variant', seat, variantId: msg.variantId });
+        this.dispatch(rt, { type: 'choose-variant', seat, variantId: msg.variantId, wild: msg.wild });
         return;
       }
       case 'discard': {
@@ -614,7 +614,8 @@ export class RoomManager {
     const now = Date.now();
     if (nightIsUp(r, now)) r.phase = 'final-hand';
     this.applyLevel(rt, now);
-    const deck = shuffle(fullDeck(), (n) => randomInt(n));
+    // Both jokers go in every time; the engine takes them out unless jokers are wild.
+    const deck = shuffle(fullDeck(2), (n) => randomInt(n));
     this.safeDispatch(rt, { type: 'start-hand', deck });
   }
 

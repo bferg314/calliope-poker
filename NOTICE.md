@@ -89,6 +89,7 @@ live under `packages/web/public/decks/`, each with its licence in its own
 | Deck | Author | Licence | Source |
 |---|---|---|---|
 | Classic Deck | Bryan Ferguson | CC0-1.0 | https://card-atelier.tinyibex.com/ |
+| Classic Deck 54 | Bryan Ferguson | CC0-1.0 | https://card-atelier.tinyibex.com/ |
 
 The fallback card shown before a deck loads, and the chips, are original SVG
 drawn for this project (`packages/web/src/components/Card.tsx` and `Chip.tsx`).

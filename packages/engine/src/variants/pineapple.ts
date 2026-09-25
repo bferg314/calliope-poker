@@ -25,6 +25,6 @@ export const pineapple: VariantDefinition = {
     },
     { name: 'river', deal: { community: 1 }, bet: true, fixedLimitTier: 'big' },
   ],
-  evaluate: (hole, board) => bestHand([...hole, ...board]),
+  evaluate: (hole, board, isWild) => bestHand([...hole, ...board], isWild),
   firstToAct: 'left-of-button',
 };
