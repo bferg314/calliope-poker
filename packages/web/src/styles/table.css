@@ -929,6 +929,13 @@
   letter-spacing: 0.08em;
   line-height: 1.2;
   pointer-events: none;
+  /* Out of sight until its card has landed, rather than waiting for it. */
+  animation: mark-in var(--d-slow) steps(1, end) both;
+}
+
+@keyframes mark-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 .own-seat .cards.overlapped .down-mark .smallcaps {
@@ -983,15 +990,73 @@
   animation: deal-in var(--d-slow) var(--ease) both;
 }
 
+/* On the table a card flies in from the deck along --deal-x/--deal-y, set
+   when it is drawn (tableMotion.tsx). Anywhere else it drops in a little. */
 @keyframes deal-in {
   from {
     opacity: 0;
-    transform: translateY(-10px);
+    transform: translate(var(--deal-x, 0), var(--deal-y, -10px)) scale(0.6);
+  }
+  30% {
+    opacity: 1;
   }
   to {
     opacity: 1;
     transform: none;
   }
+}
+
+/* A card shown at the end is turned over where it lies: one axis, no lift.
+   Reduced motion zeroes --d-base, which makes it instant. */
+.card.flip-in {
+  animation: flip-in var(--d-base) var(--ease) both;
+}
+
+@keyframes flip-in {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+/* A bet's chips set down beside the stack they came from. */
+.seat-card .bet .chip-stack {
+  animation: chip-place var(--d-base) var(--ease) both;
+}
+
+@keyframes chip-place {
+  from {
+    opacity: 0;
+    transform: translate(-8px, -4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Chips crossing the felt: into the pot when a street ends, out to the winner
+   when the hand does. Above the seats, under any dialog, and never in the way
+   of a tap. */
+.chip-flights {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 30;
+}
+
+.chip-flight {
+  position: absolute;
+  line-height: 0;
+  animation: chip-fly var(--d-base) var(--ease) both;
+}
+
+.chip-flight.slow {
+  animation-duration: var(--d-slow);
+}
+
+@keyframes chip-fly {
+  from { transform: none; opacity: 1; }
+  85% { opacity: 1; }
+  to { transform: translate(var(--fly-x), var(--fly-y)); opacity: 0; }
 }
 
 /* ---------- the top bar's bits ---------- */

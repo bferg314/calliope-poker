@@ -189,6 +189,14 @@ function probe({ table }) {
 }
 
 async function check(where, { table = false, shot = null } = {}) {
+  // Cards in flight from the deck are scaled and away from their seat, so let
+  // them land first. A deal takes under a second, well inside the turn stamp.
+  await page.evaluate(() => Promise.race([
+    Promise.all(document.getAnimations()
+      .filter((a) => ['deal-in', 'flip-in', 'chip-place'].includes(a.animationName))
+      .map((a) => a.finished.catch(() => {}))),
+    new Promise((r) => setTimeout(r, 1200)),
+  ]));
   const problems = await page.evaluate(probe, { table });
   for (const p of new Set(problems)) fail(where, p);
   if (shot) await page.screenshot({ path: out(shot) });

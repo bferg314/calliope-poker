@@ -22,6 +22,7 @@ import { absoluteUrl, fmt, fmtDuration, fmtMoney } from '../format.js';
 import { Link } from '../router.js';
 import { useNow, type RoomSocket } from '../ws.js';
 import { Icon } from '../components/Icon.js';
+import { useChipFlights, useDealFromDeck } from '../tableMotion.js';
 
 /**
  * How the table is laid out, decided once here and handed to CSS as
@@ -247,6 +248,7 @@ export function Table({ room, socket }: { room: RoomView; socket: RoomSocket }):
   const [selected, setSelected] = useState<string[]>([]);
   const [copyNote, setCopyNote] = useState<string | null>(null);
   const seenLevel = useRef(room.level.index);
+  const screenRef = useRef<HTMLDivElement>(null);
   const wasMyTurn = useRef(false);
 
   const legal = useMemo(() => {
@@ -290,6 +292,9 @@ export function Table({ room, socket }: { room: RoomView; socket: RoomSocket }):
   const winners = new Set(settled ? hand!.results!.winners : []);
   const winAmounts: Record<number, number> = {};
   if (settled) for (const pot of hand!.results!.pots) for (const [s, a] of Object.entries(pot.payouts)) winAmounts[Number(s)] = (winAmounts[Number(s)] ?? 0) + a;
+
+  useDealFromDeck(screenRef, hand?.number ?? null);
+  const flights = useChipFlights(screenRef, hand, winAmounts, room.settings.chips.denominations);
 
   // Screen reader announcements from the log.
   const lastLog = hand?.log[hand.log.length - 1]?.text ?? '';
@@ -443,7 +448,7 @@ export function Table({ room, socket }: { room: RoomView; socket: RoomSocket }):
     const seat = table.seats[idx]!;
     const member = room.members.find((mm) => mm.id === seat.playerId);
     return (
-      <div key={idx} className="seat" style={wide ? ellipsePosition(opponents.indexOf(idx) + 1, m) : undefined}>
+      <div key={idx} className="seat" data-seat={idx} style={wide ? ellipsePosition(opponents.indexOf(idx) + 1, m) : undefined}>
         <SeatCard
           seat={seat}
           player={hand?.players[idx] ?? null}
@@ -495,7 +500,7 @@ export function Table({ room, socket }: { room: RoomView; socket: RoomSocket }):
     : null;
 
   return (
-    <div className="table-screen" data-layout={layout}>
+    <div className="table-screen" data-layout={layout} ref={screenRef}>
       <header className="table-top">
         <Link to="/" className="brand">Calliope</Link>
         <button
@@ -739,6 +744,7 @@ export function Table({ room, socket }: { room: RoomView; socket: RoomSocket }):
         </aside>
       </div>
 
+      {flights}
       <div className="sr-only" aria-live="polite">{announce}</div>
       <Toast text={copyNote ?? socket.error?.message ?? (socket.status !== 'open' ? 'Reconnecting…' : null)} />
     </div>
@@ -791,6 +797,7 @@ function OwnSeat({ room, socket, layout, maxCards, mySeat, toAct, winAmount, tim
     <div
       ref={seatRef}
       className={`own-seat ${toAct ? 'to-act' : ''} ${beside ? 'beside' : 'above'}`}
+      data-seat={mySeat}
       data-max-cards={Math.max(maxCards, cards.length)}
       style={{ '--own-card-h': `${cardH}px` } as CSSProperties}
     >
@@ -808,7 +815,7 @@ function OwnSeat({ room, socket, layout, maxCards, mySeat, toAct, winAmount, tim
         <div className="own-stack num">
           {fmt(seat.stack)}
           {winAmount > 0 && <span className="win-delta"> +{fmt(winAmount)}</span>}
-          {p && p.streetBet > 0 && <span className="micro"> · bet {fmt(p.streetBet)}</span>}
+          {p && p.streetBet > 0 && <span className="micro bet"> · bet {fmt(p.streetBet)}</span>}
         </div>
         <div className="hand-label">
           {status}
@@ -818,7 +825,7 @@ function OwnSeat({ room, socket, layout, maxCards, mySeat, toAct, winAmount, tim
       <div className={`cards ${selectable ? 'selectable' : ''} ${step < cw ? 'overlapped' : ''}`}>
         {cards.map(({ c, k, down }, i) => (
           <button
-            key={k}
+            key={`${hand?.number ?? 0}-${k}`}
             type="button"
             disabled={!selectable || !c}
             className={`card-pick ${c && selected.includes(c) ? 'tossed' : ''}`}
@@ -828,7 +835,7 @@ function OwnSeat({ room, socket, layout, maxCards, mySeat, toAct, winAmount, tim
           >
             <Card card={c} width={cw} delay={i * 60} />
             {markDown && down && (
-              <span className="down-mark">
+              <span className="down-mark" style={{ animationDelay: `${i * 60}ms` }}>
                 <Icon name="eye-off" />
                 <span className="smallcaps">hidden</span>
               </span>

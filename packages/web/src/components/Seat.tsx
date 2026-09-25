@@ -34,6 +34,8 @@ export function SeatCard(p: SeatCardProps): JSX.Element {
   const cards = hp && !folded ? [...hp.holeDown, ...hp.holeUp] : [];
   const down = cards.filter((c) => c === null).length;
   const up = cards.filter((c): c is string => c !== null);
+  // Down cards shown at the end are turned over where they lie, not dealt again.
+  const turned = new Set(hp && !folded ? hp.holeDown.filter((c): c is string => c !== null) : []);
   const backWidth = Math.round(p.cardWidth * 0.8);
   return (
     <div className={cls} aria-label={`${s.name}, ${fmt(s.stack)} chips`}>
@@ -58,7 +60,8 @@ export function SeatCard(p: SeatCardProps): JSX.Element {
         ) : p.handLabel ? (
           <span className="micro italic hand">{p.handLabel}</span>
         ) : hp && hp.streetBet > 0 ? (
-          <span className="bet">
+          // Keyed on the amount, so every bet and raise puts its chips down afresh.
+          <span className="bet" key={hp.streetBet}>
             {/* Two chips at most: a seat's line must not grow taller with the bet. */}
             <ChipStack amount={hp.streetBet} denoms={p.denoms} size={14} max={2} />
             <span className="num">{fmt(hp.streetBet)}</span>
@@ -80,7 +83,7 @@ export function SeatCard(p: SeatCardProps): JSX.Element {
             <span className="up">
               {up.map((c, i) => (
                 <span key={c} className="up-slot">
-                  <Card card={c} width={p.cardWidth} delay={(down + i) * 60} mode="tile" />
+                  <Card card={c} width={p.cardWidth} delay={turned.has(c) ? 0 : (down + i) * 60} mode="tile" className={turned.has(c) ? 'flip-in' : ''} />
                 </span>
               ))}
             </span>

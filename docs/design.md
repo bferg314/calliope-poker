@@ -101,9 +101,11 @@ Few, and drawn like the rest of the page: `components/Icon.tsx` holds inline SVG
 
 Durations: `--d-fast: 120ms`, `--d-base: 200ms`, `--d-slow: 360ms`. Easing: `cubic-bezier(0.2, 0, 0, 1)` (ease-out, decisive). No spring, no bounce, no overshoot.
 
-- Cards are dealt: slide from the deck position to the seat over `--d-slow`, staggered 60ms per card. Flip on reveal: a 1-axis scaleX flip over `--d-base`.
-- Chips to pot: slide over `--d-base` at street end, then the pot number counts up over `--d-base`.
-- Pot to winner: slide over `--d-slow`, winner's stack counts up.
+- Cards are dealt: slide from the middle of the felt to the seat over `--d-slow`, staggered 60ms per card. A card redrawn in a place already dealt to this hand (a resize that swaps picture for tile) just appears. Flip on reveal: a 1-axis scaleX flip over `--d-base`. In stud, your own "hidden" marks wait until their card lands.
+- Chips placed: a bet's chips set down beside the seat's stack over `--d-base`, again on every raise.
+- Chips to pot: one chip per bet slides into the pot over `--d-base` at street end. The pot number already counts street bets, so it does not change.
+- Pot to winner: up to three chips slide from the pot to each winner's stack over `--d-slow`, after the sweep.
+- `packages/web/src/tableMotion.tsx` holds the dealing and chip flights; it only reads the view, so a missed animation is never a missed state.
 - "To act" mark: appears instantly (no fade). A moving red mark is the most important motion in the game, so it must never lag.
 - `prefers-reduced-motion`: all slides become instant, flips become fades.
 
