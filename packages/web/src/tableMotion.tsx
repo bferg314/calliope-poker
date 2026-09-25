@@ -79,9 +79,10 @@ interface Flight {
   slow: boolean;
 }
 
-const CHIP = 18;
-/** --d-base, which the sweep into the pot runs for before the pot is pushed. */
-const SWEEP_MS = 200;
+/** A chip in flight is drawn bigger than a bet's, so the eye can follow it across the felt. */
+const CHIP = 24;
+/** --d-slow, which the sweep into the pot runs for before the pot is pushed. */
+const SWEEP_MS = 360;
 
 /**
  * Chips in flight: a street's bets swept into the pot when the street ends, and

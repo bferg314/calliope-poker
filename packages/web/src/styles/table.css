@@ -1019,7 +1019,7 @@
 
 /* A bet's chips set down beside the stack they came from. */
 .seat-card .bet .chip-stack {
-  animation: chip-place var(--d-base) var(--ease) both;
+  animation: chip-place var(--d-slow) var(--ease) both;
 }
 
 @keyframes chip-place {
@@ -1046,11 +1046,12 @@
 .chip-flight {
   position: absolute;
   line-height: 0;
-  animation: chip-fly var(--d-base) var(--ease) both;
+  /* Slower than a card: a chip is small, and one that darts is one nobody sees. */
+  animation: chip-fly var(--d-slow) var(--ease) both;
 }
 
 .chip-flight.slow {
-  animation-duration: var(--d-slow);
+  animation-duration: calc(var(--d-slow) * 1.6);
 }
 
 @keyframes chip-fly {
