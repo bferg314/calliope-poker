@@ -908,6 +908,40 @@
   opacity: 1;
 }
 
+/*
+ * In stud, which of your own cards the table cannot see. Set in the card's
+ * bottom-left corner, which a deck leaves bare and which stays in view when
+ * seven cards overlap; there the word gives way and the eye alone is left.
+ */
+.card-pick .down-mark {
+  position: absolute;
+  left: var(--s-1);
+  bottom: var(--s-1);
+  display: flex;
+  align-items: center;
+  gap: var(--s-0);
+  padding: var(--s-0) var(--s-1);
+  border-radius: 2px;
+  background: var(--ink);
+  color: var(--paper);
+  font-size: var(--t-micro);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  line-height: 1.2;
+  pointer-events: none;
+  /* Out of sight until its card has landed, rather than waiting for it. */
+  animation: mark-in var(--d-slow) steps(1, end) both;
+}
+
+@keyframes mark-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.own-seat .cards.overlapped .down-mark .smallcaps {
+  display: none;
+}
+
 /* ---------- dealer's choice ---------- */
 .choose-panel {
   position: absolute;
@@ -956,15 +990,74 @@
   animation: deal-in var(--d-slow) var(--ease) both;
 }
 
+/* On the table a card flies in from the deck along --deal-x/--deal-y, set
+   when it is drawn (tableMotion.tsx). Anywhere else it drops in a little. */
 @keyframes deal-in {
   from {
     opacity: 0;
-    transform: translateY(-10px);
+    transform: translate(var(--deal-x, 0), var(--deal-y, -10px)) scale(0.6);
+  }
+  30% {
+    opacity: 1;
   }
   to {
     opacity: 1;
     transform: none;
   }
+}
+
+/* A card shown at the end is turned over where it lies: one axis, no lift.
+   Reduced motion zeroes --d-base, which makes it instant. */
+.card.flip-in {
+  animation: flip-in var(--d-base) var(--ease) both;
+}
+
+@keyframes flip-in {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+/* A bet's chips set down beside the stack they came from. */
+.seat-card .bet .chip-stack {
+  animation: chip-place var(--d-slow) var(--ease) both;
+}
+
+@keyframes chip-place {
+  from {
+    opacity: 0;
+    transform: translate(-8px, -4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Chips crossing the felt: into the pot when a street ends, out to the winner
+   when the hand does. Above the seats, under any dialog, and never in the way
+   of a tap. */
+.chip-flights {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 30;
+}
+
+.chip-flight {
+  position: absolute;
+  line-height: 0;
+  /* Slower than a card: a chip is small, and one that darts is one nobody sees. */
+  animation: chip-fly var(--d-slow) var(--ease) both;
+}
+
+.chip-flight.slow {
+  animation-duration: calc(var(--d-slow) * 1.6);
+}
+
+@keyframes chip-fly {
+  from { transform: none; opacity: 1; }
+  85% { opacity: 1; }
+  to { transform: translate(var(--fly-x), var(--fly-y)); opacity: 0; }
 }
 
 /* ---------- the top bar's bits ---------- */
@@ -1180,6 +1273,62 @@
 .turn-pop .sep {
   color: var(--on-red);
   opacity: 0.55;
+}
+
+/* ---------- last hand of the night ---------- */
+/*
+ * The same stamp as "your turn", pressed larger across the middle of the felt:
+ * red is the table's ink for "this is the one that matters". It holds for three
+ * seconds and takes no pointer events, since the last hand is often dealt with
+ * someone first to act under it.
+ */
+.last-hand-pop {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: var(--s-3);
+  pointer-events: none;
+  z-index: 25;
+  animation: last-hand-pop 3000ms var(--ease) both;
+}
+
+@keyframes last-hand-pop {
+  0%, 85% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+.last-hand-pop .plate {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s-1);
+  max-width: min(22rem, 100%);
+  padding: var(--s-4) var(--s-6);
+  background: var(--red);
+  border: 1px solid var(--red-2);
+  outline: 1px solid var(--red);
+  outline-offset: 3px;
+  text-align: center;
+  color: var(--on-red);
+  animation: stamp var(--d-base) var(--ease) both;
+}
+
+.last-hand-pop .kicker {
+  font-size: var(--t-small);
+  letter-spacing: 0.12em;
+}
+
+.last-hand-pop strong {
+  font-family: var(--font-display);
+  font-variation-settings: 'opsz' 144, 'WONK' 1;
+  font-size: var(--t-h1);
+  font-weight: 600;
+  line-height: 1;
+}
+
+.last-hand-pop .hint {
+  font-size: var(--t-small);
 }
 
 /* ---------- wide: seats on an ellipse ---------- */
