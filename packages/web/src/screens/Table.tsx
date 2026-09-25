@@ -24,6 +24,7 @@ import { absoluteUrl, fmt, fmtDuration, fmtMoney } from '../format.js';
 import { Link } from '../router.js';
 import { useNow, type RoomSocket } from '../ws.js';
 import { Icon } from '../components/Icon.js';
+import type { Ahead } from '../preActions.js';
 import { WildSelect } from '../components/WildSelect.js';
 import { useChipFlights, useDealFromDeck } from '../tableMotion.js';
 
@@ -287,6 +288,18 @@ export function Table({ room, socket }: { room: RoomView; socket: RoomSocket }):
     : hand?.stage === 'choosing' ? hand.chooser : null;
   const actorName = actorSeat !== null && actorSeat !== undefined ? table.seats[actorSeat]?.name ?? null : null;
   const myTurn = mySeat !== null && actorSeat === mySeat;
+  // Someone else is betting and you are still in with chips behind: you may choose ahead.
+  const turnKey = hand ? `${hand.number}:${hand.streetIndex}` : '';
+  const mine = mySeat !== null && hand ? hand.players[mySeat] : null;
+  const ahead: Ahead | null =
+    hand?.stage === 'betting' && mine && !mine.folded && !mine.allIn && !myTurn && hand.round.actor !== null
+      ? {
+        key: turnKey,
+        toCall: Math.max(0, hand.round.currentBet - mine.streetBet),
+        raiseKind: hand.round.currentBet === 0 ? 'bet' : 'raise',
+        canRaise: (table.seats[mySeat!]?.stack ?? 0) > hand.round.currentBet - mine.streetBet,
+      }
+      : null;
   // What the turn is actually asking for, so the popup is worth more than a nudge.
   const turnHint = hand?.stage === 'choosing'
     ? 'pick the game'
@@ -756,6 +769,8 @@ export function Table({ room, socket }: { room: RoomView; socket: RoomSocket }):
             <ActionBar
               legal={legal}
               waitingFor={legal ? null : actorName}
+              ahead={ahead}
+              turnKey={turnKey}
               onAction={send}
               confirmFold={confirmFold}
               panelHost={betSlot}

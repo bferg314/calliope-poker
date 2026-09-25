@@ -742,6 +742,50 @@
   opacity: 0.35;
 }
 
+/* Someone else is deciding, and you may choose ahead: the buttons are live
+   again, quieter than on your turn, and a chosen one is filled in. */
+.waiting-bar.ahead .buttons {
+  opacity: 1;
+}
+
+.action-bar .btn.pre {
+  border-style: dashed;
+  color: var(--ink-2);
+}
+
+.action-bar .btn.pre.on {
+  border-style: solid;
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--paper);
+}
+
+/* What the table is waiting on, set into the bar's top rule so the bar keeps
+   its height. */
+.action-bar .pre-note {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  transform: translateY(-50%);
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.action-bar .pre-note span {
+  background: var(--paper);
+  color: var(--ink-2);
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: var(--t-small);
+  padding: 0 var(--s-2);
+  max-width: 90%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .action-bar .waiting {
   position: absolute;
   inset: 0;
