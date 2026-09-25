@@ -15,6 +15,7 @@ import { useConfirm } from '../components/Modal.js';
 import { ThemePicker } from '../components/ThemePicker.js';
 import { Toast } from '../components/Toast.js';
 import { TurnPop } from '../components/TurnPop.js';
+import { LastHandPop } from '../components/LastHandPop.js';
 import { bellOn, ringBell, setBellOn } from '../bell.js';
 import { copyText } from '../clipboard.js';
 import { absoluteUrl, fmt, fmtDuration, fmtMoney } from '../format.js';
@@ -162,17 +163,31 @@ function maxHoleCards(variantId: string | null | undefined): number {
 }
 
 /**
+ * Whether this game deals some cards face up, as stud does. Only then is it
+ * worth marking which of a player's own cards the table cannot see: in hold'em
+ * or draw every one of them is hidden, and a mark on each says nothing.
+ */
+function dealsUpCards(variantId: string | null | undefined): boolean {
+  if (!variantId) return false;
+  try {
+    return getVariant(variantId).streets.some((s) => (s.deal.holeUp ?? 0) > 0);
+  } catch {
+    return false;
+  }
+}
+
+/**
  * A player's cards in the order they were dealt. Down and up cards are kept
  * apart, so stud's seventh-street down card would otherwise sit beside the
  * first two; walking the streets puts each card back where it came.
  */
-function dealOrder<T>(variantId: string | null | undefined, down: T[], up: T[]): { c: T; k: string }[] {
-  const out: { c: T; k: string }[] = [];
+function dealOrder<T>(variantId: string | null | undefined, down: T[], up: T[]): { c: T; k: string; down: boolean }[] {
+  const out: { c: T; k: string; down: boolean }[] = [];
   let d = 0;
   let u = 0;
   const take = (n: number, from: T[], at: number, tag: string): number => {
     const end = Math.min(from.length, at + n);
-    for (let i = at; i < end; i++) out.push({ c: from[i]!, k: `${tag}${i}` });
+    for (let i = at; i < end; i++) out.push({ c: from[i]!, k: `${tag}${i}`, down: tag === 'd' });
     return end;
   };
   try {
@@ -227,6 +242,8 @@ export function Table({ room, socket }: { room: RoomView; socket: RoomSocket }):
   const [announce, setAnnounce] = useState('');
   const [levelUp, setLevelUp] = useState<string | null>(null);
   const [turnPop, setTurnPop] = useState(false);
+  const [lastHandPop, setLastHandPop] = useState(false);
+  const seenPhase = useRef(room.phase);
   const [selected, setSelected] = useState<string[]>([]);
   const [copyNote, setCopyNote] = useState<string | null>(null);
   const seenLevel = useRef(room.level.index);
@@ -282,6 +299,33 @@ export function Table({ room, socket }: { room: RoomView; socket: RoomSocket }):
   }, [legal, lastLog]);
 
   /*
+   * The table going into its last hand is announced once, on the change itself:
+   * someone who reconnects partway through it gets the strip, not the plate.
+   * After the log's announcement, so the same deal does not talk over it.
+   */
+  useEffect(() => {
+    const was = seenPhase.current;
+    seenPhase.current = room.phase;
+    if (room.phase === 'final-hand' && was !== 'final-hand') {
+      setLastHandPop(true);
+      setAnnounce('Last hand of the night');
+    }
+  }, [room.phase]);
+
+  useEffect(() => {
+    if (!lastHandPop) return;
+    const hide = (): void => setLastHandPop(false);
+    const timer = window.setTimeout(hide, 3000);
+    window.addEventListener('pointerdown', hide, { passive: true });
+    window.addEventListener('keydown', hide);
+    return () => {
+      window.clearTimeout(timer);
+      window.removeEventListener('pointerdown', hide);
+      window.removeEventListener('keydown', hide);
+    };
+  }, [lastHandPop]);
+
+  /*
    * The action reaching you is the one thing you may have looked away for, so
    * ring a bell and stamp "your turn" onto the table. Edge-triggered on the turn
    * itself: a redraw mid-turn must not ring again, and two turns in the same
@@ -300,10 +344,11 @@ export function Table({ room, socket }: { room: RoomView; socket: RoomSocket }):
    * an effect that both rings once and times out cannot survive its own cleanup,
    * and would leave the stamp on the table for the rest of the hand in dev.
    * A tap or a keypress lifts it early, so somebody already watching gets the
-   * board straight back.
+   * board straight back. While the last-hand plate is up the stamp waits its
+   * turn behind it, so the two never sit on the table at once.
    */
   useEffect(() => {
-    if (!turnPop) return;
+    if (!turnPop || lastHandPop) return;
     const hide = (): void => setTurnPop(false);
     const timer = window.setTimeout(hide, 1600);
     window.addEventListener('pointerdown', hide, { passive: true });
@@ -313,7 +358,7 @@ export function Table({ room, socket }: { room: RoomView; socket: RoomSocket }):
       window.removeEventListener('pointerdown', hide);
       window.removeEventListener('keydown', hide);
     };
-  }, [turnPop]);
+  }, [turnPop, lastHandPop]);
 
   useEffect(() => {
     if (room.level.index <= seenLevel.current) {
@@ -609,11 +654,12 @@ export function Table({ room, socket }: { room: RoomView; socket: RoomSocket }):
               <Pot hand={hand} />
               <div className="stage">
                 {resultLine && <div className="result-line">{resultLine}</div>}
-                {turnPop && <TurnPop hint={turnHint} />}
+                {turnPop && !lastHandPop && <TurnPop hint={turnHint} />}
               </div>
             </div>
             <div className="seats seats-right">{shoe.right.map(seatEl)}</div>
             <div className="bet-slot" ref={setBetSlot} />
+            {lastHandPop && <LastHandPop />}
             {hand?.stage === 'choosing' && (
               <div className="choose-panel">
                 <div className="label">{hand.chooser === mySeat ? 'your deal. pick the game' : `${actorName ?? 'the dealer'} is choosing the game`}</div>
@@ -735,6 +781,7 @@ function OwnSeat({ room, socket, layout, maxCards, mySeat, toAct, winAmount, tim
   const seat = table.seats[mySeat]!;
   const p = hand?.players[mySeat] ?? null;
   const cards = p && !p.folded ? dealOrder(hand?.variantId, p.holeDown, p.holeUp) : [];
+  const markDown = !!p && !p.revealed && dealsUpCards(hand?.variantId);
   const drewNote = p && p.drew > 0 ? `drew ${p.drew}` : null;
   const label = hand?.stage === 'settled' && hand.results?.hands[mySeat] ? hand.results.hands[mySeat]!.label : ownHandLabel(hand, mySeat);
   const { cw, step, beside } = ownCardSize(layout, box.width, Math.max(maxCards, cards.length));
@@ -768,8 +815,8 @@ function OwnSeat({ room, socket, layout, maxCards, mySeat, toAct, winAmount, tim
           {drewNote && <span className="micro"> · {drewNote}</span>}
         </div>
       </div>
-      <div className={`cards ${selectable ? 'selectable' : ''}`}>
-        {cards.map(({ c, k }, i) => (
+      <div className={`cards ${selectable ? 'selectable' : ''} ${step < cw ? 'overlapped' : ''}`}>
+        {cards.map(({ c, k, down }, i) => (
           <button
             key={k}
             type="button"
@@ -780,6 +827,12 @@ function OwnSeat({ room, socket, layout, maxCards, mySeat, toAct, winAmount, tim
             onClick={() => c && onToggleCard(c)}
           >
             <Card card={c} width={cw} delay={i * 60} />
+            {markDown && down && (
+              <span className="down-mark">
+                <Icon name="eye-off" />
+                <span className="smallcaps">hidden</span>
+              </span>
+            )}
             {selectable && <span className="toss-mark" aria-hidden="true">throw</span>}
           </button>
         ))}
