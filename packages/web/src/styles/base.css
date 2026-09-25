@@ -852,6 +852,128 @@ details > summary {
   width: 100%;
 }
 
+.modal.modal-wide {
+  max-width: min(640px, calc(100vw - 32px));
+}
+
+/* ---------- a hand, reviewed ---------- */
+.hand-review {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+  color: var(--ink);
+}
+
+.hand-review-sub {
+  margin: 0;
+  color: var(--ink-2);
+}
+
+.hand-review-board {
+  display: flex;
+  gap: var(--s-1);
+}
+
+.hand-review-players {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--ink-3);
+}
+
+/* One line per player: who, their cards, what they had, what it cost or paid. */
+.hand-review-players li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1.2fr) auto;
+  align-items: center;
+  gap: var(--s-2);
+  padding: var(--s-2) 0;
+  border-bottom: 1px solid var(--ink-3);
+}
+
+.hand-review-players .who {
+  display: flex;
+  align-items: center;
+  gap: var(--s-1);
+  min-width: 0;
+}
+
+.hand-review-players .name {
+  font-family: var(--font-display);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hand-review-players .won .name {
+  font-weight: 600;
+}
+
+.hand-review-players .folded .name,
+.hand-review-players .folded .what {
+  color: var(--ink-3);
+}
+
+.hand-review-players .cards {
+  display: flex;
+  gap: var(--s-0);
+}
+
+.hand-review-players .what {
+  color: var(--ink-2);
+  font-style: italic;
+  line-height: 1.2;
+}
+
+.hand-review-players .net {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.hand-review-players .net.up {
+  color: var(--red);
+  font-weight: 600;
+}
+
+.hand-review-players .net.down {
+  color: var(--ink-2);
+}
+
+.hand-review-pots p {
+  margin: 0 0 var(--s-1);
+}
+
+.hand-review-log summary {
+  cursor: pointer;
+  min-height: var(--hit);
+  display: flex;
+  align-items: center;
+  color: var(--ink-2);
+}
+
+.hand-review-log ol {
+  margin: 0;
+  padding-left: var(--s-6);
+  font-size: var(--t-small);
+  color: var(--ink-2);
+}
+
+.hand-review-log .result {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+/* On a phone the hand label drops under the name and cards. */
+@media (max-width: 480px) {
+  .hand-review-players li {
+    grid-template-columns: minmax(0, 1fr) auto auto;
+  }
+  .hand-review-players .what {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+}
+
 .modal::backdrop {
   background: rgba(10, 10, 10, 0.55);
 }

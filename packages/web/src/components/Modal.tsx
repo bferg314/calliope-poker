@@ -12,6 +12,8 @@ export interface ConfirmOptions {
   tone?: 'danger' | 'normal';
   /** One button only, for a dialog that just shows something. */
   hideCancel?: boolean;
+  /** Room for a table of things, such as a hand to review. */
+  wide?: boolean;
 }
 
 type Pending = ConfirmOptions & { resolve: (ok: boolean) => void };
@@ -67,7 +69,7 @@ export function ConfirmProvider({ children }: { children: ReactNode }): JSX.Elem
       {children}
       <dialog
         ref={dialogRef}
-        className="modal"
+        className={`modal ${pending?.wide ? 'modal-wide' : ''}`}
         aria-labelledby="modal-title"
         onClose={() => settle(false)}
         onCancel={() => settle(false)}

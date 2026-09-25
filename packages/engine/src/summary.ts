@@ -1,3 +1,4 @@
+import type { Card } from './cards.js';
 import type { HandStakes, HandSummary, HandSummaryPlayer, TableState } from './types.js';
 
 /** Facts about a settled hand, for hand history and statistics. */
@@ -54,6 +55,33 @@ export function summarizeHand(s: TableState): HandSummary {
       const p = players.find((x) => x.seat === seat)!;
       return { seat, playerId: p.playerId, amount: p.won, handLabel: p.handLabel };
     }),
+    pots: r.pots.map((p) => ({ amount: p.amount, eligible: [...p.eligible], winners: [...p.winners], payouts: { ...p.payouts } })),
+    ...(h.wild && h.wild.kind !== 'none' ? { wild: h.wild } : {}),
     log: [...h.log],
+  };
+}
+
+/** A settled hand as one viewer may see it: face-down cards that were never shown are null. */
+export interface HandSummaryPlayerView extends Omit<HandSummaryPlayer, 'holeDown'> {
+  holeDown: (Card | null)[];
+}
+
+export interface HandSummaryView extends Omit<HandSummary, 'players'> {
+  players: HandSummaryPlayerView[];
+}
+
+/**
+ * Redact a settled hand for one viewer, for reviewing it afterwards. Down cards
+ * are shown only for players who reached the showdown, where they were turned
+ * over, and to their owner. A folded hand stays in the muck: nobody at a real
+ * table gets to turn it over once the hand is done. Up cards were seen by all.
+ */
+export function summaryFor(summary: HandSummary, viewerPlayerId: string | null): HandSummaryView {
+  return {
+    ...summary,
+    players: summary.players.map((p) => ({
+      ...p,
+      holeDown: p.sawShowdown || p.playerId === viewerPlayerId ? [...p.holeDown] : p.holeDown.map(() => null),
+    })),
   };
 }

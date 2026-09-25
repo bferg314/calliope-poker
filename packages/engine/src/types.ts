@@ -227,5 +227,9 @@ export interface HandSummary {
   button: SeatIndex;
   players: HandSummaryPlayer[];
   winners: { seat: SeatIndex; playerId: string; amount: number; handLabel: string | null }[];
+  /** Each pot as it was paid: main pot first. Absent on hands saved before it was kept. */
+  pots?: PotAward[];
+  /** The wild cards, when any were. */
+  wild?: Wild;
   log: HandLogEntry[];
 }

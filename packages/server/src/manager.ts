@@ -1,6 +1,6 @@
 import { randomInt, randomUUID } from 'node:crypto';
 import {
-  EngineError, eligibleSeats, fullDeck, listVariants, reduce, shuffle, viewFor,
+  EngineError, eligibleSeats, fullDeck, listVariants, reduce, shuffle, summaryFor, viewFor,
   type HandSummary, type TableEvent, type TableState,
 } from '@calliope/engine';
 import { chooseDiscards, chooseVariant, decideAction, pickBotName } from '@calliope/bots';
@@ -802,7 +802,7 @@ export class RoomManager {
       },
       level: levelViewOf(r, now),
       deadline: rt.deadline,
-      lastHand: r.lastHand,
+      lastHand: r.lastHand ? summaryFor(r.lastHand, viewerId) : null,
       handCount: r.hands.length,
       report: r.report,
       variants: this.variants(r),

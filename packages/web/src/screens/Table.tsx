@@ -11,6 +11,7 @@ import { ActionBar } from '../components/ActionBar.js';
 import { DrawBar } from '../components/DrawBar.js';
 import { GameStrip } from '../components/GameStrip.js';
 import { Invite } from '../components/Invite.js';
+import { HandReview } from '../components/HandReview.js';
 import { useConfirm } from '../components/Modal.js';
 import { ThemePicker } from '../components/ThemePicker.js';
 import { Toast } from '../components/Toast.js';
@@ -399,6 +400,20 @@ export function Table({ room, socket }: { room: RoomView; socket: RoomSocket }):
     });
   };
 
+  /** The last settled hand, laid out to be read: the payout that went by too fast. */
+  const reviewLastHand = (): void => {
+    const last = room.lastHand;
+    if (!last) return;
+    const variantName = room.variants.find((v) => v.id === last.variantId)?.name ?? last.variantId;
+    void confirm({
+      title: `Hand ${last.number}`,
+      body: <HandReview hand={last} variantName={variantName} />,
+      confirmLabel: 'Done',
+      hideCancel: true,
+      wide: true,
+    });
+  };
+
   const copyLink = async (): Promise<void> => {
     const ok = await copyText(absoluteUrl(room.joinUrl));
     if (ok) {
@@ -581,6 +596,9 @@ export function Table({ room, socket }: { room: RoomView; socket: RoomSocket }):
                   Stand up
                 </button>
               )}
+              {room.lastHand && (
+                <button className="btn" onClick={reviewLastHand}>Review the last hand</button>
+              )}
               {me?.canRebuy && (
                 <button className="btn" onClick={() => void rebuy()}>
                   Re-buy {fmt(room.settings.chips.buyInChips)} chips
@@ -669,7 +687,12 @@ export function Table({ room, socket }: { room: RoomView; socket: RoomSocket }):
             <div className="middle">
               <Pot hand={hand} />
               <div className="stage">
-                {resultLine && <div className="result-line">{resultLine}</div>}
+                {resultLine && (
+                  // The result is the hand's last word, and a tap on it opens the whole hand.
+                  <button type="button" className="result-review" onClick={reviewLastHand} disabled={!room.lastHand} title="Review this hand">
+                    <span className="result-line">{resultLine}</span>
+                  </button>
+                )}
                 {turnPop && !lastHandPop && <TurnPop hint={turnHint} />}
               </div>
             </div>
@@ -748,9 +771,12 @@ export function Table({ room, socket }: { room: RoomView; socket: RoomSocket }):
           ) : (
             <div className="muted">Between hands.</div>
           )}
-          {room.lastHand && !hand && (
+          {room.lastHand && room.lastHand.number !== hand?.number && (
             <>
-              <div className="label">last hand</div>
+              <div className="row row-between">
+                <div className="label">last hand</div>
+                <button className="btn btn-quiet btn-small" onClick={reviewLastHand}>review</button>
+              </div>
               {room.lastHand.winners.map((w) => (
                 <div key={w.seat} className="log-line result">
                   {room.lastHand!.players.find((p) => p.seat === w.seat)?.name} won {fmt(w.amount)}{w.handLabel ? ` with ${w.handLabel.toLowerCase()}` : ''}

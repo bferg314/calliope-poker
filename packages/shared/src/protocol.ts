@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { HandSummary, TableView } from '@calliope/engine';
+import type { HandSummaryView, TableView } from '@calliope/engine';
 import { nameSchema, roomSettingsPatchSchema, wildSchema, type RoomSettings } from './settings.js';
 import type { LevelStakes } from './levels.js';
 
@@ -205,7 +205,8 @@ export interface RoomView {
   level: LevelView;
   /** Epoch ms when the current actor or chooser times out. */
   deadline: number | null;
-  lastHand: HandSummary | null;
+  /** The last settled hand, as this viewer may see it: folded hands stay face down. */
+  lastHand: HandSummaryView | null;
   handCount: number;
   report: NightReport | null;
   variants: VariantInfo[];
