@@ -164,6 +164,12 @@ export interface LegalActions {
 export type TableEvent =
   | { type: 'sit'; seat: SeatIndex; player: { id: string; name: string; kind: 'human' | 'bot' }; stack: number }
   | { type: 'stand'; seat: SeatIndex }
+  /**
+   * Move the seated players between seats: after it, seat i holds whoever was
+   * in seat order[i]. Only between hands. The room uses it to shuffle the
+   * seating before the first hand.
+   */
+  | { type: 'arrange-seats'; order: SeatIndex[] }
   | { type: 'sit-out'; seat: SeatIndex; out: boolean }
   | { type: 'add-chips'; seat: SeatIndex; amount: number }
   | { type: 'rename'; seat: SeatIndex; name: string }

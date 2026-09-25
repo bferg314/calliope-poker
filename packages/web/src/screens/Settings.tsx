@@ -100,7 +100,7 @@ export function Settings({ settings, variants, editable, onSave, onDirtyChange }
   return (
     <div className="stack">
       <div className="settings-form">
-        <Section title="Game" summary={`${gameName}${wildLine ? ` · ${wildLine}` : ''} · ${bettingLabel}${usesBlinds ? ` · blinds ${fmt(draft.blinds.small)}/${fmt(draft.blinds.big)}` : ''}${usesAntes ? ` · ante ${fmt(draft.ante)}` : ''}`} open={editable}>
+        <Section title="Game" summary={`${gameName}${wildLine ? ` · ${wildLine}` : ''}${draft.shuffleSeats ? ' · seats drawn' : ''} · ${bettingLabel}${usesBlinds ? ` · blinds ${fmt(draft.blinds.small)}/${fmt(draft.blinds.big)}` : ''}${usesAntes ? ` · ante ${fmt(draft.ante)}` : ''}`} open={editable}>
           <div className="row">
             <label className="check">
               <input type="radio" name="mode" disabled={ro} checked={!dc} onChange={() => set('variantMode', { kind: 'locked', variantId: allowed[0] ?? 'holdem' })} />
@@ -141,6 +141,10 @@ export function Settings({ settings, variants, editable, onSave, onDirtyChange }
               <span className="label">wild cards</span>
               <WildSelect value={wild} disabled={ro} onChange={(w) => set('wild', w)} />
               {dc && <span className="micro">In dealer's choice the dealer picks them with the game. This is where the choice starts.</span>}
+            </label>
+            <label className="check span-2">
+              <input type="checkbox" disabled={ro} checked={draft.shuffleSeats ?? false} onChange={(e) => set('shuffleSeats', e.target.checked)} />
+              Shuffle the seats when the first hand is dealt
             </label>
             <label className="field span-2">
               <span className="label">betting</span>
