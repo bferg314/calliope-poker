@@ -239,6 +239,25 @@ export class RoomManager {
     this.afterChange(rt);
   }
 
+  /**
+   * Draw the seats: the same seats stay filled, so the host's spacing of the
+   * table holds, but who sits in which is shuffled. Done once, as the first
+   * hand is dealt; from then on moving seats means leaving the table.
+   */
+  private shuffleSeats(rt: RoomRuntime): void {
+    const seats = rt.record.table.seats;
+    const filled = seats.map((s, i) => (s ? i : -1)).filter((i) => i !== -1);
+    const drawn = [...filled];
+    for (let i = drawn.length - 1; i > 0; i--) {
+      const j = randomInt(i + 1);
+      [drawn[i], drawn[j]] = [drawn[j]!, drawn[i]!];
+    }
+    const order = seats.map((_, i) => i);
+    filled.forEach((seat, k) => { order[seat] = drawn[k]!; });
+    this.dispatch(rt, { type: 'arrange-seats', order }, false);
+    rt.timeouts = {};
+  }
+
   private rebuyAllowed(r: RoomRecord, ledger: { rebuys: number }): boolean {
     const rb = r.settings.rebuys;
     if (!rb.allowed) return false;
@@ -287,6 +306,7 @@ export class RoomManager {
           r.clock.limitMs = r.settings.end.kind === 'time' ? r.settings.end.minutes * 60_000 : null;
           r.clock.appliedLevel = 0;
           r.clock.levelAnchor = { atMs: 0, atHands: r.hands.length, level: 0 };
+          if (r.settings.shuffleSeats) this.shuffleSeats(rt);
           void this.deps.onRoomStarted(r).catch((e) => this.deps.log('onRoomStarted failed', e));
         } else if (r.phase === 'paused' && r.clock.pausedAt !== null) {
           // Fold the closed pause into the total, then reopen the clock.

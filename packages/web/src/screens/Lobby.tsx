@@ -122,6 +122,9 @@ export function Lobby({ room, socket }: { room: RoomView; socket: RoomSocket }):
               })}
             </div>
             {me && me.seat === null && <p className="micro">Pick an open seat. Each seat starts with a buy-in of {fmt(room.settings.chips.buyInChips)} chips.</p>}
+            {room.settings.shuffleSeats && (
+              <p className="micro">The seats are drawn at random when the first hand is dealt, and stay put after that.</p>
+            )}
 
             <div className="panel stack">
               <div className="label">invite</div>

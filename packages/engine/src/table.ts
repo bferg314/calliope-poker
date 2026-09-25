@@ -60,6 +60,7 @@ export function reduce(state: TableState, event: TableEvent): ReduceResult {
   switch (event.type) {
     case 'sit': sit(s, event); break;
     case 'stand': stand(s, event.seat, effects); break;
+    case 'arrange-seats': arrangeSeats(s, event.order); break;
     case 'sit-out': sitOut(s, event.seat, event.out); break;
     case 'add-chips': addChips(s, event.seat, event.amount); break;
     case 'rename': rename(s, event.seat, event.name); break;
@@ -173,6 +174,14 @@ function stand(s: TableState, seat: SeatIndex, effects: TableEffect[]): void {
     }
   }
   s.seats[seat] = null;
+}
+
+function arrangeSeats(s: TableState, order: SeatIndex[]): void {
+  if (isHandActive(s)) throw new EngineError('hand-in-progress', 'Seats can only change between hands');
+  const n = s.config.maxSeats;
+  const ok = order.length === n && order.every((i) => Number.isInteger(i) && i >= 0 && i < n) && new Set(order).size === n;
+  if (!ok) throw new EngineError('bad-order', 'The new seating must name every seat once');
+  s.seats = order.map((from) => s.seats[from] ?? null);
 }
 
 function sitOut(s: TableState, seat: SeatIndex, out: boolean): void {

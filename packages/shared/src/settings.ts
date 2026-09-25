@@ -80,6 +80,8 @@ export const roomSettingsSchema = z.object({
   levels: levelScheduleSchema.default(LEVELS_OFF),
   /** Deal the next hand automatically once the last one settles. */
   autoDeal: z.boolean(),
+  /** Draw the seats at random when the first hand is dealt; they stay put after that. */
+  shuffleSeats: z.boolean().default(false),
   /** Pause between a hand settling and the next deal. */
   settleSeconds: z.number().int().min(2).max(60),
 });
@@ -101,6 +103,7 @@ export const DEFAULT_ROOM_SETTINGS: RoomSettings = {
   end: { kind: 'last-standing' },
   levels: LEVELS_OFF,
   autoDeal: true,
+  shuffleSeats: false,
   settleSeconds: 6,
 };
 
