@@ -280,6 +280,34 @@
   color: var(--ink-2);
 }
 
+/* The result line is also the way into the hand's review. The button carries
+   the tap pad, since the line itself clips what overflows it. */
+.result-review {
+  all: unset;
+  position: relative;
+  display: block;
+  max-width: 100%;
+  cursor: pointer;
+}
+
+.result-review::before {
+  content: '';
+  position: absolute;
+  top: min(0px, calc((100% - var(--hit)) / 2));
+  bottom: min(0px, calc((100% - var(--hit)) / 2));
+  left: 0;
+  right: 0;
+}
+
+.result-review:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.result-review:enabled:hover .result-line {
+  border-color: var(--ink-2);
+}
+
 .result-line {
   text-align: center;
   font-family: var(--font-display);
