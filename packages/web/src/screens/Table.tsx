@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import {
   bestHand, bestHandOmaha, evaluateCards, getVariant, legalActions, type Action, type HandView, type TableState,
 } from '@calliope/engine';
-import { stakesLabel, type RoomView } from '@calliope/shared';
+import { SERVER_LIMIT_WARNING_MINUTES, stakesLabel, type RoomView } from '@calliope/shared';
 import { Board, Pot } from '../components/Board.js';
 import { Card } from '../components/Card.js';
 import { useActiveDeck } from '../decks.js';
@@ -423,12 +423,17 @@ export function Table({ room, socket }: { room: RoomView; socket: RoomSocket }):
   // buttons are rather than in a corner of the seat.
   const canRebuyNow = !!me?.canRebuy && mySeat !== null && table.seats[mySeat]?.stack === 0 && !legal;
   const canDeal = isHost && room.phase === 'playing' && !hand && !room.settings.autoDeal && seatedWithChips >= 2;
+  // A public table the server will close soon says so, well before it happens.
+  const closesIn = room.serverLimit ? room.serverLimit.expiresAt - now : null;
+  const closingSoon = closesIn !== null && closesIn <= SERVER_LIMIT_WARNING_MINUTES * 60_000;
   const stripNote = hand?.stage === 'discarding'
     ? (drawSpec?.replace ? 'the draw' : 'everyone throws one away')
     : levelUp
       ? `stakes are up: ${levelUp}`
       : room.phase === 'final-hand'
         ? 'last hand of the night'
+        : closingSoon
+          ? `the server closes this table in ${fmtDuration(Math.max(0, closesIn!))}`
         : room.phase === 'paused'
           ? isHost ? 'paused. resume from the menu' : 'paused, and so is the clock'
           : room.phase === 'playing' && !hand
@@ -438,7 +443,7 @@ export function Table({ room, socket }: { room: RoomView; socket: RoomSocket }):
                 ? 'shuffling'
                 : isHost ? 'deal when you are ready' : 'waiting for the host to deal'
             : null;
-  const stripAlert = !!levelUp || room.phase === 'final-hand';
+  const stripAlert = !!levelUp || room.phase === 'final-hand' || closingSoon;
 
   const resultLine = settled
     ? hand!.log.filter((l) => l.kind === 'result').map((l) => l.text).join(' · ')

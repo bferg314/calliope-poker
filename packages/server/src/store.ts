@@ -3,8 +3,12 @@ import type { RoomRecord } from './room.js';
 
 const KEY = (code: string): string => `room:${code}`;
 const INDEX = 'rooms';
-/** Rooms expire from Redis a week after their last change; Postgres keeps the report. */
-const TTL_SECONDS = 7 * 24 * 60 * 60;
+/**
+ * Rooms expire from Redis two days after their last change. It is only a
+ * backstop: live tables save on every action, the sweep refreshes quiet ones,
+ * and finished ones are removed once Postgres has the report.
+ */
+const TTL_SECONDS = 2 * 24 * 60 * 60;
 
 export class Store {
   private readonly redis: Redis;

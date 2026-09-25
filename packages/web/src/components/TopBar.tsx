@@ -10,6 +10,11 @@ export function TopBar({ right }: { right?: ReactNode }): JSX.Element {
       <Link to="/" className="brand">Calliope Poker</Link>
       <div className="row">
         {right}
+        {user?.serverRole && (
+          <Link to="/server" className="btn btn-quiet btn-small" aria-label="Run this server">
+            <Icon name="key" />
+          </Link>
+        )}
         {user && (
           <Link to="/me" className="btn btn-quiet btn-small">
             <Icon name="person" />

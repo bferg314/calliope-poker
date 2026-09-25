@@ -15,7 +15,7 @@ export interface RoomSocket {
   skew: number;
 }
 
-const FATAL = new Set(['not-a-member', 'no-room', 'unauthenticated', 'removed', 'cancelled']);
+const FATAL = new Set(['not-a-member', 'no-room', 'unauthenticated', 'removed', 'cancelled', 'closed']);
 
 export function useRoomSocket(code: string | null, enabled: boolean): RoomSocket {
   const [room, setRoom] = useState<RoomView | null>(null);

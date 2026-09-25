@@ -1,5 +1,6 @@
 import { createHash, randomBytes, randomUUID, scryptSync, timingSafeEqual } from 'node:crypto';
 import type { FastifyReply, FastifyRequest } from 'fastify';
+import type { ServerRole } from '@calliope/shared';
 import type { Db, UserRow } from './db.js';
 import { normalizePhrase, randomPhrase, randomUsername } from './words.js';
 
@@ -11,21 +12,35 @@ export interface PublicUser {
   recovered: boolean;
   createdAt: number;
   /**
-   * This identity has entered the server's host key, so it may open tables.
-   * Not to be confused with being the host of a particular table.
+   * The owner entered HOST_KEY; an admin entered a key the owner made. Either
+   * may open tables whatever the policy, free of its limits. Not to be confused
+   * with being the host of a particular table.
    */
-  canOpenTables: boolean;
+  serverRole: ServerRole | null;
 }
 
-export function publicUser(u: UserRow): PublicUser {
+/** What HOST_KEY is remembered by, so changing the key revokes old owners. */
+export function hostKeyFingerprint(key: string): string {
+  return createHash('sha256').update(`calliope:host:${key}`).digest('hex');
+}
+
+/** Admin keys are random and long, so a plain hash is enough and can be looked up. */
+export function adminKeyHash(key: string): string {
+  return createHash('sha256').update(`calliope:admin:${key}`).digest('hex');
+}
+
+export function publicUser(u: UserRow, hostFingerprint: string | null): PublicUser {
+  const owner = hostFingerprint !== null && u.host_key_fp === hostFingerprint;
   return {
     id: u.id,
     name: u.name,
     recovered: u.recovered_at !== null,
     createdAt: u.created_at.getTime(),
-    canOpenTables: u.can_open_tables === true,
+    serverRole: owner ? 'owner' : hostFingerprint !== null && u.is_admin === true ? 'admin' : null,
   };
 }
+
+export const ADMIN_KEY_PREFIX = 'cal-admin-';
 
 // ---- hashing (scrypt: no native dependencies) ----
 
@@ -54,7 +69,7 @@ function tokenHash(token: string): string {
 
 // ---- rate limiting for recovery attempts ----
 
-class Limiter {
+export class Limiter {
   private hits = new Map<string, number[]>();
   constructor(private readonly max: number, private readonly windowMs: number) {}
   allow(key: string, now = Date.now()): boolean {
@@ -72,20 +87,25 @@ export class Auth {
   /** Stops a stranger filling the table with throwaway identities. */
   private readonly createLimiter = new Limiter(30, 60 * 60 * 1000);
 
+  /** Fingerprint of the current HOST_KEY; null when the server has no owner. */
+  readonly hostFingerprint: string | null;
+
   constructor(
     private readonly db: Db,
     private readonly secureCookies: boolean,
-    /** When set, opening a table needs this key. Null leaves the server open. */
+    /** The owner's key. Null leaves the server open, with nobody to run it. */
     private readonly hostKey: string | null = null,
-  ) {}
+  ) {
+    this.hostFingerprint = hostKey === null ? null : hostKeyFingerprint(hostKey);
+  }
 
-  /** Opening a table is restricted on this server. */
-  get restricted(): boolean {
+  /** The server has an owner, so it can have admins and a policy. */
+  get owned(): boolean {
     return this.hostKey !== null;
   }
 
-  canOpenTables(user: PublicUser): boolean {
-    return !this.restricted || user.canOpenTables;
+  publicUser(row: UserRow): PublicUser {
+    return publicUser(row, this.hostFingerprint);
   }
 
   allowCreate(ip: string): boolean {
@@ -93,17 +113,36 @@ export class Auth {
   }
 
   /**
-   * Hand this identity the right to open tables, if the key is right. Compared
-   * in constant time, and rate limited, so the key cannot be guessed at speed.
+   * Give this identity the role its key unlocks: HOST_KEY makes it the owner,
+   * a live admin key an admin. The host key is compared in constant time, and
+   * every attempt is rate limited, so neither can be guessed at speed.
    */
-  async claimHost(userId: string, key: string, ip: string): Promise<'ok' | 'wrong' | 'limited' | 'open'> {
+  async claimKey(userId: string, key: string, ip: string): Promise<ServerRole | 'wrong' | 'limited' | 'open'> {
     if (this.hostKey === null) return 'open';
     if (!this.claimLimiter.allow(`ip:${ip}`)) return 'limited';
-    const given = createHash('sha256').update(key.trim()).digest();
+    const typed = key.trim();
+    const given = createHash('sha256').update(typed).digest();
     const want = createHash('sha256').update(this.hostKey).digest();
-    if (given.length !== want.length || !timingSafeEqual(given, want)) return 'wrong';
-    await this.db.grantOpenTables(userId);
-    return 'ok';
+    if (given.length === want.length && timingSafeEqual(given, want)) {
+      await this.db.grantOwner(userId, this.hostFingerprint!);
+      return 'owner';
+    }
+    if (typed.startsWith(ADMIN_KEY_PREFIX)) {
+      const keyId = await this.db.useAdminKey(adminKeyHash(typed));
+      if (keyId) {
+        await this.db.grantAdmin(userId, keyId);
+        return 'admin';
+      }
+    }
+    return 'wrong';
+  }
+
+  /** A new admin key. Returned once; only its hash is kept. */
+  async createAdminKey(label: string): Promise<{ id: string; key: string }> {
+    const id = randomUUID();
+    const key = ADMIN_KEY_PREFIX + randomBytes(24).toString('base64url');
+    await this.db.createAdminKey(id, label, adminKeyHash(key));
+    return { id, key };
   }
 
   /** First visit: a fresh identity with a generated name and phrase. */
@@ -114,7 +153,7 @@ export class Auth {
     await this.db.createUser(id, finalName, hashSecret(phraseKey(phrase)));
     const token = await this.issueToken(id);
     const user = (await this.db.getUser(id))!;
-    return { user: publicUser(user), phrase, token };
+    return { user: this.publicUser(user), phrase, token };
   }
 
   /** Recover a previous identity from its name and five words. */
@@ -126,7 +165,7 @@ export class Auth {
         await this.db.markRecovered(row.id);
         const token = await this.issueToken(row.id);
         const user = (await this.db.getUser(row.id))!;
-        return { user: publicUser(user), token };
+        return { user: this.publicUser(user), token };
       }
     }
     return null;

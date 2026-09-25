@@ -174,3 +174,22 @@ export function Report({ room }: { room: RoomView }): JSX.Element {
     </div>
   );
 }
+
+/**
+ * A night the server has filed away: the live table is gone, so the report
+ * comes from the record kept in the database. Same page, without the room.
+ */
+export function FiledReport({ code, report, youId }: { code: string; report: NightReport; youId: string | null }): JSX.Element {
+  return (
+    <div className="page page-narrow" style={{ maxWidth: 760 }}>
+      <TopBar right={<span className="room-code smallcaps">{code}</span>} />
+      <div style={{ paddingTop: 'var(--s-4)' }}>
+        <ReportSheet report={report} youId={youId} />
+      </div>
+      <div className="row" style={{ paddingTop: 'var(--s-6)' }}>
+        <Link to="/" className="btn btn-ink">Another night</Link>
+        <Link to="/me" className="btn">My record</Link>
+      </div>
+    </div>
+  );
+}

@@ -1,6 +1,6 @@
 import postgres from 'postgres';
 import type { HandSummary, } from '@calliope/engine';
-import type { NightReport } from '@calliope/shared';
+import type { AdminKeyView, InstancePolicy, NightReport } from '@calliope/shared';
 
 export type Sql = ReturnType<typeof postgres>;
 
@@ -10,9 +10,19 @@ export interface UserRow {
   phrase_hash: string;
   created_at: Date;
   recovered_at: Date | null;
-  /** This identity has entered the host key, so it may open tables. */
-  can_open_tables: boolean;
+  /**
+   * Fingerprint of the HOST_KEY this identity entered. It is the owner only
+   * while this matches the current key, so changing the key revokes it.
+   */
+  host_key_fp: string | null;
+  /** Holds an admin key the owner has not revoked. */
+  is_admin: boolean;
 }
+
+/** Every query that reads a user selects exactly these, so roles are never stale. */
+const USER_COLUMNS = `u.id, u.name, u.phrase_hash, u.created_at, u.recovered_at, u.host_key_fp,
+  (a.id IS NOT NULL AND a.revoked_at IS NULL) AS is_admin`;
+const USER_JOIN = `LEFT JOIN admin_keys a ON a.id = u.admin_key_id`;
 
 const MIGRATION = `
 CREATE TABLE IF NOT EXISTS users (
@@ -27,6 +37,25 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE INDEX IF NOT EXISTS users_name ON users (lower(name));
 -- For databases created before the host key existed.
 ALTER TABLE users ADD COLUMN IF NOT EXISTS can_open_tables boolean NOT NULL DEFAULT false;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS host_key_fp text;
+
+-- Keys the owner hands to admins. Only a hash is kept; the key is shown once.
+CREATE TABLE IF NOT EXISTS admin_keys (
+  id text PRIMARY KEY,
+  label text NOT NULL,
+  key_hash text NOT NULL UNIQUE,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  last_used_at timestamptz,
+  revoked_at timestamptz
+);
+ALTER TABLE users ADD COLUMN IF NOT EXISTS admin_key_id text REFERENCES admin_keys(id);
+
+-- One row: who may open tables, and the limits on public ones.
+CREATE TABLE IF NOT EXISTS instance_settings (
+  id int PRIMARY KEY CHECK (id = 1),
+  policy jsonb NOT NULL,
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
 
 CREATE TABLE IF NOT EXISTS sessions (
   token_hash text PRIMARY KEY,
@@ -113,12 +142,14 @@ export class Db {
   }
 
   async getUser(id: string): Promise<UserRow | null> {
-    const rows = await this.sql<UserRow[]>`SELECT id, name, phrase_hash, created_at, recovered_at, can_open_tables FROM users WHERE id = ${id}`;
+    const rows = await this.sql<UserRow[]>`SELECT ${this.sql.unsafe(USER_COLUMNS)} FROM users u ${this.sql.unsafe(USER_JOIN)} WHERE u.id = ${id}`;
     return rows[0] ?? null;
   }
 
   async usersNamed(name: string): Promise<UserRow[]> {
-    return this.sql<UserRow[]>`SELECT id, name, phrase_hash, created_at, recovered_at, can_open_tables FROM users WHERE lower(name) = lower(${name}) LIMIT 50`;
+    return this.sql<UserRow[]>`
+      SELECT ${this.sql.unsafe(USER_COLUMNS)} FROM users u ${this.sql.unsafe(USER_JOIN)}
+      WHERE lower(u.name) = lower(${name}) LIMIT 50`;
   }
 
   async renameUser(id: string, name: string): Promise<void> {
@@ -129,9 +160,80 @@ export class Db {
     await this.sql`UPDATE users SET phrase_hash = ${phraseHash} WHERE id = ${id}`;
   }
 
-  /** Let this identity open tables. Survives moving to another device. */
-  async grantOpenTables(id: string): Promise<void> {
-    await this.sql`UPDATE users SET can_open_tables = true WHERE id = ${id}`;
+  /** Make this identity the owner under the current HOST_KEY. Follows it to other devices. */
+  async grantOwner(id: string, fingerprint: string): Promise<void> {
+    await this.sql`UPDATE users SET host_key_fp = ${fingerprint} WHERE id = ${id}`;
+  }
+
+  /**
+   * Owners from before key fingerprints were kept were granted under whatever
+   * key was set then. Assume it is the current one, so nobody is locked out
+   * by the upgrade. Changing the key afterwards revokes them as usual.
+   */
+  async adoptLegacyOwners(fingerprint: string): Promise<number> {
+    const rows = await this.sql`
+      UPDATE users SET host_key_fp = ${fingerprint}
+      WHERE can_open_tables AND host_key_fp IS NULL RETURNING id`;
+    return rows.length;
+  }
+
+  async grantAdmin(id: string, keyId: string): Promise<void> {
+    await this.sql`UPDATE users SET admin_key_id = ${keyId} WHERE id = ${id}`;
+  }
+
+  // ---- admin keys ----
+
+  /** A live (unrevoked) key with this hash, marking it used. */
+  async useAdminKey(keyHash: string): Promise<string | null> {
+    const rows = await this.sql<{ id: string }[]>`
+      UPDATE admin_keys SET last_used_at = now()
+      WHERE key_hash = ${keyHash} AND revoked_at IS NULL RETURNING id`;
+    return rows[0]?.id ?? null;
+  }
+
+  async createAdminKey(id: string, label: string, keyHash: string): Promise<void> {
+    await this.sql`INSERT INTO admin_keys (id, label, key_hash) VALUES (${id}, ${label}, ${keyHash})`;
+  }
+
+  async listAdminKeys(): Promise<AdminKeyView[]> {
+    const rows = await this.sql<{ id: string; label: string; created_at: Date; last_used_at: Date | null; revoked_at: Date | null; holders: number }[]>`
+      SELECT a.id, a.label, a.created_at, a.last_used_at, a.revoked_at,
+        (SELECT count(*)::int FROM users u WHERE u.admin_key_id = a.id) AS holders
+      FROM admin_keys a ORDER BY a.revoked_at IS NOT NULL, a.created_at DESC`;
+    return rows.map((r) => ({
+      id: r.id,
+      label: r.label,
+      createdAt: r.created_at.getTime(),
+      lastUsedAt: r.last_used_at?.getTime() ?? null,
+      revokedAt: r.revoked_at?.getTime() ?? null,
+      holders: r.holders,
+    }));
+  }
+
+  /** Revoke one key, or every live key when id is null. Returns how many changed. */
+  async revokeAdminKeys(id: string | null): Promise<number> {
+    const rows = id === null
+      ? await this.sql`UPDATE admin_keys SET revoked_at = now() WHERE revoked_at IS NULL RETURNING id`
+      : await this.sql`UPDATE admin_keys SET revoked_at = now() WHERE id = ${id} AND revoked_at IS NULL RETURNING id`;
+    return rows.length;
+  }
+
+  async liveAdminKeyCount(): Promise<number> {
+    const rows = await this.sql<{ n: number }[]>`SELECT count(*)::int AS n FROM admin_keys WHERE revoked_at IS NULL`;
+    return rows[0]?.n ?? 0;
+  }
+
+  // ---- instance policy ----
+
+  async getPolicy(): Promise<Partial<InstancePolicy> | null> {
+    const rows = await this.sql<{ policy: Partial<InstancePolicy> }[]>`SELECT policy FROM instance_settings WHERE id = 1`;
+    return rows[0]?.policy ?? null;
+  }
+
+  async savePolicy(policy: InstancePolicy): Promise<void> {
+    await this.sql`
+      INSERT INTO instance_settings (id, policy, updated_at) VALUES (1, ${this.sql.json(policy as never)}, now())
+      ON CONFLICT (id) DO UPDATE SET policy = EXCLUDED.policy, updated_at = now()`;
   }
 
   async markRecovered(id: string): Promise<void> {
@@ -148,14 +250,20 @@ export class Db {
 
   async sessionUser(tokenHash: string): Promise<UserRow | null> {
     const rows = await this.sql<UserRow[]>`
-      SELECT u.id, u.name, u.phrase_hash, u.created_at, u.recovered_at, u.can_open_tables
-      FROM sessions s JOIN users u ON u.id = s.user_id
+      SELECT ${this.sql.unsafe(USER_COLUMNS)}
+      FROM sessions s JOIN users u ON u.id = s.user_id ${this.sql.unsafe(USER_JOIN)}
       WHERE s.token_hash = ${tokenHash}`;
     return rows[0] ?? null;
   }
 
   async deleteSession(tokenHash: string): Promise<void> {
     await this.sql`DELETE FROM sessions WHERE token_hash = ${tokenHash}`;
+  }
+
+  /** A room has ever had this code, so it must not be handed out again. */
+  async roomCodeExists(code: string): Promise<boolean> {
+    const rows = await this.sql`SELECT 1 FROM rooms WHERE code = ${code}`;
+    return rows.length > 0;
   }
 
   async insertRoom(room: { code: string; name: string; hostId: string; createdAt: number; settings: unknown }): Promise<void> {

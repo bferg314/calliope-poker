@@ -11,8 +11,21 @@ import {
 import {
   absorbDowntime, buildReport, currentStakes, elapsedPlayingMs, emptyLedger, endsAtOf, levelViewOf, migrateClock,
   newRoom, nightIsUp, randomRoomCode, remainingMs, seatOf, stakeConfigFrom, stakesAtLevel,
-  nonStakeConfigFrom, targetLevel, type RoomRecord,
+  nonStakeConfigFrom, targetLevel, type RoomQuota, type RoomRecord,
 } from './room.js';
+
+/** How long a finished table stays live, so people can read the report and grab tickets. */
+export const ENDED_RETENTION_MS = 6 * 60 * 60 * 1000;
+
+/** Why the server, rather than the table's host, is shutting a table down. */
+export type CloseReason = 'limit' | 'idle' | 'abandoned' | 'admin';
+
+const CLOSE_MESSAGES: Record<CloseReason, string> = {
+  limit: 'This table reached the server\'s time limit.',
+  idle: 'This table was closed because nobody was using it.',
+  abandoned: 'This table was closed because nobody had been at it for a long time.',
+  admin: 'Whoever runs this server closed this table.',
+};
 
 export class RoomError extends Error {
   readonly code: string;
@@ -39,6 +52,10 @@ export interface RoomRuntime {
   timeouts: Record<number, number>;
   /** The table has been cancelled; this runtime is dead and must not persist. */
   cancelled: boolean;
+  /** Since when no person has been connected, or null while someone is. */
+  humansAwaySince: number | null;
+  /** The report on its way to Postgres. The room may not be evicted before it lands. */
+  reportWrite: Promise<void> | null;
 }
 
 export interface ManagerDeps {
@@ -50,6 +67,8 @@ export interface ManagerDeps {
   onRoomStarted(record: RoomRecord): Promise<void>;
   onHandSettled(record: RoomRecord, summary: HandSummary): Promise<void>;
   onNightEnded(record: RoomRecord, report: NightReport): Promise<void>;
+  /** When the server will close this table, or null if it never will. */
+  expiresAt?(record: RoomRecord): number | null;
   publicUrl: string;
   log: (msg: string, extra?: unknown) => void;
 }
@@ -65,6 +84,11 @@ export class RoomManager {
   restore(records: RoomRecord[]): void {
     const now = Date.now();
     for (const record of records) {
+      // Finished long enough ago that Postgres is the only place it lives now.
+      if (record.phase === 'ended' && record.endedAt !== null && now - record.endedAt > ENDED_RETENTION_MS) {
+        void this.deps.forget(record).catch((e) => this.deps.log(`could not drop finished room ${record.code}`, e));
+        continue;
+      }
       try {
         migrateClock(record, now);
       } catch (e) {
@@ -80,14 +104,22 @@ export class RoomManager {
   }
 
   private runtime(record: RoomRecord): RoomRuntime {
-    return { record, clients: new Set(), timer: null, deadline: null, timeouts: {}, cancelled: false };
+    // Counted as away from the start, so a table nobody ever opens is not kept forever.
+    return { record, clients: new Set(), timer: null, deadline: null, timeouts: {}, cancelled: false, humansAwaySince: Date.now(), reportWrite: null };
   }
 
-  async create(host: { id: string; name: string }, opts: { name?: string; passwordHash?: string | null; settings?: Partial<RoomSettings> }): Promise<RoomRecord> {
-    let code = randomRoomCode();
+  /**
+   * Open a table. Everything up to adding it to `rooms` is synchronous, so a
+   * caller that checked the limits just before cannot be overtaken.
+   */
+  async create(
+    host: { id: string; name: string },
+    opts: { name?: string; passwordHash?: string | null; settings?: Partial<RoomSettings>; code?: string; quota?: RoomQuota | null },
+  ): Promise<RoomRecord> {
+    let code = opts.code && !this.rooms.has(opts.code) ? opts.code : randomRoomCode();
     while (this.rooms.has(code)) code = randomRoomCode();
     if (opts.settings) roomSettingsSchema.partial().parse(opts.settings);
-    const record = newRoom({ code, host, name: opts.name, passwordHash: opts.passwordHash ?? null, settings: opts.settings, now: Date.now() });
+    const record = newRoom({ code, host, name: opts.name, passwordHash: opts.passwordHash ?? null, settings: opts.settings, quota: opts.quota ?? null, now: Date.now() });
     const rt = this.runtime(record);
     this.rooms.set(code, rt);
     await this.deps.onRoomCreated(record);
@@ -115,12 +147,14 @@ export class RoomManager {
 
   connect(rt: RoomRuntime, client: Client): void {
     rt.clients.add(client);
+    rt.humansAwaySince = null;
     client.send({ type: 'snapshot', room: this.view(rt, client.userId) });
     this.broadcast(rt); // others see the connection state change
   }
 
   disconnect(rt: RoomRuntime, client: Client): void {
     rt.clients.delete(client);
+    if (rt.clients.size === 0) rt.humansAwaySince = Date.now();
     if (rt.cancelled) return; // there is no room left to describe
     this.broadcast(rt);
   }
@@ -344,13 +378,10 @@ export class RoomManager {
         return;
       }
       case 'cancel-room':
-        return this.cancelRoom(rt);
-      case 'end-night': {
-        const h = r.table.hand;
-        if (h && h.stage !== 'settled') { r.phase = 'final-hand'; this.afterChange(rt); }
-        else this.endNight(rt);
+        return this.cancelRoom(rt, 'cancelled', 'The host cancelled this table.');
+      case 'end-night':
+        this.requestEnd(rt);
         return;
-      }
       case 'transfer-host': {
         const m = r.members[cmd.playerId];
         if (!m || m.kind !== 'human') throw new RoomError('no-such-player', 'Pick a person at the table');
@@ -595,7 +626,7 @@ export class RoomManager {
    *
    * If Redis refuses, nothing has changed and the host can simply try again.
    */
-  private async cancelRoom(rt: RoomRuntime): Promise<void> {
+  private async cancelRoom(rt: RoomRuntime, code: string, message: string): Promise<void> {
     const r = rt.record;
     if (rt.cancelled) return;
     if (r.phase !== 'lobby') {
@@ -619,7 +650,7 @@ export class RoomManager {
     this.rooms.delete(r.code);
     for (const c of rt.clients) {
       try {
-        c.send({ type: 'error', code: 'cancelled', message: 'The host cancelled this table.' });
+        c.send({ type: 'error', code, message });
         c.close?.(4005, 'cancelled');
       } catch (e) {
         this.deps.log('could not tell a client the table was cancelled', e);
@@ -628,6 +659,54 @@ export class RoomManager {
     rt.clients.clear();
 
     void this.deps.onRoomCancelled(r).catch((e) => this.deps.log('onRoomCancelled failed', e));
+  }
+
+  /** End the night: at once between hands, or after the hand being played. */
+  private requestEnd(rt: RoomRuntime): void {
+    const r = rt.record;
+    const h = r.table.hand;
+    if (h && h.stage !== 'settled') { r.phase = 'final-hand'; this.afterChange(rt); }
+    else this.endNight(rt);
+  }
+
+  /**
+   * The server shutting a table down: over a limit, idle, or by hand from the
+   * Server page. A lobby is cancelled outright; a night in progress finishes
+   * its hand and ends normally, so everyone still gets the report.
+   */
+  async close(rt: RoomRuntime, reason: CloseReason): Promise<void> {
+    const r = rt.record;
+    if (rt.cancelled || r.phase === 'ended' || r.phase === 'final-hand') return;
+    const message = CLOSE_MESSAGES[reason];
+    this.deps.log(`closing ${r.code}: ${reason}`);
+    if (r.phase === 'lobby') return this.cancelRoom(rt, 'closed', message);
+    for (const c of rt.clients) {
+      try { c.send({ type: 'error', code: 'closing', message: `${message} The hand being played will finish.` }); } catch { /* gone */ }
+    }
+    this.requestEnd(rt);
+  }
+
+  /**
+   * Let go of a finished table once its report is safely in Postgres, which is
+   * where the report link reads it from after this. Anyone still looking is
+   * disconnected, and their page falls back to that copy.
+   */
+  async evict(rt: RoomRuntime): Promise<boolean> {
+    const r = rt.record;
+    if (r.phase !== 'ended' || !this.rooms.has(r.code)) return false;
+    if (rt.reportWrite) {
+      try { await rt.reportWrite; } catch { return false; } // not saved, so keep it
+    }
+    await this.deps.forget(r);
+    this.rooms.delete(r.code);
+    for (const c of rt.clients) {
+      try {
+        c.send({ type: 'error', code: 'no-room', message: 'This night is over and filed away.' });
+        c.close?.(4006, 'ended');
+      } catch { /* gone */ }
+    }
+    rt.clients.clear();
+    return true;
   }
 
   private endNight(rt: RoomRuntime): void {
@@ -639,7 +718,8 @@ export class RoomManager {
     r.phase = 'ended';
     r.endedAt = endedAt;
     r.report = buildReport(r, endedAt);
-    void this.deps.onNightEnded(r, r.report).catch((e) => this.deps.log('onNightEnded failed', e));
+    rt.reportWrite = this.deps.onNightEnded(r, r.report);
+    rt.reportWrite.catch((e) => this.deps.log('onNightEnded failed', e));
     this.afterChange(rt);
   }
 
@@ -706,6 +786,10 @@ export class RoomManager {
       report: r.report,
       variants: this.variants(r),
       joinUrl: `${this.deps.publicUrl}/r/${r.code}`,
+      serverLimit: (() => {
+        const expiresAt = r.phase === 'ended' ? null : this.deps.expiresAt?.(r) ?? null;
+        return expiresAt === null ? null : { expiresAt };
+      })(),
     };
   }
 

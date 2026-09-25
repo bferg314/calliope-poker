@@ -22,7 +22,7 @@ const BETTING_LABEL: Record<string, string> = { 'no-limit': 'No limit', 'pot-lim
  * One part of the form, folded to a line that says what it is set to, so the
  * whole form reads at a glance and a phone does not scroll past it all.
  */
-function Section({ title, summary, open = false, children }: { title: string; summary: string; open?: boolean; children: ReactNode }): JSX.Element {
+export function Section({ title, summary, open = false, children }: { title: string; summary: string; open?: boolean; children: ReactNode }): JSX.Element {
   return (
     <details className="settings-section" open={open}>
       <summary>
@@ -34,7 +34,7 @@ function Section({ title, summary, open = false, children }: { title: string; su
   );
 }
 
-function Num({ label, value, onChange, min = 0, disabled }: { label: string; value: number; onChange: (n: number) => void; min?: number; disabled: boolean }): JSX.Element {
+export function Num({ label, value, onChange, min = 0, disabled }: { label: string; value: number; onChange: (n: number) => void; min?: number; disabled: boolean }): JSX.Element {
   return (
     <label className="field">
       <span className="label">{label}</span>

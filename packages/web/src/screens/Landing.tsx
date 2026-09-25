@@ -1,13 +1,22 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { api, ApiError } from '../api.js';
 import { ResumeBanner } from '../components/ResumeBanner.js';
 import { TopBar } from '../components/TopBar.js';
 import { useRouter } from '../router.js';
 import { useSession } from '../session.js';
 
+/** "4 hours", "90 minutes", "1 hour 30 minutes". */
+function fmtMinutes(m: number): string {
+  const h = Math.floor(m / 60);
+  const rest = m % 60;
+  const hours = h === 1 ? '1 hour' : `${h} hours`;
+  if (h === 0) return `${m} minutes`;
+  return rest === 0 ? hours : `${hours} ${rest} minutes`;
+}
+
 export function Landing(): JSX.Element {
   const { navigate } = useRouter();
-  const { user, restricted, canOpenTables, claimHost } = useSession();
+  const { user, restricted, limits, canOpenTables, claimHost, refreshInstance } = useSession();
   const [code, setCode] = useState('');
   const [name, setName] = useState('');
   const [password, setPassword] = useState('');
@@ -16,6 +25,14 @@ export function Landing(): JSX.Element {
   const [hostKey, setHostKey] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [unlocked, setUnlocked] = useState<string | null>(null);
+
+  // How busy the server is changes while this page sits open.
+  useEffect(() => refreshInstance(), [refreshInstance]);
+
+  // The owner and admins are free of the limits, so they need not see them.
+  const limited = limits && !user?.serverRole ? limits : null;
+  const full = !!limited && limited.maxTables !== null && limited.inUse >= limited.maxTables;
 
   const create = async (): Promise<void> => {
     setBusy(true);
@@ -28,6 +45,7 @@ export function Landing(): JSX.Element {
       navigate(`/r/${r.code}`);
     } catch (e) {
       setError(e instanceof ApiError ? e.message : 'Could not create a table');
+      refreshInstance();
     } finally {
       setBusy(false);
     }
@@ -37,7 +55,9 @@ export function Landing(): JSX.Element {
     setBusy(true);
     setError(null);
     try {
-      await claimHost(hostKey.trim());
+      const role = await claimHost(hostKey.trim());
+      setUnlocked(role === 'owner' ? 'You run this server.' : 'You help run this server.');
+      refreshInstance();
       setClaiming(false);
       setHostKey('');
     } catch (e) {
@@ -82,6 +102,11 @@ export function Landing(): JSX.Element {
               <span className="label">password (optional)</span>
               <input className="input" type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="off" />
             </div>
+            {limited?.maxTableMinutes && (
+              <p className="micro" style={{ margin: 0 }}>
+                Tables here close after {fmtMinutes(limited.maxTableMinutes)}. The hand being played always finishes.
+              </p>
+            )}
             {error && <div className="error">{error}</div>}
             <div className="row">
               <button className="btn btn-red" disabled={busy} onClick={() => void create()}>Open the table</button>
@@ -90,15 +115,12 @@ export function Landing(): JSX.Element {
           </div>
         ) : (
           <div className="stack">
-            {canOpenTables ? (
-              <button className="btn btn-red" style={{ minHeight: 56 }} onClick={() => setCreating(true)}>
-                Deal a new table
-              </button>
-            ) : claiming ? (
+            {claiming ? (
               <div className="panel stack">
-                <div className="label">the host key</div>
+                <div className="label">your key</div>
                 <p className="micro" style={{ margin: 0 }}>
-                  It is the <strong>HOST_KEY</strong> from the <code>.env</code> file on the machine running this server.
+                  The <strong>HOST_KEY</strong> from the <code>.env</code> file on the machine running this server,
+                  or an admin key its owner gave you.
                 </p>
                 <input
                   className="input"
@@ -108,7 +130,7 @@ export function Landing(): JSX.Element {
                   autoComplete="off"
                   onChange={(e) => setHostKey(e.target.value)}
                   onKeyDown={(e) => { if (e.key === 'Enter') void claim(); }}
-                  aria-label="Host key"
+                  aria-label="Server key"
                 />
                 {error && <div className="error">{error}</div>}
                 <div className="row">
@@ -116,14 +138,28 @@ export function Landing(): JSX.Element {
                   <button className="btn btn-quiet" onClick={() => { setClaiming(false); setError(null); }}>never mind</button>
                 </div>
               </div>
+            ) : canOpenTables ? (
+              <>
+                {unlocked && <p className="micro" style={{ margin: 0, textAlign: 'center' }}>{unlocked}</p>}
+                <button className="btn btn-red" style={{ minHeight: 56 }} disabled={full} onClick={() => setCreating(true)}>
+                  Deal a new table
+                </button>
+                {limited && limited.maxTables !== null && (
+                  <p className="micro" style={{ margin: 0, textAlign: 'center' }}>
+                    {full
+                      ? `${limited.maxTables === 1 ? 'The one public table is' : `All ${limited.maxTables} public tables are`} in use. Try again in a little while, or join one with a code.`
+                      : `${limited.inUse} of ${limited.maxTables} public ${limited.maxTables === 1 ? 'table' : 'tables'} in use.`}
+                  </p>
+                )}
+              </>
             ) : (
               <div className="panel stack">
                 <p style={{ margin: 0 }}>
-                  Tables on this server are opened by whoever runs it. Ask them for a room code or a link, and you can
+                  Tables on this server are opened by the people who run it. Ask them for a room code or a link, and you can
                   sit down and play.
                 </p>
                 <button className="btn btn-quiet btn-small" style={{ alignSelf: 'flex-start' }} onClick={() => setClaiming(true)}>
-                  I run this server
+                  I help run this server
                 </button>
               </div>
             )}
@@ -154,6 +190,12 @@ export function Landing(): JSX.Element {
       {restricted && canOpenTables && (
         <p className="micro" style={{ textAlign: 'center' }}>
           This server is set to host only. Other people can join your tables but cannot open their own.
+        </p>
+      )}
+      {/* On a public server the key box is otherwise out of sight. */}
+      {!claiming && !creating && canOpenTables && !user?.serverRole && limits && (
+        <p className="micro" style={{ textAlign: 'center' }}>
+          <button className="btn btn-quiet btn-small" onClick={() => setClaiming(true)}>I help run this server</button>
         </p>
       )}
       <p className="folio" style={{ textAlign: 'center' }}>
