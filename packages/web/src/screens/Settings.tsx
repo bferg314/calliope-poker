@@ -5,6 +5,7 @@ import {
 } from '@calliope/shared';
 import { Chip } from '../components/Chip.js';
 import { WildSelect } from '../components/WildSelect.js';
+import { useGameGuide } from '../components/GameGuide.js';
 import { wildLabel } from '@calliope/engine';
 import { fmt, fmtMoney } from '../format.js';
 import { Icon } from '../components/Icon.js';
@@ -88,6 +89,8 @@ export function Settings({ settings, variants, editable, onSave, onDirtyChange }
   };
   const gameName = dc ? "Dealer's choice" : variants.find((v) => v.id === allowed[0])?.name ?? allowed[0];
   const lockedVariant = dc ? null : variants.find((v) => v.id === allowed[0]);
+  const openGuide = useGameGuide();
+  const guideGames = variants.filter((v) => allowed.includes(v.id));
   const wild = draft.wild ?? { kind: 'none' as const };
   const wildLine = wildLabel(wild);
   const bettingLabel = draft.betting === 'variant-default' ? 'usual betting' : BETTING_LABEL[draft.betting]!.toLowerCase();
@@ -136,6 +139,11 @@ export function Settings({ settings, variants, editable, onSave, onDirtyChange }
             </select>
           )}
           {lockedVariant && <p className="micro" style={{ margin: 0 }}>{lockedVariant.description}</p>}
+          <div>
+            <button type="button" className="btn btn-quiet btn-small" onClick={() => openGuide(guideGames, allowed[0], draft.wild)}>
+              {dc ? 'How to play these games' : `How to play ${lockedVariant?.name ?? 'it'}`}
+            </button>
+          </div>
           <div className="settings-grid">
             <label className="field span-2">
               <span className="label">wild cards</span>
