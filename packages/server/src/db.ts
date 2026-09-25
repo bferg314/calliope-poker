@@ -315,6 +315,12 @@ export class Db {
     }
   }
 
+  /** Every hand a table played, in order: the history behind its report. */
+  async roomHands(code: string): Promise<HandSummary[]> {
+    const rows = await this.sql<{ summary: HandSummary }[]>`SELECT summary FROM hands WHERE room_code = ${code} ORDER BY number`;
+    return rows.map((r) => r.summary);
+  }
+
   async roomReport(code: string): Promise<NightReport | null> {
     const rows = await this.sql<{ report: NightReport | null }[]>`SELECT report FROM rooms WHERE code = ${code}`;
     return rows[0]?.report ?? null;

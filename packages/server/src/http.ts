@@ -1,7 +1,7 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
-import { listVariants } from '@calliope/engine';
-import { createRoomSchema, instancePolicySchema, nameSchema, phraseSchema, roomCodeSchema } from '@calliope/shared';
+import { hasVariant, getVariant, listVariants, summaryFor, wildLabel, type HandSummary } from '@calliope/engine';
+import { createRoomSchema, instancePolicySchema, nameSchema, phraseSchema, roomCodeSchema, type HandDetail, type HandListItem } from '@calliope/shared';
 import { hashSecret, verifySecret, type Auth, type PublicUser } from './auth.js';
 import type { Db } from './db.js';
 import { RoomError, type RoomManager } from './manager.js';
@@ -259,6 +259,37 @@ export function registerHttp(app: FastifyInstance, s: Services): void {
   app.delete('/api/server/admins', async (request, reply) => {
     if (!requireRole(request, reply, true)) return;
     return { revoked: await s.db.revokeAdminKeys(null) };
+  });
+
+  /**
+   * A night's hands, from the live table while it is held and from the database
+   * after. Anyone with the code may read them, as anyone with it may read the
+   * report, so each hand goes out as the asker may see it: folded hands stay
+   * face down, except the asker's own.
+   */
+  const handsOf = async (code: string): Promise<HandSummary[]> => s.manager.get(code)?.record.hands ?? (await s.db.roomHands(code));
+  const variantName = (id: string): string => (hasVariant(id) ? getVariant(id).name : id);
+
+  app.get('/api/rooms/:code/hands', async (request): Promise<HandListItem[]> => {
+    const code = roomCodeSchema.parse((request.params as { code: string }).code);
+    return (await handsOf(code)).map((h) => ({
+      number: h.number,
+      variantId: h.variantId,
+      variantName: variantName(h.variantId),
+      potTotal: h.potTotal,
+      showdown: h.showdown,
+      wild: wildLabel(h.wild),
+      winners: h.winners.map((w) => ({ name: h.players.find((p) => p.seat === w.seat)?.name ?? '?', amount: w.amount, handLabel: w.handLabel })),
+    }));
+  });
+
+  app.get('/api/rooms/:code/hands/:number', async (request, reply): Promise<HandDetail | FastifyReply> => {
+    const params = request.params as { code: string; number: string };
+    const code = roomCodeSchema.parse(params.code);
+    const number = z.coerce.number().int().positive().parse(params.number);
+    const hand = (await handsOf(code)).find((h) => h.number === number);
+    if (!hand) return fail(reply, 404, 'no-hand', 'No such hand at that table');
+    return { hand: summaryFor(hand, request.user?.id ?? null), variantName: variantName(hand.variantId) };
   });
 
   app.get('/api/rooms/:code/report', async (request, reply) => {

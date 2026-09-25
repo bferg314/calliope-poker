@@ -1,5 +1,23 @@
 import { z } from 'zod';
 import type { HandSummaryView, TableView } from '@calliope/engine';
+
+/** One line of a night's hand history: enough to find the hand worth opening. */
+export interface HandListItem {
+  number: number;
+  variantId: string;
+  variantName: string;
+  potTotal: number;
+  showdown: boolean;
+  /** "deuces wild", when anything was. */
+  wild: string | null;
+  winners: { name: string; amount: number; handLabel: string | null }[];
+}
+
+/** One hand of the history, as the asker may see it. */
+export interface HandDetail {
+  hand: HandSummaryView;
+  variantName: string;
+}
 import { nameSchema, roomSettingsPatchSchema, wildSchema, type RoomSettings } from './settings.js';
 import type { LevelStakes } from './levels.js';
 
