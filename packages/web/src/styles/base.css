@@ -259,6 +259,74 @@ select {
   color: var(--ink-disabled);
 }
 
+/* ---------- the keys that act at the table ---------- */
+.keys-picker {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+}
+
+.keys-presets {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-2);
+}
+
+.keys-letters {
+  font-variant-caps: all-small-caps;
+  letter-spacing: 0.3em;
+  font-weight: 600;
+}
+
+.keys-custom {
+  color: var(--ink-2);
+}
+
+.keys-custom.on {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.keys-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--s-2);
+}
+
+/* A keycap over what it does; pressed, it waits for the new key. */
+.keys-action {
+  all: unset;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s-1);
+  min-height: var(--hit);
+  padding: var(--s-2);
+  border: 1px solid var(--ink-3);
+  border-radius: var(--r-btn);
+  cursor: pointer;
+  text-align: center;
+}
+
+.keys-action kbd {
+  font-family: var(--font-display);
+  font-size: var(--t-h3);
+  text-transform: uppercase;
+  line-height: 1;
+}
+
+.keys-action.listening {
+  border-color: var(--red);
+  color: var(--red);
+}
+
+.keys-action:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
 .btn kbd {
   font-family: var(--font-ui);
   font-size: var(--t-micro);
