@@ -3,7 +3,7 @@ import type { BotPersonality } from '@calliope/shared';
 import { estimateStrength } from './strength.js';
 
 export { estimateStrength, chenStrength } from './strength.js';
-export { chooseDiscards, drawKeep } from './discard.js';
+export { chooseDiscards, drawKeep, drawKeepThree } from './discard.js';
 
 export interface PersonalityParams {
   /** Shifts every strength estimate: positive plays more hands. */

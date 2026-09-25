@@ -1,4 +1,4 @@
-import { bestHand, evaluateCards, getVariant, rankOf, suitOf, type Card, type TableState } from '@calliope/engine';
+import { bestHand, evaluateCards, evaluateThree, getVariant, rankOf, suitOf, type Card, type TableState } from '@calliope/engine';
 
 /** Ranks that appear more than once, most repeated first. */
 function groups(cards: readonly Card[]): { rank: number; cards: Card[] }[] {
@@ -66,6 +66,26 @@ export function drawKeep(hole: readonly Card[]): Card[] {
 }
 
 /**
+ * Three-card draw: stand pat on a flush or better, keep a pair, keep two to a
+ * straight flush, otherwise keep a queen or better and draw to it.
+ */
+export function drawKeepThree(hole: readonly Card[]): Card[] {
+  const made = evaluateThree(hole);
+  if (made.category >= 3) return [...hole];
+  if (made.category === 1) return groups(hole)[0]!.cards;
+  for (let i = 0; i < hole.length; i++) {
+    for (let j = i + 1; j < hole.length; j++) {
+      const a = hole[i]!;
+      const b = hole[j]!;
+      const gap = Math.abs(rankOf(a) - rankOf(b));
+      if (suitOf(a) === suitOf(b) && gap >= 1 && gap <= 2) return [a, b];
+    }
+  }
+  const high = [...hole].sort((a, b) => rankOf(b) - rankOf(a))[0]!;
+  return rankOf(high) >= 12 ? [high] : [];
+}
+
+/**
  * Which cards a bot throws away. Returns an empty list when the street has no
  * draw, or when standing pat is allowed and best.
  */
@@ -79,7 +99,7 @@ export function chooseDiscards(state: TableState, seat: number): Card[] {
 
   const hole = p.holeDown;
   if (spec.replace) {
-    const keep = drawKeep(hole);
+    const keep = hole.length === 3 ? drawKeepThree(hole) : drawKeep(hole);
     const toss = hole.filter((c) => !keep.includes(c));
     return toss.slice(0, spec.max);
   }

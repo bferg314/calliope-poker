@@ -199,7 +199,7 @@ export function Landing(): JSX.Element {
         </p>
       )}
       <p className="folio" style={{ textAlign: 'center' }}>
-        Hold'em · Omaha · Pineapple · Seven-card stud · Five-card stud · Five-card draw · Dealer's choice
+        Hold'em · Omaha · Pineapple · Seven-card stud · Five-card stud · Five-card draw · Three-card poker · Three-card draw · Dealer's choice
       </p>
     </div>
   );
