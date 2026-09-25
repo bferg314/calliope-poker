@@ -4,6 +4,7 @@ import type { Action, LegalActions } from '@calliope/engine';
 import { fmt } from '../format.js';
 import { BetPanel } from './BetPanel.js';
 import { Icon } from './Icon.js';
+import { actionFor, currentKeys } from '../keys.js';
 
 interface ActionBarProps {
   legal: LegalActions | null;
@@ -26,6 +27,8 @@ interface ActionBarProps {
 export function ActionBar({ legal, waitingFor, onAction, confirmFold, primary, panelHost }: ActionBarProps): JSX.Element {
   const [betOpen, setBetOpen] = useState(false);
   const [foldArmed, setFoldArmed] = useState(false);
+  // Chosen on the profile page, so read once as the table opens.
+  const [keys] = useState(currentKeys);
 
   useEffect(() => {
     setBetOpen(false);
@@ -52,9 +55,12 @@ export function ActionBar({ legal, waitingFor, onAction, confirmFold, primary, p
     const onKey = (e: KeyboardEvent): void => {
       const t = e.target as HTMLElement | null;
       if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT')) return;
-      if (e.key === 'f' || e.key === 'F') { e.preventDefault(); fold(); }
-      else if (e.key === 'c' || e.key === 'C') { e.preventDefault(); checkCall(); }
-      else if (e.key === 'r' || e.key === 'R') { e.preventDefault(); betRaise(); }
+      const act = actionFor(e, keys);
+      if (!act) return;
+      e.preventDefault();
+      if (act === 'fold') fold();
+      else if (act === 'call') checkCall();
+      else betRaise();
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
@@ -110,15 +116,15 @@ export function ActionBar({ legal, waitingFor, onAction, confirmFold, primary, p
       <div className="buttons">
         <button className="btn" onClick={fold} aria-label="Fold">
           <span>{foldArmed ? 'Really fold?' : 'Fold'}</span>
-          <kbd>f</kbd>
+          <kbd>{keys.fold}</kbd>
         </button>
         <button className="btn btn-ink" onClick={checkCall}>
           <span>{legal.canCheck ? 'Check' : `Call ${fmt(legal.callAmount)}`}</span>
-          <kbd>c</kbd>
+          <kbd>{keys.call}</kbd>
         </button>
         <button className="btn btn-red" onClick={betRaise} disabled={!raise} aria-expanded={betOpen}>
           <span>{raiseLabel}{raise && !raise.fixed && <Icon name="chevron-right" />}</span>
-          <kbd>r</kbd>
+          <kbd>{keys.raise}</kbd>
         </button>
       </div>
     </div>
