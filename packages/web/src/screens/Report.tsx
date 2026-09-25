@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { priceNight, type NightReport, type RoomView } from '@calliope/shared';
 import { TopBar } from '../components/TopBar.js';
+import { HandHistory } from '../components/HandHistory.js';
 import { fmt, fmtCash, fmtCashSigned, fmtDate, fmtDuration, fmtSigned } from '../format.js';
 import { Link } from '../router.js';
 
@@ -167,6 +168,7 @@ export function Report({ room }: { room: RoomView }): JSX.Element {
       <div style={{ paddingTop: 'var(--s-4)' }}>
         {report ? <ReportSheet report={report} youId={room.me?.id ?? null} /> : <p className="muted">The night has ended.</p>}
       </div>
+      <HandHistory code={room.code} />
       <div className="row" style={{ paddingTop: 'var(--s-6)' }}>
         <Link to="/" className="btn btn-ink">Another night</Link>
         <Link to="/me" className="btn">My record</Link>
@@ -186,6 +188,7 @@ export function FiledReport({ code, report, youId }: { code: string; report: Nig
       <div style={{ paddingTop: 'var(--s-4)' }}>
         <ReportSheet report={report} youId={youId} />
       </div>
+      <HandHistory code={code} />
       <div className="row" style={{ paddingTop: 'var(--s-6)' }}>
         <Link to="/" className="btn btn-ink">Another night</Link>
         <Link to="/me" className="btn">My record</Link>

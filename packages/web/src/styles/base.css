@@ -773,6 +773,62 @@ details > summary {
   padding: var(--s-6) 0;
 }
 
+/* ---------- the night's hands ---------- */
+.hand-history {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  padding-top: var(--s-6);
+}
+
+.hand-history-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--ink);
+}
+
+.hand-history-list li {
+  border-bottom: 1px solid var(--ink-3);
+}
+
+/* A whole row is the way into the hand: game on the left, pot on the right,
+   who won under both. */
+.hand-history-row {
+  all: unset;
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--s-0) var(--s-3);
+  width: 100%;
+  min-height: var(--hit);
+  padding: var(--s-2) 0;
+  cursor: pointer;
+}
+
+.hand-history-row:hover .what .num {
+  text-decoration: underline;
+}
+
+.hand-history-row:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.hand-history-row .what .num {
+  font-family: var(--font-display);
+}
+
+.hand-history-row .pot {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.hand-history-row .who {
+  grid-column: 1 / -1;
+  color: var(--ink-2);
+}
+
 .report-cards {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
