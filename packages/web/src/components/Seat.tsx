@@ -1,4 +1,4 @@
-import type { HandPlayerView, Seat as SeatState } from '@calliope/engine';
+import type { HandPlayerView, Seat as SeatState, WildTest } from '@calliope/engine';
 import type { ChipDenomination } from '@calliope/shared';
 import { fmt } from '../format.js';
 import { Card } from './Card.js';
@@ -17,6 +17,8 @@ interface SeatCardProps {
   denoms: ChipDenomination[];
   /** Width of a face-up card's tile. Face-down backs are drawn a little narrower. */
   cardWidth: number;
+  /** Which cards are wild this hand, if any. */
+  isWild?: WildTest;
 }
 
 /**
@@ -83,7 +85,7 @@ export function SeatCard(p: SeatCardProps): JSX.Element {
             <span className="up">
               {up.map((c, i) => (
                 <span key={c} className="up-slot">
-                  <Card card={c} width={p.cardWidth} delay={turned.has(c) ? 0 : (down + i) * 60} mode="tile" className={turned.has(c) ? 'flip-in' : ''} />
+                  <Card card={c} width={p.cardWidth} delay={turned.has(c) ? 0 : (down + i) * 60} mode="tile" className={turned.has(c) ? 'flip-in' : ''} wild={!!p.isWild?.(c)} />
                 </span>
               ))}
             </span>

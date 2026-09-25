@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import type { HandSummary, TableView } from '@calliope/engine';
-import { nameSchema, roomSettingsPatchSchema, type RoomSettings } from './settings.js';
+import { nameSchema, roomSettingsPatchSchema, wildSchema, type RoomSettings } from './settings.js';
 import type { LevelStakes } from './levels.js';
 
 export const actionSchema = z.discriminatedUnion('type', [
@@ -34,7 +34,7 @@ export const hostCommandSchema = z.discriminatedUnion('kind', [
 
 export const clientMessageSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('action'), action: actionSchema }),
-  z.object({ type: z.literal('choose-variant'), variantId: z.string().min(2).max(32) }),
+  z.object({ type: z.literal('choose-variant'), variantId: z.string().min(2).max(32), wild: wildSchema.optional() }),
   /** Throw cards away on a draw street. An empty list stands pat. */
   z.object({ type: z.literal('discard'), cards: z.array(z.string().length(2)).max(5) }),
   z.object({ type: z.literal('sit'), seat: z.number().int().min(0).max(9) }),

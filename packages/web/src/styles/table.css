@@ -513,6 +513,13 @@
   color: var(--card-red);
 }
 
+/* A wild card this hand, ringed in the table's accent. An outline rather than a
+   border, so the card keeps its size and nothing beside it moves. */
+.card.wild {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
 .card-tile .rank {
   letter-spacing: -0.04em;
 }

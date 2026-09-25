@@ -36,10 +36,21 @@ export const variantModeSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('dealers-choice'), allowed: z.array(z.string().min(2).max(32)).min(1).max(16) }),
 ]);
 
+/** Which cards are wild; see engine/src/wild.ts. Jokers are only dealt when they are. */
+export const wildSchema = z.discriminatedUnion('kind', [
+  z.object({ kind: z.literal('none') }),
+  z.object({ kind: z.literal('jokers') }),
+  z.object({ kind: z.literal('deuces') }),
+  z.object({ kind: z.literal('one-eyed-jacks') }),
+  z.object({ kind: z.literal('rank'), rank: z.number().int().min(2).max(14) }),
+]);
+
 export const bettingStructureSchema = z.enum(['no-limit', 'pot-limit', 'fixed-limit']);
 
 export const roomSettingsSchema = z.object({
   variantMode: variantModeSchema,
+  /** Wild cards for a table locked to one game; in dealer's choice the dealer picks them each hand. */
+  wild: wildSchema.default({ kind: 'none' }),
   betting: z.union([bettingStructureSchema, z.literal('variant-default')]),
   blinds: z.object({ small: z.number().int().min(0), big: z.number().int().positive() }),
   ante: z.number().int().min(0),
@@ -78,6 +89,7 @@ export type ChipDenomination = z.infer<typeof chipDenominationSchema>;
 
 export const DEFAULT_ROOM_SETTINGS: RoomSettings = {
   variantMode: { kind: 'locked', variantId: 'holdem' },
+  wild: { kind: 'none' },
   betting: 'variant-default',
   blinds: { small: 5, big: 10 },
   ante: 0,

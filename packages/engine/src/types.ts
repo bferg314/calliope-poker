@@ -1,5 +1,6 @@
 import type { Card } from './cards.js';
 import type { HandRank } from './evaluator.js';
+import type { Wild } from './wild.js';
 
 export type SeatIndex = number;
 export type BettingStructure = 'no-limit' | 'pot-limit' | 'fixed-limit';
@@ -23,6 +24,11 @@ export interface TableConfig {
   /** Maximum bets per street in fixed limit (a bet plus raises). Ignored heads-up. */
   fixedLimitRaiseCap: number;
   actionSeconds: number;
+  /**
+   * The wild cards for a table locked to one game. In dealer's choice the
+   * dealer picks them with the game. Absent on tables made before wild cards.
+   */
+  wild?: Wild;
 }
 
 export interface Seat {
@@ -117,6 +123,8 @@ export interface HandState {
   chooser: SeatIndex | null;
   /** Cards thrown away this hand, shuffled back in if the deck runs out. */
   muck: Card[];
+  /** The wild cards this hand, fixed when the game is. Absent on older hands: nothing wild. */
+  wild?: Wild;
   results: HandResult | null;
   log: HandLogEntry[];
 }
@@ -161,7 +169,7 @@ export type TableEvent =
   | { type: 'rename'; seat: SeatIndex; name: string }
   | { type: 'set-config'; config: Partial<TableConfig> }
   | { type: 'start-hand'; deck: Card[]; variantId?: string }
-  | { type: 'choose-variant'; seat: SeatIndex; variantId: string }
+  | { type: 'choose-variant'; seat: SeatIndex; variantId: string; wild?: Wild }
   | { type: 'action'; seat: SeatIndex; action: Action }
   | { type: 'discard'; seat: SeatIndex; cards: Card[] }
   | { type: 'timeout'; seat: SeatIndex }

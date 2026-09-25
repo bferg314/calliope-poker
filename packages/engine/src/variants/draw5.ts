@@ -25,6 +25,6 @@ export const draw5: VariantDefinition = {
       fixedLimitTier: 'big',
     },
   ],
-  evaluate: (hole) => bestHand(hole),
+  evaluate: (hole, _board, isWild) => bestHand(hole, isWild),
   firstToAct: 'left-of-button',
 };

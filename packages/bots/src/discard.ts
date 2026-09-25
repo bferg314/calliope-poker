@@ -1,4 +1,4 @@
-import { bestHand, evaluateCards, evaluateThree, getVariant, rankOf, suitOf, type Card, type TableState } from '@calliope/engine';
+import { bestHand, evaluateCards, evaluateThree, getVariant, rankOf, suitOf, wildTest, type Card, type TableState } from '@calliope/engine';
 
 /** Ranks that appear more than once, most repeated first. */
 function groups(cards: readonly Card[]): { rank: number; cards: Card[] }[] {
@@ -98,18 +98,28 @@ export function chooseDiscards(state: TableState, seat: number): Card[] {
   if (!spec) return [];
 
   const hole = p.holeDown;
+  // A wild card is never thrown away. To the keep rules it reads as an ace.
+  const isWild = wildTest(h.wild);
   if (spec.replace) {
-    const keep = hole.length === 3 ? drawKeepThree(hole) : drawKeep(hole);
-    const toss = hole.filter((c) => !keep.includes(c));
+    const shown = hole.map((c) => (isWild?.(c) ? 'As' : c));
+    const keep = hole.length === 3 ? drawKeepThree(shown) : drawKeep(shown);
+    const left = [...keep];
+    const kept = new Set<number>();
+    shown.forEach((c, i) => {
+      const at = left.indexOf(c);
+      if (at >= 0) { left.splice(at, 1); kept.add(i); }
+    });
+    const toss = hole.filter((c, i) => !kept.has(i) && !isWild?.(c));
     return toss.slice(0, spec.max);
   }
 
   // Pineapple: throw whichever card leaves the best hand against the board.
   let best: { card: Card; value: number } | null = null;
   for (const card of hole) {
+    if (isWild?.(card)) continue;
     const kept = hole.filter((c) => c !== card);
     const pool = [...kept, ...h.board];
-    const value = pool.length ? bestHand(pool).value : -rankOf(card);
+    const value = pool.length ? bestHand(pool, isWild).value : -rankOf(card);
     if (!best || value > best.value) best = { card, value };
   }
   return best ? [best.card] : hole.slice(0, spec.min);

@@ -4,6 +4,8 @@ import {
   type LevelSchedule, type RoomSettings, type VariantInfo,
 } from '@calliope/shared';
 import { Chip } from '../components/Chip.js';
+import { WildSelect } from '../components/WildSelect.js';
+import { wildLabel } from '@calliope/engine';
 import { fmt, fmtMoney } from '../format.js';
 import { Icon } from '../components/Icon.js';
 
@@ -86,6 +88,8 @@ export function Settings({ settings, variants, editable, onSave, onDirtyChange }
   };
   const gameName = dc ? "Dealer's choice" : variants.find((v) => v.id === allowed[0])?.name ?? allowed[0];
   const lockedVariant = dc ? null : variants.find((v) => v.id === allowed[0]);
+  const wild = draft.wild ?? { kind: 'none' as const };
+  const wildLine = wildLabel(wild);
   const bettingLabel = draft.betting === 'variant-default' ? 'usual betting' : BETTING_LABEL[draft.betting]!.toLowerCase();
   const rebuysLine = !draft.rebuys.allowed
     ? 'no re-buys'
@@ -96,7 +100,7 @@ export function Settings({ settings, variants, editable, onSave, onDirtyChange }
   return (
     <div className="stack">
       <div className="settings-form">
-        <Section title="Game" summary={`${gameName} · ${bettingLabel}${usesBlinds ? ` · blinds ${fmt(draft.blinds.small)}/${fmt(draft.blinds.big)}` : ''}${usesAntes ? ` · ante ${fmt(draft.ante)}` : ''}`} open={editable}>
+        <Section title="Game" summary={`${gameName}${wildLine ? ` · ${wildLine}` : ''} · ${bettingLabel}${usesBlinds ? ` · blinds ${fmt(draft.blinds.small)}/${fmt(draft.blinds.big)}` : ''}${usesAntes ? ` · ante ${fmt(draft.ante)}` : ''}`} open={editable}>
           <div className="row">
             <label className="check">
               <input type="radio" name="mode" disabled={ro} checked={!dc} onChange={() => set('variantMode', { kind: 'locked', variantId: allowed[0] ?? 'holdem' })} />
@@ -133,6 +137,11 @@ export function Settings({ settings, variants, editable, onSave, onDirtyChange }
           )}
           {lockedVariant && <p className="micro" style={{ margin: 0 }}>{lockedVariant.description}</p>}
           <div className="settings-grid">
+            <label className="field span-2">
+              <span className="label">wild cards</span>
+              <WildSelect value={wild} disabled={ro} onChange={(w) => set('wild', w)} />
+              {dc && <span className="micro">In dealer's choice the dealer picks them with the game. This is where the choice starts.</span>}
+            </label>
             <label className="field span-2">
               <span className="label">betting</span>
               <select className="select" disabled={ro} value={draft.betting} onChange={(e) => set('betting', e.target.value as RoomSettings['betting'])}>

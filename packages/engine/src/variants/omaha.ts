@@ -14,6 +14,6 @@ export const omaha: VariantDefinition = {
     { name: 'turn', deal: { community: 1 }, bet: true, fixedLimitTier: 'big' },
     { name: 'river', deal: { community: 1 }, bet: true, fixedLimitTier: 'big' },
   ],
-  evaluate: (hole, board) => bestHandOmaha(hole, board),
+  evaluate: (hole, board, isWild) => bestHandOmaha(hole, board, isWild),
   firstToAct: 'left-of-button',
 };

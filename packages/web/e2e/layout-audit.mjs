@@ -96,7 +96,9 @@ function probe({ table }) {
     const r = rect(target);
     const cx = r.left + r.width / 2;
     const cy = r.top + r.height / 2;
-    if (cx < 0 || cy < 0 || cx > W || cy > H) continue; // scrolled away; checked when scrolled to
+    // Scrolled away; checked when scrolled to. The window's far edge is outside it:
+    // elementFromPoint finds nothing at x = W or y = H.
+    if (cx < 0 || cy < 0 || cx >= W || cy >= H) continue;
     const hits = [[0, 0], [-21, 0], [21, 0], [0, -21], [0, 21]].every(([dx, dy]) => {
       const x = cx + dx;
       const y = cy + dy;

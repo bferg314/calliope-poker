@@ -16,7 +16,7 @@ export const three: VariantDefinition = {
   streets: [
     { name: 'first', deal: { holeDown: 3 }, bet: true, fixedLimitTier: 'small' },
   ],
-  evaluate: (hole) => evaluateThree(hole),
+  evaluate: (hole, _board, isWild) => evaluateThree(hole, isWild),
   firstToAct: 'left-of-button',
 };
 
@@ -37,6 +37,6 @@ export const draw3: VariantDefinition = {
       fixedLimitTier: 'big',
     },
   ],
-  evaluate: (hole) => evaluateThree(hole),
+  evaluate: (hole, _board, isWild) => evaluateThree(hole, isWild),
   firstToAct: 'left-of-button',
 };

@@ -1,4 +1,4 @@
-import type { HandView } from '@calliope/engine';
+import { type HandView, wildTest } from '@calliope/engine';
 import { fmt } from '../format.js';
 import { Card } from './Card.js';
 
@@ -6,12 +6,13 @@ import { Card } from './Card.js';
 export function Board({ hand, slots, cardWidth }: { hand: HandView | null; slots: number; cardWidth: number }): JSX.Element | null {
   if (slots === 0) return null;
   const board = hand?.board ?? [];
+  const isWild = wildTest(hand?.wild);
   return (
     <div className="board">
       <div className="cards">
         {Array.from({ length: slots }, (_, i) => {
           const c = board[i];
-          return c ? <Card key={c} card={c} width={cardWidth} delay={i * 60} /> : <div key={`slot${i}`} className="slot" />;
+          return c ? <Card key={c} card={c} width={cardWidth} delay={i * 60} wild={!!isWild?.(c)} /> : <div key={`slot${i}`} className="slot" />;
         })}
       </div>
     </div>

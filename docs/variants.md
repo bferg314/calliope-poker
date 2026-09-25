@@ -92,6 +92,23 @@ from five-card poker. A-2-3 is the lowest straight. A variant's `evaluate` is
 the one place its ranking lives: the showdown, the bots and the hand label on
 the player's own seat all go through it.
 
+## Wild cards
+
+Any game can be played with wild cards (`packages/engine/src/wild.ts`): none,
+jokers, deuces, the one-eyed jacks (J♥ and J♠), or any one rank. A table locked
+to one game sets them in its config (`wild`); in dealer's choice the dealer
+picks them with the game (`choose-variant` carries `wild`). The hand records
+them as `hand.wild`, so every screen and every evaluator agrees.
+
+The rule is "anything goes": a wild card stands for any card at all, even one
+already in the hand, so two aces of spades make a flush, and five of a kind
+ranks above a straight flush. Every evaluator takes an optional `isWild` test
+and tries each wild as every rank, which stays quick even with five wilds.
+
+Jokers are `*1` and `*2`. The server shuffles both into every deck, and the
+engine takes them out as soon as the hand's wild cards are known, unless jokers
+are wild. A variant's `evaluate` receives the test as its third argument.
+
 Blind Man's Bluff deals its card face up and sets `ownUpCardsHidden: true`.
 The engine plays it as any other up card; `viewFor` alone keeps each player's
 own up cards out of what that player is sent, until the showdown. Bots decide

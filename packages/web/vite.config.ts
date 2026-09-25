@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react';
 import { starterDecks } from './starterDecks.js';
 
 export default defineConfig({
-  plugins: [react(), starterDecks({ order: ['classic'] })],
+  plugins: [react(), starterDecks({ order: ['classic', 'crow'] })],
   server: {
     port: 5173,
     proxy: {

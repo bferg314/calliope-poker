@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import {
-  getVariant, legalActions, type Action, type HandView, type TableState,
+  getVariant, legalActions, wildTest, type Action, type HandView, type TableState, type Wild,
 } from '@calliope/engine';
 import { SERVER_LIMIT_WARNING_MINUTES, stakesLabel, type RoomView } from '@calliope/shared';
 import { Board, Pot } from '../components/Board.js';
@@ -22,6 +22,7 @@ import { absoluteUrl, fmt, fmtDuration, fmtMoney } from '../format.js';
 import { Link } from '../router.js';
 import { useNow, type RoomSocket } from '../ws.js';
 import { Icon } from '../components/Icon.js';
+import { WildSelect } from '../components/WildSelect.js';
 import { useChipFlights, useDealFromDeck } from '../tableMotion.js';
 
 /**
@@ -225,7 +226,7 @@ function ownHandLabel(hand: HandView | null, seat: number | null): string | null
   // The game's own rules, so three-card hands rank as three-card hands. A game
   // that cannot rank yet (Omaha before the flop) throws, and shows nothing.
   try {
-    return getVariant(hand.variantId).evaluate(hole, hand.board).label;
+    return getVariant(hand.variantId).evaluate(hole, hand.board, wildTest(hand.wild)).label;
   } catch {
     return null;
   }
@@ -253,6 +254,8 @@ export function Table({ room, socket }: { room: RoomView; socket: RoomSocket }):
   const [lastHandPop, setLastHandPop] = useState(false);
   const seenPhase = useRef(room.phase);
   const [selected, setSelected] = useState<string[]>([]);
+  // What the dealer will call wild with the game, starting from the table's setting.
+  const [pickWild, setPickWild] = useState<Wild>(() => room.settings.wild ?? { kind: 'none' });
   const [copyNote, setCopyNote] = useState<string | null>(null);
   const seenLevel = useRef(room.level.index);
   const screenRef = useRef<HTMLDivElement>(null);
@@ -468,6 +471,7 @@ export function Table({ room, socket }: { room: RoomView; socket: RoomSocket }):
           handLabel={settled && hand!.results!.hands[idx] ? hand!.results!.hands[idx]!.label : null}
           denoms={denoms}
           cardWidth={seatCardW}
+          isWild={wildTest(hand?.wild)}
         />
       </div>
     );
@@ -675,6 +679,12 @@ export function Table({ room, socket }: { room: RoomView; socket: RoomSocket }):
             {hand?.stage === 'choosing' && (
               <div className="choose-panel">
                 <div className="label">{hand.chooser === mySeat ? 'your deal. pick the game' : `${actorName ?? 'the dealer'} is choosing the game`}</div>
+                {hand.chooser === mySeat && (
+                  <label className="field">
+                    <span className="label">wild cards</span>
+                    <WildSelect value={pickWild} onChange={setPickWild} />
+                  </label>
+                )}
                 {hand.chooser === mySeat &&
                   (room.settings.variantMode.kind === 'dealers-choice' ? room.settings.variantMode.allowed : []).map((id) => {
                     const v = room.variants.find((x) => x.id === id);
@@ -686,7 +696,7 @@ export function Table({ room, socket }: { room: RoomView; socket: RoomSocket }):
                         className="btn choose-game"
                         disabled={tooMany}
                         title={tooMany ? `${v?.name} seats at most ${v?.players.max}` : v?.description}
-                        onClick={() => socket.send({ type: 'choose-variant', variantId: id })}
+                        onClick={() => socket.send({ type: 'choose-variant', variantId: id, wild: pickWild })}
                       >
                         <span className="choose-name">{v?.name ?? id}</span>
                         <span className="micro">
@@ -797,6 +807,7 @@ function OwnSeat({ room, socket, layout, maxCards, mySeat, toAct, winAmount, tim
   const markDown = !!p && !p.revealed && dealsUpCards(hand?.variantId);
   // In Blind Man's Bluff your own card is face down to you and up to everyone else.
   const blind = !!p && hidesOwnUpCards(hand?.variantId);
+  const isWild = wildTest(hand?.wild);
   const drewNote = p && p.drew > 0 ? `drew ${p.drew}` : null;
   const label = hand?.stage === 'settled' && hand.results?.hands[mySeat] ? hand.results.hands[mySeat]!.label : ownHandLabel(hand, mySeat);
   const { cw, step, beside } = ownCardSize(layout, box.width, Math.max(maxCards, cards.length));
@@ -851,6 +862,7 @@ function OwnSeat({ room, socket, layout, maxCards, mySeat, toAct, winAmount, tim
               card={c}
               width={cw}
               delay={i * 60}
+              wild={!!c && !!isWild?.(c)}
               className={blind && !down && c ? 'flip-in' : ''}
               title={blind && !down && !c ? 'Your card, which everyone else can see' : undefined}
             />

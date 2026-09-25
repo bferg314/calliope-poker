@@ -1,5 +1,6 @@
 import type { Card } from '../cards.js';
 import type { HandRank } from '../evaluator.js';
+import type { WildTest } from '../wild.js';
 import type { BettingStructure } from '../types.js';
 
 export interface StreetSpec {
@@ -38,8 +39,8 @@ export interface VariantDefinition {
   forcedBets: 'blinds' | 'antes-bringin';
   defaultBetting: BettingStructure;
   streets: StreetSpec[];
-  /** Best hand from a player's cards (down + up) and the board. */
-  evaluate: (hole: readonly Card[], board: readonly Card[]) => HandRank;
+  /** Best hand from a player's cards (down + up) and the board, with any wild cards. */
+  evaluate: (hole: readonly Card[], board: readonly Card[], isWild?: WildTest) => HandRank;
   /**
    * Who opens betting on streets after the first.
    * 'left-of-button' for blind games, 'best-showing' for stud.
