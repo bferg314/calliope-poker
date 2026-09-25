@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createTable, legalActions, mulberry32, reduce, seededDeck, type TableState } from '@calliope/engine';
 import { BOT_PERSONALITIES } from '@calliope/shared';
-import { chenStrength, chooseDiscards, decideAction, drawKeep, drawKeepThree, estimateStrength } from '../src/index.js';
+import { blindStrength, chenStrength, chooseDiscards, decideAction, drawKeep, drawKeepThree, estimateStrength } from '../src/index.js';
 
 function table(names: string[], config = {}): TableState {
   let s = createTable(config);
@@ -29,7 +29,7 @@ describe('strength', () => {
 });
 
 describe('decideAction', () => {
-  for (const variantId of ['holdem', 'omaha', 'stud7', 'stud5', 'pineapple', 'draw5', 'three', 'draw3']) {
+  for (const variantId of ['holdem', 'omaha', 'stud7', 'stud5', 'pineapple', 'draw5', 'three', 'draw3', 'bluff']) {
     for (const personality of BOT_PERSONALITIES) {
       it(`plays ${variantId} legally as ${personality}`, () => {
         const r = mulberry32(7);
@@ -63,6 +63,44 @@ describe('decideAction', () => {
       });
     }
   }
+});
+
+describe("Blind Man's Bluff", () => {
+  /** Three seated, a hand dealt, with seat 0's own card set to `own`. */
+  function dealt(own: string, others: [string, string]): TableState {
+    let s = createTable({ variantMode: { kind: 'locked', variantId: 'bluff' } });
+    ['A', 'B', 'C'].forEach((name, i) => {
+      s = reduce(s, { type: 'sit', seat: i, player: { id: `p${i}`, name, kind: 'bot' }, stack: 1000 }).state;
+    });
+    s = reduce(s, { type: 'start-hand', deck: seededDeck(1) }).state;
+    const h = s.hand!;
+    h.players[0]!.holeUp = [own];
+    h.players[1]!.holeUp = [others[0]];
+    h.players[2]!.holeUp = [others[1]];
+    return s;
+  }
+
+  it('never reads its own card', () => {
+    for (const own of ['2c', 'Ah', '7d']) {
+      expect(estimateStrength(dealt(own, ['Ks', '4d']), 0)).toBeCloseTo(estimateStrength(dealt('Qc', ['Ks', '4d']), 0));
+    }
+  });
+
+  it('reads the table: low cards showing mean yours is likely best', () => {
+    expect(blindStrength(dealt('2c', ['3s', '4d']), 0)).toBeGreaterThan(0.8);
+    expect(blindStrength(dealt('2c', ['As', '4d']), 0)).toBeLessThan(0.05);
+  });
+
+  it('decides the same whatever its own card is', () => {
+    const act = (own: string) => {
+      const s = dealt('5h', ['Ts', '9d']);
+      const seat = s.hand!.round.actor!;
+      s.hand!.players[seat]!.holeUp = [own];
+      const rng = mulberry32(7);
+      return decideAction(s, seat, 'tight', () => rng(1_000_000) / 1_000_000);
+    };
+    expect(act('2c')).toEqual(act('Ac'));
+  });
 });
 
 describe('drawKeepThree', () => {

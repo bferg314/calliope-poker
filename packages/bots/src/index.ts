@@ -1,8 +1,8 @@
-import { legalActions, playersInHand, type Action, type LegalActions, type TableState } from '@calliope/engine';
+import { getVariant, legalActions, playersInHand, type Action, type LegalActions, type TableState } from '@calliope/engine';
 import type { BotPersonality } from '@calliope/shared';
 import { estimateStrength } from './strength.js';
 
-export { estimateStrength, chenStrength } from './strength.js';
+export { blindStrength, estimateStrength, chenStrength } from './strength.js';
 export { chooseDiscards, drawKeep, drawKeepThree } from './discard.js';
 
 export interface PersonalityParams {
@@ -61,7 +61,8 @@ export function decideAction(state: TableState, seat: number, personality: BotPe
   const h = state.hand!;
   const opponents = playersInHand(h).length - 1;
   let s = estimateStrength(state, seat);
-  s = Math.pow(s, 1 + 0.12 * Math.max(0, opponents - 1));
+  // Blind Man's Bluff's estimate already weighs every opponent's card.
+  if (!getVariant(h.variantId).ownUpCardsHidden) s = Math.pow(s, 1 + 0.12 * Math.max(0, opponents - 1));
   s = clamp(s + p.looseness * 0.4 + (rng() - 0.5) * 0.08);
 
   const stack = state.seats[seat]!.stack;

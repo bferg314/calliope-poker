@@ -83,6 +83,7 @@ For split-pot or lowball games you would add a new evaluator alongside these in 
 | `draw5` | Five-card Draw | 5 down, one draw, at most six players |
 | `three` | Three-card Poker | 3 down, one round of betting; three-card ranks |
 | `draw3` | Three-card Draw | 3 down, one draw of up to three; three-card ranks |
+| `bluff` | Blind Man's Bluff | 1 card each, seen by everyone but its owner; high card wins |
 
 Three-card games rank hands with `evaluateThree`: straight flush, three of a
 kind, straight, flush, pair, high card. With three cards a straight is rarer
@@ -90,6 +91,12 @@ than a flush and trips rarer than a straight, so they rank the other way round
 from five-card poker. A-2-3 is the lowest straight. A variant's `evaluate` is
 the one place its ranking lives: the showdown, the bots and the hand label on
 the player's own seat all go through it.
+
+Blind Man's Bluff deals its card face up and sets `ownUpCardsHidden: true`.
+The engine plays it as any other up card; `viewFor` alone keeps each player's
+own up cards out of what that player is sent, until the showdown. Bots decide
+from the other players' cards only (`blindStrength`), and a test checks a bot
+decides the same whatever its own card is.
 
 ## Registering
 

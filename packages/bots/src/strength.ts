@@ -1,5 +1,5 @@
 import {
-  bestHand, bestHandOmaha, evaluateCards, evaluateThree, getVariant, rankOf, suitOf,
+  bestHand, bestHandOmaha, evaluateCards, evaluateThree, fullDeck, getVariant, rankOf, suitOf,
   type Card, type HandRank, type TableState,
 } from '@calliope/engine';
 
@@ -126,6 +126,34 @@ function threeStrength(hole: readonly Card[]): number {
   }
 }
 
+/**
+ * Blind Man's Bluff: the bot's own card is the one card it cannot see, so this
+ * never looks at it. Of the cards it might be holding (the deck less every card
+ * on anyone else's forehead), the share that beats the best card showing, with
+ * a tie counted as half. That is already the chance of beating the whole
+ * table, so it is not discounted again for more opponents.
+ */
+export function blindStrength(state: TableState, seat: number): number {
+  const h = state.hand;
+  if (!h) return 0;
+  const seen = new Set<Card>(h.board);
+  let best = 0;
+  for (const p of h.players) {
+    if (!p || p.seat === seat) continue;
+    for (const c of p.holeUp) seen.add(c);
+    if (!p.folded) for (const c of p.holeUp) best = Math.max(best, rankOf(c));
+  }
+  const pool = fullDeck().filter((c) => !seen.has(c));
+  if (pool.length === 0) return 0.5;
+  let wins = 0;
+  for (const c of pool) {
+    const r = rankOf(c);
+    if (r > best) wins += 1;
+    else if (r === best) wins += 0.5;
+  }
+  return wins / pool.length;
+}
+
 /** 0..1 estimate of how strong the seat's hand is right now, from what the bot can see. */
 export function estimateStrength(state: TableState, seat: number): number {
   const h = state.hand;
@@ -133,6 +161,7 @@ export function estimateStrength(state: TableState, seat: number): number {
   const p = h.players[seat];
   if (!p) return 0;
   const v = getVariant(h.variantId);
+  if (v.ownUpCardsHidden) return blindStrength(state, seat);
   const hole = [...p.holeDown, ...p.holeUp];
   const board = h.board;
   const community = v.streets.some((s) => (s.deal.community ?? 0) > 0);
