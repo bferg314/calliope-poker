@@ -41,6 +41,8 @@ export const hostCommandSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('deal') }),
   z.object({ kind: z.literal('set-settings'), settings: roomSettingsPatchSchema }),
   z.object({ kind: z.literal('add-bot'), seat: z.number().int().min(0).max(9), personality: z.enum(BOT_PERSONALITIES).optional() }),
+  /** Seat bots in the first `count` open seats, each with a random style. */
+  z.object({ kind: z.literal('fill-bots'), count: z.number().int().min(1).max(10) }),
   z.object({ kind: z.literal('remove-player'), playerId: z.string().min(1) }),
   z.object({ kind: z.literal('extend'), minutes: z.number().int().positive().max(600) }),
   z.object({ kind: z.literal('end-night') }),

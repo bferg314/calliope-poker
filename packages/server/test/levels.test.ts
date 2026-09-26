@@ -126,6 +126,18 @@ describe('rising stakes in a real game', () => {
     expect(rt.record.clock.limitMs).toBe(60 * 60_000);
   });
 
+  it('pushes a clock-time end later, and drops extensions when the kind of end changes', async () => {
+    const at = Date.now() + 60 * 60_000;
+    const { manager, rt } = await tableWithBots({ kind: 'off' }, { end: { kind: 'at', at } });
+    expect(rt.record.clock.limitMs).toBeNull();
+    manager.handle(rt, 'host', { type: 'host', command: { kind: 'extend', minutes: 15 } }, host);
+    expect(rt.record.clock.bonusMs).toBe(15 * 60_000);
+
+    manager.handle(rt, 'host', { type: 'host', command: { kind: 'set-settings', settings: { end: { kind: 'time', minutes: 90 } } } }, host);
+    expect(rt.record.clock.bonusMs).toBe(0);
+    expect(rt.record.clock.limitMs).toBe(90 * 60_000);
+  });
+
   it('deals only on request when autoDeal is off', async () => {
     const { manager, rt } = await tableWithBots({ kind: 'off' }, { autoDeal: false });
     await play(rt, 60_000);

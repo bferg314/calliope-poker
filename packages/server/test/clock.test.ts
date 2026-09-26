@@ -208,3 +208,31 @@ describe('level resolution', () => {
     expect(view.nextAt).toBe(t0 + 10 * MIN);
   });
 });
+
+describe('a night that ends at a clock time', () => {
+  const at = (r: RoomRecord, deadline: number): void => { r.settings = { ...r.settings, end: { kind: 'at', at: deadline } }; };
+
+  it('counts down in wall time, straight through a pause', () => {
+    const r = room();
+    const t0 = 1_000_000;
+    start(r, t0);
+    at(r, t0 + 60 * MIN);
+    expect(remainingMs(r, t0 + 10 * MIN)).toBe(50 * MIN);
+    pause(r, t0 + 10 * MIN);
+    expect(remainingMs(r, t0 + 40 * MIN)).toBe(20 * MIN);
+    // The deadline stays fixed while paused, unlike a playing-time limit.
+    expect(endsAtOf(r, t0 + 40 * MIN)).toBe(t0 + 60 * MIN);
+    expect(nightIsUp(r, t0 + 59 * MIN)).toBe(false);
+    expect(nightIsUp(r, t0 + 60 * MIN)).toBe(true);
+  });
+
+  it('moves later by whatever the host adds', () => {
+    const r = room();
+    const t0 = 1_000_000;
+    start(r, t0);
+    at(r, t0 + 60 * MIN);
+    r.clock.bonusMs = 15 * MIN;
+    expect(endsAtOf(r, t0)).toBe(t0 + 75 * MIN);
+    expect(nightIsUp(r, t0 + 70 * MIN)).toBe(false);
+  });
+});

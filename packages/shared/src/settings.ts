@@ -75,6 +75,8 @@ export const roomSettingsSchema = z.object({
   end: z.discriminatedUnion('kind', [
     z.object({ kind: z.literal('last-standing') }),
     z.object({ kind: z.literal('time'), minutes: z.number().int().positive().max(24 * 60) }),
+    /** A wall-clock deadline in epoch ms; pausing does not push it back. */
+    z.object({ kind: z.literal('at'), at: z.number().int().positive() }),
   ]),
   /** Stakes that climb during the night. Level 0 is always the blinds/ante above. */
   levels: levelScheduleSchema.default(LEVELS_OFF),
@@ -100,7 +102,7 @@ export const DEFAULT_ROOM_SETTINGS: RoomSettings = {
   actionSeconds: 30,
   chips: { buyInValue: 20, currency: '$', buyInChips: 1000, denominations: DEFAULT_DENOMINATIONS },
   rebuys: { allowed: true, maxCount: null, untilMinutes: null },
-  end: { kind: 'last-standing' },
+  end: { kind: 'time', minutes: 120 },
   levels: LEVELS_OFF,
   autoDeal: true,
   shuffleSeats: false,

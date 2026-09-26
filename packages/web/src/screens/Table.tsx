@@ -9,6 +9,7 @@ import { useActiveDeck } from '../decks.js';
 import { SeatCard } from '../components/Seat.js';
 import { ActionBar } from '../components/ActionBar.js';
 import { DrawBar } from '../components/DrawBar.js';
+import { FillBots } from '../components/FillBots.js';
 import { GameStrip } from '../components/GameStrip.js';
 import { Invite } from '../components/Invite.js';
 import { HandReview } from '../components/HandReview.js';
@@ -247,6 +248,9 @@ export function Table({ room, socket }: { room: RoomView; socket: RoomSocket }):
   const me = room.me;
   const mySeat = me?.seat ?? null;
   const [menuOpen, setMenuOpen] = useState(false);
+  const [fillOpen, setFillOpen] = useState(false);
+  // The bot fill folds back up each time the menu closes.
+  useEffect(() => { if (!menuOpen) setFillOpen(false); }, [menuOpen]);
   const [confirmFold, setConfirmFold] = useState(() => {
     try { return localStorage.getItem('calliope.confirmFold') === '1'; } catch { return false; }
   });
@@ -660,7 +664,21 @@ export function Table({ room, socket }: { room: RoomView; socket: RoomSocket }):
                     <button className="btn" onClick={() => socket.send({ type: 'host', command: { kind: 'deal' } })}>Deal the next hand</button>
                   )}
                   <button className="btn" onClick={() => socket.send({ type: 'host', command: { kind: 'extend', minutes: 15 } })}>Add 15 minutes</button>
-                  <button className="btn" onClick={() => socket.send({ type: 'host', command: { kind: 'add-bot', seat: table.seats.findIndex((s) => s === null) } })} disabled={!table.seats.some((s) => s === null)}>Add a bot</button>
+                  {table.seats.some((s) => s === null) && (
+                    // Folded to one line until asked for, so the menu stays short enough
+                    // on a phone not to cover the action bar. The slider needs clicks of
+                    // its own, so the menu closes only on "Add".
+                    <div onClick={(e) => e.stopPropagation()}>
+                      {fillOpen ? (
+                        <FillBots
+                          open={table.seats.filter((s) => s === null).length}
+                          onFill={(count) => { socket.send({ type: 'host', command: { kind: 'fill-bots', count } }); setMenuOpen(false); }}
+                        />
+                      ) : (
+                        <button className="btn" onClick={() => setFillOpen(true)}>Fill seats with bots</button>
+                      )}
+                    </div>
+                  )}
                   <button
                     className="btn"
                     onClick={() => void (async () => {

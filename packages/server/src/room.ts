@@ -254,8 +254,10 @@ export function nightBudgetMs(r: RoomRecord): number | null {
   return r.clock.limitMs === null ? null : r.clock.limitMs + r.clock.bonusMs;
 }
 
-/** Playing-ms left tonight; holds its value while paused. */
+/** Ms left tonight; holds its value while paused, unless the night ends at a clock time. */
 export function remainingMs(r: RoomRecord, now: number): number | null {
+  const end = r.settings.end;
+  if (end.kind === 'at') return end.at + r.clock.bonusMs - now;
   const budget = nightBudgetMs(r);
   return budget === null ? null : budget - elapsedPlayingMs(r, now);
 }
@@ -265,8 +267,13 @@ export function nightIsUp(r: RoomRecord, now: number): boolean {
   return left !== null && left <= 0;
 }
 
-/** Wall time the night ends. Null while paused, since the deadline is sliding. */
+/**
+ * Wall time the night ends. Null while paused, since a playing-time deadline
+ * slides; a clock-time deadline stays put.
+ */
 export function endsAtOf(r: RoomRecord, now: number): number | null {
+  const end = r.settings.end;
+  if (end.kind === 'at') return end.at + r.clock.bonusMs;
   const left = remainingMs(r, now);
   if (left === null || r.clock.pausedAt !== null) return null;
   return now + left;
