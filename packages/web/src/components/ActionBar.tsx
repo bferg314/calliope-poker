@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import type { Action, LegalActions } from '@calliope/engine';
 import { fmt } from '../format.js';
@@ -6,6 +6,7 @@ import { BetPanel } from './BetPanel.js';
 import { Icon } from './Icon.js';
 import { actionFor, currentKeys } from '../keys.js';
 import { arm, resolve, stillArmed, type Ahead, type Armed, type PreKind } from '../preActions.js';
+import { usingPad } from '../gamepad.js';
 
 interface ActionBarProps {
   legal: LegalActions | null;
@@ -42,6 +43,7 @@ export function ActionBar({ legal, waitingFor, onAction, confirmFold, primary, p
   // The turn a choice made ahead was carried out on. Until the table moves on,
   // the bar shows it going through rather than live buttons to press twice.
   const [sentOn, setSentOn] = useState<string | null>(null);
+  const checkCallRef = useRef<HTMLButtonElement>(null);
   const turnSig = legal ? `${turnKey}:${legal.seat}:${legal.toCall}` : null;
   const auto = legal && armed ? resolve(armed, turnKey, legal) : null;
 
@@ -66,6 +68,12 @@ export function ActionBar({ legal, waitingFor, onAction, confirmFold, primary, p
     }
     // Otherwise the street it was chosen on has ended: it lapses without a word.
   }, [legal]);
+
+  // With a controller, the turn arriving puts you on check or call, so A plays it
+  // and the D-pad reaches fold and raise either side.
+  useEffect(() => {
+    if (legal && usingPad()) checkCallRef.current?.focus({ preventScroll: true });
+  }, [legal?.seat, turnKey, !!legal]);
 
   // Should the table not take it, the buttons come back rather than wait forever.
   useEffect(() => {
@@ -216,7 +224,7 @@ export function ActionBar({ legal, waitingFor, onAction, confirmFold, primary, p
           <span>{foldArmed ? 'Really fold?' : 'Fold'}</span>
           <kbd>{keys.fold}</kbd>
         </button>
-        <button className="btn btn-ink" onClick={checkCall}>
+        <button ref={checkCallRef} className="btn btn-ink" onClick={checkCall}>
           <span>{legal.canCheck ? 'Check' : `Call ${fmt(legal.callAmount)}`}</span>
           <kbd>{keys.call}</kbd>
         </button>

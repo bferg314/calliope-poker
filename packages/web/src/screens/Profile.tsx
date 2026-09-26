@@ -48,7 +48,7 @@ export function Profile(): JSX.Element {
       <TopBar />
       <ResumeBanner />
       <div className="stack" style={{ paddingTop: 'var(--s-4)' }}>
-        <div className="label">your record</div>
+        <div className="label">your profile</div>
         <h1>{user.name}</h1>
         {!user.recovered && (
           <p className="muted">
@@ -97,6 +97,17 @@ export function Profile(): JSX.Element {
         <div className="settings-section">
           <h3>Keys</h3>
           <KeysPicker />
+          <h4 className="label deck-heading">controller</h4>
+          <dl className="pad-map">
+            <dt>D-pad or left stick</dt><dd>move between controls</dd>
+            <dt>A</dt><dd>press; on a number or a list, pick it up to change it, then A again when done</dd>
+            <dt>B</dt><dd>back: put a value down, close a dialog, the bet slip or the menu</dd>
+            <dt>X / Y</dt><dd>fold / bet or raise, at your turn or ahead of it</dd>
+            <dt>LB / RB</dt><dd>a number, ten steps down or up</dd>
+            <dt>Start</dt><dd>the table menu</dd>
+            <dt>Right stick</dt><dd>scroll</dd>
+          </dl>
+          <p className="micro">Any controller the browser knows. When your turn comes, you are put on check or call.</p>
         </div>
 
         <div className="settings-section">

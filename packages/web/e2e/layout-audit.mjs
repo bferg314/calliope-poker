@@ -393,7 +393,7 @@ if (lastCode) {
 
 // ---- Profile ----
 await page.goto(`${BASE}/me`);
-await page.waitForSelector('text=your record');
+await page.waitForSelector('text=your profile');
 for (const vp of VIEWPORTS) {
   await page.setViewportSize(vp);
   await check(`profile @${vp.tag}`, { shot: `profile-${vp.tag}.png` });

@@ -126,7 +126,7 @@ await page.screenshot({ path: out('09-resume-landing.png') });
 log('resume banner:', (await page.locator('.resume-card .headline').first().textContent())?.trim());
 
 await page.goto(`${BASE}/me`);
-await page.waitForSelector('text=your record');
+await page.waitForSelector('text=your profile');
 await page.screenshot({ path: out('10-profile.png'), fullPage: true });
 
 // Every theme, on the table.

@@ -686,7 +686,7 @@ export function Table({ room, socket }: { room: RoomView; socket: RoomSocket }):
                 <ThemePicker compact />
               </div>
               <button className="btn" onClick={() => void showInvite()}>Invite someone</button>
-              <Link to="/me" className="btn">My record</Link>
+              <Link to="/me" className="btn">My profile</Link>
             </div>
           )}
         </div>
@@ -722,18 +722,21 @@ export function Table({ room, socket }: { room: RoomView; socket: RoomSocket }):
             {lastHandPop && <LastHandPop />}
             {hand?.stage === 'choosing' && (
               <div className="choose-panel">
-                <div className="label">{hand.chooser === mySeat ? 'your deal. pick the game' : `${actorName ?? 'the dealer'} is choosing the game`}</div>
-                {hand.chooser === mySeat && (
-                  <button type="button" className="btn btn-quiet btn-small" onClick={howToPlay}>How to play these</button>
-                )}
+                <div className="choose-head">
+                  <div className="label">{hand.chooser === mySeat ? 'your deal. pick the game' : `${actorName ?? 'the dealer'} is choosing the game`}</div>
+                  {hand.chooser === mySeat && (
+                    <button type="button" className="btn btn-quiet btn-small" onClick={howToPlay}>How to play these</button>
+                  )}
+                </div>
                 {hand.chooser === mySeat && (
                   <label className="field">
                     <span className="label">wild cards</span>
                     <WildSelect value={pickWild} onChange={setPickWild} />
                   </label>
                 )}
-                {hand.chooser === mySeat &&
-                  (room.settings.variantMode.kind === 'dealers-choice' ? room.settings.variantMode.allowed : []).map((id) => {
+                {hand.chooser === mySeat && (
+                  <div className="choose-games">
+                  {(room.settings.variantMode.kind === 'dealers-choice' ? room.settings.variantMode.allowed : []).map((id) => {
                     const v = room.variants.find((x) => x.id === id);
                     const seated = hand.players.filter(Boolean).length;
                     const tooMany = !!v && seated > v.players.max;
@@ -752,6 +755,8 @@ export function Table({ room, socket }: { room: RoomView; socket: RoomSocket }):
                       </button>
                     );
                   })}
+                  </div>
+                )}
               </div>
             )}
           </div>

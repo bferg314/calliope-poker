@@ -171,7 +171,7 @@ export function Report({ room }: { room: RoomView }): JSX.Element {
       <HandHistory code={room.code} />
       <div className="row" style={{ paddingTop: 'var(--s-6)' }}>
         <Link to="/" className="btn btn-ink">Another night</Link>
-        <Link to="/me" className="btn">My record</Link>
+        <Link to="/me" className="btn">My profile</Link>
       </div>
     </div>
   );
@@ -191,7 +191,7 @@ export function FiledReport({ code, report, youId }: { code: string; report: Nig
       <HandHistory code={code} />
       <div className="row" style={{ paddingTop: 'var(--s-6)' }}>
         <Link to="/" className="btn btn-ink">Another night</Link>
-        <Link to="/me" className="btn">My record</Link>
+        <Link to="/me" className="btn">My profile</Link>
       </div>
     </div>
   );
