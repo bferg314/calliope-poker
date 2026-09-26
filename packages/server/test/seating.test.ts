@@ -45,3 +45,30 @@ describe('shuffling the seats', () => {
     expect(after).toEqual(before);
   });
 });
+
+describe('filling the seats with bots', () => {
+  async function table(): Promise<{ manager: RoomManager; rt: NonNullable<ReturnType<RoomManager['get']>> }> {
+    const manager = new RoomManager(deps);
+    const record = await manager.create({ id: 'host', name: 'Host' }, {});
+    return { manager, rt: manager.get(record.code)! };
+  }
+  const bots = (rt: { record: { table: { seats: ({ kind: string } | null)[] } } }): number =>
+    rt.record.table.seats.filter((s) => s?.kind === 'bot').length;
+
+  it('seats as many bots as asked, in the open seats', async () => {
+    const { manager, rt } = await table();
+    manager.handle(rt, 'host', { type: 'host', command: { kind: 'add-bot', seat: 0 } }, host);
+    manager.handle(rt, 'host', { type: 'host', command: { kind: 'fill-bots', count: 3 } }, host);
+    expect(bots(rt)).toBe(4);
+    expect(rt.record.table.seats.slice(0, 4).every(Boolean)).toBe(true);
+    const styles = Object.values(rt.record.members).filter((m) => m.kind === 'bot').map((m) => m.personality);
+    expect(styles.every(Boolean)).toBe(true);
+  });
+
+  it('stops at a full table when asked for more than there is room for', async () => {
+    const { manager, rt } = await table();
+    const seats = rt.record.table.seats.length;
+    manager.handle(rt, 'host', { type: 'host', command: { kind: 'fill-bots', count: 10 } }, host);
+    expect(bots(rt)).toBe(seats);
+  });
+});

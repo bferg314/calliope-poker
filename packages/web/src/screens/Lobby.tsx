@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react';
 import { BOT_PERSONALITIES, type RoomView } from '@calliope/shared';
+import { FillBots } from '../components/FillBots.js';
 import { GameStrip } from '../components/GameStrip.js';
 import { Invite } from '../components/Invite.js';
 import { useConfirm } from '../components/Modal.js';
@@ -19,7 +20,9 @@ export function Lobby({ room, socket }: { room: RoomView; socket: RoomSocket }):
   const [settingsDirty, setSettingsDirty] = useState(false);
   // Stable, so the effect in Settings that reports it does not loop.
   const onDirtyChange = useCallback((dirty: boolean) => setSettingsDirty(dirty), []);
+  const [fillOpen, setFillOpen] = useState(false);
   const seated = room.table.seats.filter(Boolean).length;
+  const openSeats = room.table.seats.length - seated;
   const withChips = room.table.seats.filter((s) => s && s.stack > 0).length;
 
   return (
@@ -55,9 +58,26 @@ export function Lobby({ room, socket }: { room: RoomView; socket: RoomSocket }):
           <div className="stack">
             <div className="row row-between">
               <span className="label">seats · {seated} of {room.table.seats.length}</span>
-              {me && me.seat !== null && (
-                <button className="btn btn-quiet btn-small" onClick={() => socket.send({ type: 'stand' })}>stand up</button>
-              )}
+              <div className="row" style={{ gap: 'var(--s-1)' }}>
+                {isHost && openSeats > 0 && (
+                  <div className="menu-wrap">
+                    <button className="btn btn-quiet btn-small" aria-expanded={fillOpen} onClick={() => setFillOpen((o) => !o)}>
+                      fill seats with bots
+                    </button>
+                    {fillOpen && (
+                      <div className="menu">
+                        <FillBots
+                          open={openSeats}
+                          onFill={(count) => { socket.send({ type: 'host', command: { kind: 'fill-bots', count } }); setFillOpen(false); }}
+                        />
+                      </div>
+                    )}
+                  </div>
+                )}
+                {me && me.seat !== null && (
+                  <button className="btn btn-quiet btn-small" onClick={() => socket.send({ type: 'stand' })}>stand up</button>
+                )}
+              </div>
             </div>
             <div className="seat-grid">
               {room.table.seats.map((s, i) => {

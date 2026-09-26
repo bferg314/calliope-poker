@@ -1239,6 +1239,25 @@
   padding: var(--s-1) var(--s-3);
 }
 
+.fill-bots {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-1);
+  padding: var(--s-1) var(--s-3);
+}
+
+.fill-bots input[type='range'] {
+  width: 100%;
+  min-height: var(--hit);
+  accent-color: var(--ink);
+  margin: 0;
+}
+
+.menu .fill-bots .btn {
+  justify-content: center;
+  border-color: var(--ink);
+}
+
 /* The room code doubles as the quickest way to share the table. */
 .room-code-button {
   all: unset;

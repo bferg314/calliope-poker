@@ -151,7 +151,10 @@ export function Settings({ settings, variants, editable, onSave, onDirtyChange }
     ? 'no re-buys'
     : `${draft.rebuys.maxCount === null ? 'any number' : `up to ${draft.rebuys.maxCount}`}${draft.rebuys.untilMinutes === null ? '' : ` in the first ${draft.rebuys.untilMinutes} min`}`;
   const levelsLine = levels.kind === 'off' ? 'the same all night' : levels.kind === 'time' ? `up every ${levels.everyMinutes} min` : `up every ${levels.everyHands} hands`;
-  const endLine = `${draft.end.kind === 'time' ? `after ${draft.end.minutes} minutes` : 'last one standing'} · ${draft.autoDeal ? 'deals itself' : 'the host deals'}`;
+  const endWhen = draft.end.kind === 'time' ? `after ${draft.end.minutes} minutes`
+    : draft.end.kind === 'at' ? `at ${clockTime(draft.end.at)}`
+    : 'last one standing';
+  const endLine = `${endWhen} · ${draft.autoDeal ? 'deals itself' : 'the host deals'}`;
 
   return (
     <div className="stack">
@@ -355,6 +358,25 @@ export function Settings({ settings, variants, editable, onSave, onDirtyChange }
               <input className="input num" style={{ width: 110 }} type="number" min={1} disabled={ro} value={draft.end.minutes} onChange={(e) => set('end', { kind: 'time', minutes: Number(e.target.value) || 1 })} aria-label="minutes" />
             )}
             {draft.end.kind === 'time' && <span className="micro">minutes, then one last hand</span>}
+            <label className="check">
+              <input type="radio" name="end" disabled={ro} checked={draft.end.kind === 'at'} onChange={() => set('end', { kind: 'at', at: defaultEndAt(Date.now()) })} />
+              At a set time
+            </label>
+            {draft.end.kind === 'at' && (
+              <input
+                className="input num"
+                style={{ width: 160 }}
+                type="time"
+                disabled={ro}
+                value={timeInputValue(draft.end.at)}
+                onChange={(e) => {
+                  const [h, m] = e.target.value.split(':').map(Number);
+                  if (h !== undefined && m !== undefined && !Number.isNaN(h) && !Number.isNaN(m)) set('end', { kind: 'at', at: nextOccurrence(h, m, Date.now()) });
+                }}
+                aria-label="end time"
+              />
+            )}
+            {draft.end.kind === 'at' && <span className="micro">then one last hand. Pausing does not move it.</span>}
           </div>
           <div className="settings-grid">
             <label className="check">
@@ -383,6 +405,31 @@ export function Settings({ settings, variants, editable, onSave, onDirtyChange }
       )}
     </div>
   );
+}
+
+/** "11:30 PM", in the viewer's own time zone. */
+function clockTime(at: number): string {
+  return new Date(at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+}
+
+/** "23:30", the shape an `<input type="time">` reads and writes. */
+function timeInputValue(at: number): string {
+  const d = new Date(at);
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+}
+
+/** The next time the local clock reads h:m, today or else tomorrow. */
+export function nextOccurrence(h: number, m: number, now: number): number {
+  const d = new Date(now);
+  d.setHours(h, m, 0, 0);
+  if (d.getTime() <= now) d.setDate(d.getDate() + 1);
+  return d.getTime();
+}
+
+/** Two hours from now, rounded up to the quarter hour. */
+export function defaultEndAt(now: number): number {
+  const quarter = 15 * 60_000;
+  return Math.ceil((now + 2 * 60 * 60_000) / quarter) * quarter;
 }
 
 export function personalityLabel(p: (typeof BOT_PERSONALITIES)[number]): string {

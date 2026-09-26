@@ -5,8 +5,8 @@ import {
 } from '@calliope/engine';
 import { chooseDiscards, chooseVariant, decideAction, pickBotName } from '@calliope/bots';
 import {
-  roomSettingsSchema, sameStakes, type ActiveRoom, type ClientMessage, type HostCommand, type LevelSchedule,
-  type MemberView, type NightReport, type RoomSettings, type RoomView, type ServerMessage, type VariantInfo,
+  BOT_PERSONALITIES, roomSettingsSchema, sameStakes, type ActiveRoom, type BotPersonality, type ClientMessage,
+  type HostCommand, type LevelSchedule, type MemberView, type NightReport, type RoomSettings, type RoomView, type ServerMessage, type VariantInfo,
 } from '@calliope/shared';
 import {
   absorbDowntime, buildReport, currentStakes, elapsedPlayingMs, emptyLedger, endsAtOf, levelViewOf, migrateClock,
@@ -228,6 +228,21 @@ export class RoomManager {
     this.afterChange(rt);
   }
 
+  /** Seat a new bot; with no personality given, one is drawn at random. */
+  private addBot(rt: RoomRuntime, seat: number, personality?: BotPersonality): void {
+    const r = rt.record;
+    const taken = Object.values(r.members).map((m) => m.name);
+    const id = `bot:${randomUUID().slice(0, 8)}`;
+    const style = personality ?? BOT_PERSONALITIES[randomInt(BOT_PERSONALITIES.length)]!;
+    r.members[id] = { id, name: pickBotName(taken, rng), kind: 'bot', personality: style, joinedAt: Date.now() };
+    try {
+      this.sit(rt, id, seat);
+    } catch (e) {
+      delete r.members[id];
+      throw e;
+    }
+  }
+
   private stand(rt: RoomRuntime, playerId: string): void {
     const r = rt.record;
     const seat = this.requireSeat(r, playerId);
@@ -345,6 +360,8 @@ export class RoomManager {
         this.dispatch(rt, { type: 'set-config', config: nonStakeConfigFrom(next) }, false);
         // A duration, not an absolute deadline, so an extension survives the edit.
         r.clock.limitMs = next.end.kind === 'time' ? next.end.minutes * 60_000 : null;
+        // Extensions are counted against one kind of end; they do not carry to another.
+        if (prev.end.kind !== next.end.kind) r.clock.bonusMs = 0;
         if (cadenceChanged(prev.levels, next.levels)) {
           r.clock.levelAnchor = {
             atMs: elapsedPlayingMs(r, Date.now()),
@@ -356,17 +373,13 @@ export class RoomManager {
         this.afterChange(rt);
         return;
       }
-      case 'add-bot': {
-        const taken = Object.values(r.members).map((m) => m.name);
-        const id = `bot:${randomUUID().slice(0, 8)}`;
-        const personality = cmd.personality ?? (['tight', 'loose', 'aggressive', 'station'] as const)[randomInt(4)]!;
-        r.members[id] = { id, name: pickBotName(taken, rng), kind: 'bot', personality, joinedAt: Date.now() };
-        try {
-          this.sit(rt, id, cmd.seat);
-        } catch (e) {
-          delete r.members[id];
-          throw e;
-        }
+      case 'add-bot':
+        this.addBot(rt, cmd.seat, cmd.personality);
+        return;
+      case 'fill-bots': {
+        const open = r.table.seats.map((s, i) => (s ? -1 : i)).filter((i) => i !== -1);
+        if (open.length === 0) throw new RoomError('table-full', 'Every seat is taken');
+        for (const seat of open.slice(0, cmd.count)) this.addBot(rt, seat);
         return;
       }
       case 'remove-player': {
@@ -383,7 +396,11 @@ export class RoomManager {
         const now = Date.now();
         const add = cmd.minutes * 60_000;
         const elapsed = elapsedPlayingMs(r, now);
-        if (r.clock.limitMs === null) {
+        if (r.settings.end.kind === 'at') {
+          // A clock deadline moves later; past it, the N minutes run from now.
+          const overrun = Math.max(0, now - (r.settings.end.at + r.clock.bonusMs));
+          r.clock.bonusMs += add + overrun;
+        } else if (r.clock.limitMs === null) {
           // An open-ended night becomes a timed one, running from now.
           r.settings = { ...r.settings, end: { kind: 'time', minutes: cmd.minutes } };
           r.clock.limitMs = add;
