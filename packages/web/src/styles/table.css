@@ -573,6 +573,7 @@
   border-top: 1px solid var(--ink-3);
   flex-shrink: 0;
   min-width: 0;
+  position: relative;
 }
 
 .own-seat.beside {
@@ -776,7 +777,31 @@
   pointer-events: none;
 }
 
-.action-bar .pre-note span {
+/* Or, at the table, set into the rule above your cards, so it reads before them. */
+.own-note {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  transform: translateY(-50%);
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.own-note .pre-note {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+/* Tight enough that the half hanging below the rule clears the cards. */
+.own-note .pre-note span {
+  line-height: 1.2;
+}
+
+.pre-note span {
   background: var(--paper);
   color: var(--ink-2);
   font-family: var(--font-display);
@@ -1226,6 +1251,17 @@
 
 .menu-checks .check {
   padding: 0 var(--s-3);
+}
+
+/* Which sound the bell makes, tucked under its toggle. */
+.menu-checks .bell-sounds {
+  display: flex;
+  flex-direction: column;
+  padding-left: var(--s-4);
+}
+
+.menu-checks .bell-sounds .check {
+  font-size: var(--t-small);
 }
 
 .menu .btn {
