@@ -743,6 +743,60 @@ html[data-input='pad'] [data-pad-editing]:focus {
   gap: var(--s-3);
 }
 
+/* Dealer's choice: the games grouped by kind, in even columns. */
+.game-picker {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+}
+
+.game-picker-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-2);
+  color: var(--ink-2);
+  font-size: var(--t-small);
+}
+
+/* All or None when there is nothing to change: faded, not boxed as if chosen. */
+.game-picker-head .btn:disabled {
+  border-color: transparent;
+}
+
+.game-picker fieldset {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+}
+
+.game-picker legend {
+  padding: 0;
+  margin-bottom: var(--s-1);
+  font-family: var(--font-ui);
+  font-variant-caps: all-small-caps;
+  letter-spacing: 0.1em;
+  font-size: var(--t-small);
+  color: var(--ink-2);
+}
+
+.game-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr));
+  gap: 0 var(--s-3);
+}
+
+.game-picker-grid .check {
+  display: flex;
+  min-width: 0;
+}
+
+.game-picker-grid .check input {
+  flex-shrink: 0;
+}
+
 /* The settings form: sections folded to one line each, like a contents page. */
 .settings-section {
   border-top: 1px solid var(--ink-3);

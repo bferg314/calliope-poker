@@ -4,6 +4,7 @@ import type { VariantDefinition } from './types.js';
 export const holdem: VariantDefinition = {
   id: 'holdem',
   name: "Texas Hold'em",
+  family: 'community',
   description: 'Two down cards, five shared. The one everybody knows.',
   players: { min: 2, max: 10 },
   forcedBets: 'blinds',

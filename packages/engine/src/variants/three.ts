@@ -9,6 +9,7 @@ import type { VariantDefinition } from './types.js';
 export const three: VariantDefinition = {
   id: 'three',
   name: 'Three-card Poker',
+  family: 'other',
   description: 'Three down cards and one round of betting. A straight beats a flush here.',
   players: { min: 2, max: 9 },
   forcedBets: 'blinds',
@@ -23,6 +24,7 @@ export const three: VariantDefinition = {
 export const draw3: VariantDefinition = {
   id: 'draw3',
   name: 'Three-card Draw',
+  family: 'draw',
   description: 'Three down cards, a bet, then throw away what you do not want and draw again.',
   players: { min: 2, max: 8 },
   forcedBets: 'blinds',
