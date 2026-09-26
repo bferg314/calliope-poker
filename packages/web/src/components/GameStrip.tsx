@@ -36,7 +36,9 @@ export function GameStrip({ room, note, alert = false }: { room: RoomView; note?
     sub = chooser ? `${chooser} is picking the game` : 'picking the game';
   } else if (dealersChoice) {
     title = "Dealer's choice";
-    sub = mode.allowed.map(nameOf).join(' · ');
+    // A few games read well by name; past that the strip would run off the
+    // table, so it counts them (the lobby lists them all).
+    sub = withWild(mode.allowed.length <= 3 ? mode.allowed.map(nameOf).join(' · ') : `${mode.allowed.length} games`);
   } else {
     title = nameOf(mode.variantId);
     sub = withWild(BETTING[room.settings.betting] ?? null);

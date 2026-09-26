@@ -1035,9 +1035,30 @@
   flex-direction: column;
   gap: var(--s-2);
   min-width: 240px;
-  max-width: 92%;
+  width: min(680px, 92%);
   max-height: 96%;
   overflow-y: auto;
+}
+
+/* In a column that scrolls, nothing may be squeezed shorter than it is. */
+.choose-panel > * {
+  flex-shrink: 0;
+}
+
+.choose-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+}
+
+/* However many games the table allows, as many across as fit: one column on
+   a phone, two or three on a wide table. */
+.choose-games {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: var(--s-2);
 }
 
 .choose-panel .btn {
@@ -1061,6 +1082,28 @@
 
 .choose-panel .choose-game .micro {
   line-height: 1.25;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+
+/* On a phone the games go two across by name alone, so a long list fits
+   without scrolling; "How to play these" says what each one is. A game the
+   table is too full for still says why. */
+@media (max-width: 599px) {
+  .choose-games {
+    grid-template-columns: 1fr 1fr;
+  }
+  .choose-panel .choose-game {
+    padding: var(--s-2);
+  }
+  .choose-panel .choose-game .choose-name {
+    font-size: var(--t-body);
+  }
+  .choose-panel .choose-game:enabled .micro {
+    display: none;
+  }
 }
 
 .card {
