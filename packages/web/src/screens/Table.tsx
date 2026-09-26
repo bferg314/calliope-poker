@@ -248,6 +248,9 @@ export function Table({ room, socket }: { room: RoomView; socket: RoomSocket }):
   const me = room.me;
   const mySeat = me?.seat ?? null;
   const [menuOpen, setMenuOpen] = useState(false);
+  const [fillOpen, setFillOpen] = useState(false);
+  // The bot fill folds back up each time the menu closes.
+  useEffect(() => { if (!menuOpen) setFillOpen(false); }, [menuOpen]);
   const [confirmFold, setConfirmFold] = useState(() => {
     try { return localStorage.getItem('calliope.confirmFold') === '1'; } catch { return false; }
   });
@@ -662,12 +665,18 @@ export function Table({ room, socket }: { room: RoomView; socket: RoomSocket }):
                   )}
                   <button className="btn" onClick={() => socket.send({ type: 'host', command: { kind: 'extend', minutes: 15 } })}>Add 15 minutes</button>
                   {table.seats.some((s) => s === null) && (
-                    // The slider needs clicks of its own, so the menu closes only on "Add".
+                    // Folded to one line until asked for, so the menu stays short enough
+                    // on a phone not to cover the action bar. The slider needs clicks of
+                    // its own, so the menu closes only on "Add".
                     <div onClick={(e) => e.stopPropagation()}>
-                      <FillBots
-                        open={table.seats.filter((s) => s === null).length}
-                        onFill={(count) => { socket.send({ type: 'host', command: { kind: 'fill-bots', count } }); setMenuOpen(false); }}
-                      />
+                      {fillOpen ? (
+                        <FillBots
+                          open={table.seats.filter((s) => s === null).length}
+                          onFill={(count) => { socket.send({ type: 'host', command: { kind: 'fill-bots', count } }); setMenuOpen(false); }}
+                        />
+                      ) : (
+                        <button className="btn" onClick={() => setFillOpen(true)}>Fill seats with bots</button>
+                      )}
                     </div>
                   )}
                   <button
