@@ -48,7 +48,7 @@ export function Profile(): JSX.Element {
       <TopBar />
       <ResumeBanner />
       <div className="stack" style={{ paddingTop: 'var(--s-4)' }}>
-        <div className="label">your record</div>
+        <div className="label">your profile</div>
         <h1>{user.name}</h1>
         {!user.recovered && (
           <p className="muted">

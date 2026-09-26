@@ -686,7 +686,7 @@ export function Table({ room, socket }: { room: RoomView; socket: RoomSocket }):
                 <ThemePicker compact />
               </div>
               <button className="btn" onClick={() => void showInvite()}>Invite someone</button>
-              <Link to="/me" className="btn">My record</Link>
+              <Link to="/me" className="btn">My profile</Link>
             </div>
           )}
         </div>

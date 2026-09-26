@@ -590,6 +590,9 @@ details > summary {
 html[data-input='pad'] :focus {
   outline: 3px solid var(--focus);
   outline-offset: 3px;
+  /* Above its neighbours, so the ring is not drawn under the next control
+     in a tight list such as the table menu. */
+  z-index: 1;
 }
 
 /* A value picked up with A to change: the ring turns to the red of "to act". */
