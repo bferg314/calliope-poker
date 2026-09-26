@@ -19,7 +19,7 @@ import { ThemePicker } from '../components/ThemePicker.js';
 import { Toast } from '../components/Toast.js';
 import { TurnPop } from '../components/TurnPop.js';
 import { LastHandPop } from '../components/LastHandPop.js';
-import { bellOn, ringBell, setBellOn } from '../bell.js';
+import { BELL_SOUND_LABEL, BELL_SOUNDS, bellOn, bellSound, ringBell, setBellOn, setBellSound } from '../bell.js';
 import { copyText } from '../clipboard.js';
 import { absoluteUrl, fmt, fmtDuration, fmtMoney } from '../format.js';
 import { Link } from '../router.js';
@@ -256,6 +256,7 @@ export function Table({ room, socket }: { room: RoomView; socket: RoomSocket }):
     try { return localStorage.getItem('calliope.confirmFold') === '1'; } catch { return false; }
   });
   const [bell, setBell] = useState(bellOn);
+  const [sound, setSound] = useState(bellSound);
   const [announce, setAnnounce] = useState('');
   const [levelUp, setLevelUp] = useState<string | null>(null);
   const [turnPop, setTurnPop] = useState(false);
@@ -652,6 +653,25 @@ export function Table({ room, socket }: { room: RoomView; socket: RoomSocket }):
                   />
                   Turn bell
                 </label>
+                {bell && (
+                  <div className="bell-sounds" role="radiogroup" aria-label="Bell sound">
+                    {BELL_SOUNDS.map((s) => (
+                      <label key={s} className="check">
+                        <input
+                          type="radio"
+                          name="bell-sound"
+                          checked={sound === s}
+                          onChange={() => {
+                            setSound(s);
+                            setBellSound(s);
+                            ringBell(s); // so you hear what you just chose
+                          }}
+                        />
+                        {BELL_SOUND_LABEL[s]}
+                      </label>
+                    ))}
+                  </div>
+                )}
               </div>
               {isHost && (
                 <>

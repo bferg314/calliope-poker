@@ -1253,6 +1253,17 @@
   padding: 0 var(--s-3);
 }
 
+/* Which sound the bell makes, tucked under its toggle. */
+.menu-checks .bell-sounds {
+  display: flex;
+  flex-direction: column;
+  padding-left: var(--s-4);
+}
+
+.menu-checks .bell-sounds .check {
+  font-size: var(--t-small);
+}
+
 .menu .btn {
   justify-content: flex-start;
   border-color: transparent;
