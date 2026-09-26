@@ -9,6 +9,7 @@ import type { VariantDefinition } from './types.js';
 export const pineapple: VariantDefinition = {
   id: 'pineapple',
   name: 'Pineapple',
+  family: 'community',
   description: 'Three down cards, five shared. Everyone throws one away after the flop.',
   players: { min: 2, max: 10 },
   forcedBets: 'blinds',

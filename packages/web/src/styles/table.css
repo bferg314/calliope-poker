@@ -97,6 +97,9 @@
   text-align: center;
   white-space: nowrap;
   flex-shrink: 0;
+  /* Take the width it is given, never the width of its line: in the lobby a
+     long list of games would otherwise widen the page instead of trimming. */
+  contain: inline-size;
 }
 
 .game-strip .game-name {

@@ -46,6 +46,59 @@ export function Num({ label, value, onChange, min = 0, disabled }: { label: stri
   );
 }
 
+const FAMILIES: { id: VariantInfo['family']; label: string }[] = [
+  { id: 'community', label: 'Community cards' },
+  { id: 'stud', label: 'Stud' },
+  { id: 'draw', label: 'Draw' },
+  { id: 'other', label: 'Other games' },
+];
+
+/**
+ * The games dealer's choice may pick from, grouped by kind and set in even
+ * columns so the list stays readable however many games there are. At least
+ * one game is always kept: the last one checked cannot be unchecked.
+ */
+function GamePicker({ variants, allowed, disabled, onChange }: { variants: VariantInfo[]; allowed: string[]; disabled: boolean; onChange: (allowed: string[]) => void }): JSX.Element {
+  const count = variants.filter((v) => allowed.includes(v.id)).length;
+  const toggle = (id: string, on: boolean): void => {
+    const next = on ? [...allowed, id] : allowed.filter((x) => x !== id);
+    if (next.length) onChange(next);
+  };
+  return (
+    <div className="game-picker">
+      <div className="game-picker-head">
+        <span>{count} of {variants.length} games</span>
+        {!disabled && (
+          <span className="row">
+            <button type="button" className="btn btn-quiet btn-small" disabled={count === variants.length} onClick={() => onChange(variants.map((v) => v.id))}>All</button>
+            <button type="button" className="btn btn-quiet btn-small" disabled={count === 1} onClick={() => onChange(allowed.slice(0, 1))}>None</button>
+          </span>
+        )}
+      </div>
+      {FAMILIES.map((f) => {
+        const games = variants.filter((v) => v.family === f.id);
+        if (!games.length) return null;
+        return (
+          <fieldset key={f.id}>
+            <legend>{f.label}</legend>
+            <div className="game-picker-grid">
+              {games.map((v) => {
+                const on = allowed.includes(v.id);
+                return (
+                  <label key={v.id} className="check">
+                    <input type="checkbox" disabled={disabled || (on && count === 1)} checked={on} onChange={(e) => toggle(v.id, e.target.checked)} />
+                    {v.name}
+                  </label>
+                );
+              })}
+            </div>
+          </fieldset>
+        );
+      })}
+    </div>
+  );
+}
+
 /** The room's settings as a printed form. Host edits; others read. */
 export function Settings({ settings, variants, editable, onSave, onDirtyChange }: SettingsProps): JSX.Element {
   const [draft, setDraft] = useState<RoomSettings>(settings);
@@ -115,22 +168,7 @@ export function Settings({ settings, variants, editable, onSave, onDirtyChange }
             </label>
           </div>
           {dc ? (
-            <div className="row">
-              {variants.map((v) => (
-                <label key={v.id} className="check">
-                  <input
-                    type="checkbox"
-                    disabled={ro}
-                    checked={allowed.includes(v.id)}
-                    onChange={(e) => {
-                      const next = e.target.checked ? [...allowed, v.id] : allowed.filter((x) => x !== v.id);
-                      if (next.length) set('variantMode', { kind: 'dealers-choice', allowed: next });
-                    }}
-                  />
-                  {v.name}
-                </label>
-              ))}
-            </div>
+            <GamePicker variants={variants} allowed={allowed} disabled={ro} onChange={(next) => set('variantMode', { kind: 'dealers-choice', allowed: next })} />
           ) : (
             <select className="select" disabled={ro} value={allowed[0]} onChange={(e) => set('variantMode', { kind: 'locked', variantId: e.target.value })}>
               {variants.map((v) => (

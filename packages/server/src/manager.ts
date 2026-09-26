@@ -746,19 +746,18 @@ export class RoomManager {
 
   // ---------- views ----------
 
-  variants(r: RoomRecord): VariantInfo[] {
-    const allowed = r.settings.variantMode.kind === 'locked' ? [r.settings.variantMode.variantId] : r.settings.variantMode.allowed;
-    return listVariants()
-      .map((v) => ({
-        id: v.id,
-        name: v.name,
-        description: v.description,
-        defaultBetting: v.defaultBetting,
-        forcedBets: v.forcedBets,
-        players: { ...v.players },
-        hasDraw: v.streets.some((street) => street.draw !== undefined),
-      }))
-      .sort((a, b) => Number(allowed.includes(b.id)) - Number(allowed.includes(a.id)));
+  /** Every game, in the order the lobby lists them, so a list of them never reshuffles. */
+  variants(): VariantInfo[] {
+    return listVariants().map((v) => ({
+      id: v.id,
+      name: v.name,
+      family: v.family,
+      description: v.description,
+      defaultBetting: v.defaultBetting,
+      forcedBets: v.forcedBets,
+      players: { ...v.players },
+      hasDraw: v.streets.some((street) => street.draw !== undefined),
+    }));
   }
 
   view(rt: RoomRuntime, viewerId: string | null): RoomView {
@@ -805,7 +804,7 @@ export class RoomManager {
       lastHand: r.lastHand ? summaryFor(r.lastHand, viewerId) : null,
       handCount: r.hands.length,
       report: r.report,
-      variants: this.variants(r),
+      variants: this.variants(),
       joinUrl: `${this.deps.publicUrl}/r/${r.code}`,
       serverLimit: (() => {
         const expiresAt = r.phase === 'ended' ? null : this.deps.expiresAt?.(r) ?? null;

@@ -31,9 +31,13 @@ export interface StreetSpec {
   fixedLimitTier: 'small' | 'big';
 }
 
+export type VariantFamily = 'community' | 'stud' | 'draw' | 'other';
+
 export interface VariantDefinition {
   id: string;
   name: string;
+  /** The kind of game, which the dealer's-choice picker groups by. */
+  family: VariantFamily;
   description: string;
   players: { min: number; max: number };
   forcedBets: 'blinds' | 'antes-bringin';

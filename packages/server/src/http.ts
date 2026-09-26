@@ -68,6 +68,7 @@ export function registerHttp(app: FastifyInstance, s: Services): void {
     listVariants().map((v) => ({
       id: v.id,
       name: v.name,
+      family: v.family,
       description: v.description,
       defaultBetting: v.defaultBetting,
       forcedBets: v.forcedBets,

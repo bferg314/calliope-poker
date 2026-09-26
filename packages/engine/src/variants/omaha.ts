@@ -4,6 +4,7 @@ import type { VariantDefinition } from './types.js';
 export const omaha: VariantDefinition = {
   id: 'omaha',
   name: 'Omaha',
+  family: 'community',
   description: 'Four down cards, use exactly two of them with three from the board.',
   players: { min: 2, max: 10 },
   forcedBets: 'blinds',

@@ -11,6 +11,7 @@ import type { VariantDefinition } from './types.js';
 export const draw5: VariantDefinition = {
   id: 'draw5',
   name: 'Five-card Draw',
+  family: 'draw',
   description: 'Five down cards, no board. Throw away what you do not want and draw again.',
   players: { min: 2, max: 6 },
   forcedBets: 'blinds',

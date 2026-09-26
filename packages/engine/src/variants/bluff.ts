@@ -13,6 +13,7 @@ import type { VariantDefinition } from './types.js';
 export const bluff: VariantDefinition = {
   id: 'bluff',
   name: "Blind Man's Bluff",
+  family: 'other',
   description: 'One card each, on your forehead: everyone sees it but you. High card wins.',
   players: { min: 2, max: 10 },
   forcedBets: 'blinds',

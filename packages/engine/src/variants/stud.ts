@@ -4,6 +4,7 @@ import type { VariantDefinition } from './types.js';
 export const stud7: VariantDefinition = {
   id: 'stud7',
   name: 'Seven-card Stud',
+  family: 'stud',
   description: 'Two down, four up, one down. Antes and a bring-in, no board.',
   players: { min: 2, max: 8 },
   forcedBets: 'antes-bringin',
@@ -22,6 +23,7 @@ export const stud7: VariantDefinition = {
 export const stud5: VariantDefinition = {
   id: 'stud5',
   name: 'Five-card Stud',
+  family: 'stud',
   description: 'One down, four up. The old one from the westerns.',
   players: { min: 2, max: 10 },
   forcedBets: 'antes-bringin',

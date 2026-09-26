@@ -87,6 +87,8 @@ export interface LedgerEntry {
 export interface VariantInfo {
   id: string;
   name: string;
+  /** Board games, stud, draw, or anything else; the dealer's-choice picker groups by it. */
+  family: 'community' | 'stud' | 'draw' | 'other';
   description: string;
   defaultBetting: 'no-limit' | 'pot-limit' | 'fixed-limit';
   forcedBets: 'blinds' | 'antes-bringin';
