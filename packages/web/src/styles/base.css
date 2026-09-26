@@ -743,6 +743,19 @@ html[data-input='pad'] [data-pad-editing]:focus {
   gap: var(--s-3);
 }
 
+/* End of the night: each choice on its own line, its input in a second column. */
+.end-options {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  align-items: center;
+  column-gap: var(--s-4);
+  row-gap: var(--s-2);
+}
+
+.end-options > .row {
+  min-height: var(--hit);
+}
+
 /* Dealer's choice: the games grouped by kind, in even columns. */
 .game-picker {
   display: flex;

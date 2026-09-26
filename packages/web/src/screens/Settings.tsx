@@ -345,38 +345,48 @@ export function Settings({ settings, variants, editable, onSave, onDirtyChange }
         </Section>
 
         <Section title="End of the night" summary={endLine}>
-          <div className="row">
-            <label className="check">
-              <input type="radio" name="end" disabled={ro} checked={draft.end.kind === 'last-standing'} onChange={() => set('end', { kind: 'last-standing' })} />
-              Last one standing
-            </label>
+          {/* One choice per line, the label in its own column so the inputs line up. */}
+          <div className="end-options">
             <label className="check">
               <input type="radio" name="end" disabled={ro} checked={draft.end.kind === 'time'} onChange={() => set('end', { kind: 'time', minutes: 120 })} />
               Time limit
             </label>
-            {draft.end.kind === 'time' && (
-              <input className="input num" style={{ width: 110 }} type="number" min={1} disabled={ro} value={draft.end.minutes} onChange={(e) => set('end', { kind: 'time', minutes: Number(e.target.value) || 1 })} aria-label="minutes" />
-            )}
-            {draft.end.kind === 'time' && <span className="micro">minutes, then one last hand</span>}
+            <div className="row">
+              {draft.end.kind === 'time' && (
+                <>
+                  <input className="input num" style={{ width: 110 }} type="number" min={1} disabled={ro} value={draft.end.minutes} onChange={(e) => set('end', { kind: 'time', minutes: Number(e.target.value) || 1 })} aria-label="minutes" />
+                  <span className="micro">minutes, then one last hand</span>
+                </>
+              )}
+            </div>
             <label className="check">
               <input type="radio" name="end" disabled={ro} checked={draft.end.kind === 'at'} onChange={() => set('end', { kind: 'at', at: defaultEndAt(Date.now()) })} />
               At a set time
             </label>
-            {draft.end.kind === 'at' && (
-              <input
-                className="input num"
-                style={{ width: 160 }}
-                type="time"
-                disabled={ro}
-                value={timeInputValue(draft.end.at)}
-                onChange={(e) => {
-                  const [h, m] = e.target.value.split(':').map(Number);
-                  if (h !== undefined && m !== undefined && !Number.isNaN(h) && !Number.isNaN(m)) set('end', { kind: 'at', at: nextOccurrence(h, m, Date.now()) });
-                }}
-                aria-label="end time"
-              />
-            )}
-            {draft.end.kind === 'at' && <span className="micro">then one last hand. Pausing does not move it.</span>}
+            <div className="row">
+              {draft.end.kind === 'at' && (
+                <>
+                  <input
+                    className="input num"
+                    style={{ width: 160 }}
+                    type="time"
+                    disabled={ro}
+                    value={timeInputValue(draft.end.at)}
+                    onChange={(e) => {
+                      const [h, m] = e.target.value.split(':').map(Number);
+                      if (h !== undefined && m !== undefined && !Number.isNaN(h) && !Number.isNaN(m)) set('end', { kind: 'at', at: nextOccurrence(h, m, Date.now()) });
+                    }}
+                    aria-label="end time"
+                  />
+                  <span className="micro">then one last hand. Pausing does not move it.</span>
+                </>
+              )}
+            </div>
+            <label className="check">
+              <input type="radio" name="end" disabled={ro} checked={draft.end.kind === 'last-standing'} onChange={() => set('end', { kind: 'last-standing' })} />
+              Last one standing
+            </label>
+            <div />
           </div>
           <div className="settings-grid">
             <label className="check">
