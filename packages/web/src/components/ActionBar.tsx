@@ -25,6 +25,11 @@ interface ActionBarProps {
    */
   panelHost?: HTMLElement | null;
   /**
+   * Where the note on whose turn it is goes: the rule above your cards, so it
+   * reads before them. Without one it sits in the bar's own top rule.
+   */
+  noteHost?: HTMLElement | null;
+  /**
    * Set while someone else is acting and the player is still in the hand:
    * they may choose now what to do when the action reaches them.
    */
@@ -33,7 +38,11 @@ interface ActionBarProps {
   turnKey?: string;
 }
 
-export function ActionBar({ legal, waitingFor, onAction, confirmFold, primary, panelHost, ahead = null, turnKey = '' }: ActionBarProps): JSX.Element {
+export function ActionBar({ legal, waitingFor, onAction, confirmFold, primary, panelHost, noteHost, ahead = null, turnKey = '' }: ActionBarProps): JSX.Element {
+  const note = (text: string): JSX.Element => {
+    const el = <div className="pre-note" role="status"><span>{text}</span></div>;
+    return noteHost ? createPortal(el, noteHost) : el;
+  };
   const [betOpen, setBetOpen] = useState(false);
   const [foldArmed, setFoldArmed] = useState(false);
   // Chosen on the profile page, so read once as the table opens.
@@ -172,9 +181,7 @@ export function ActionBar({ legal, waitingFor, onAction, confirmFold, primary, p
       );
       return (
         <div className="action-bar waiting-bar ahead">
-          <div className="pre-note" role="status">
-            <span>{dropped ?? (armed ? `${waiting} · set for your turn` : `${waiting} · choose ahead`)}</span>
-          </div>
+          {note(dropped ?? (armed ? `${waiting} · set for your turn` : `${waiting} · choose ahead`))}
           <div className="buttons">
             {pre('check-fold', ahead.toCall > 0 ? 'Fold' : 'Check / fold')}
             {pre('call', ahead.toCall > 0 ? `Call ${fmt(ahead.toCall)}` : 'Check')}
@@ -208,7 +215,7 @@ export function ActionBar({ legal, waitingFor, onAction, confirmFold, primary, p
 
   return (
     <div className="action-bar">
-      {dropped && <div className="pre-note" role="status"><span>{dropped}</span></div>}
+      {dropped && note(dropped)}
       {betOpen && raise && !raise.fixed && (() => {
         const panel = (
           <BetPanel

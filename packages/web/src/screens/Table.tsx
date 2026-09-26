@@ -243,6 +243,7 @@ export function Table({ room, socket }: { room: RoomView; socket: RoomSocket }):
   const wide = layout === 'wide';
   const [tableAreaRef, area] = useSize();
   const [betSlot, setBetSlot] = useState<HTMLDivElement | null>(null);
+  const [noteSlot, setNoteSlot] = useState<HTMLDivElement | null>(null);
   const table = room.table;
   const hand = table.hand;
   const me = room.me;
@@ -779,7 +780,7 @@ export function Table({ room, socket }: { room: RoomView; socket: RoomSocket }):
             )}
           </div>
 
-          <OwnSeat room={room} socket={socket} layout={layout} maxCards={maxHoleCards(tableVariant?.id)} mySeat={mySeat} toAct={myTurn} winAmount={mySeat !== null ? winAmounts[mySeat] ?? 0 : 0} timerFraction={actorSeat === mySeat ? timerFraction : null} selectable={!!myDraw} selected={selected} onToggleCard={toggleCard} />
+          <OwnSeat room={room} socket={socket} layout={layout} maxCards={maxHoleCards(tableVariant?.id)} mySeat={mySeat} toAct={myTurn} winAmount={mySeat !== null ? winAmounts[mySeat] ?? 0 : 0} timerFraction={actorSeat === mySeat ? timerFraction : null} selectable={!!myDraw} selected={selected} onToggleCard={toggleCard} noteRef={setNoteSlot} />
 
           {mySeat !== null && (myDraw ? (
             <DrawBar
@@ -797,6 +798,7 @@ export function Table({ room, socket }: { room: RoomView; socket: RoomSocket }):
               onAction={send}
               confirmFold={confirmFold}
               panelHost={betSlot}
+              noteHost={noteSlot}
               primary={
                 canRebuyNow
                   ? { label: `Re-buy ${fmt(chips.buyInChips)} chips`, onClick: () => void rebuy() }
@@ -843,7 +845,7 @@ export function Table({ room, socket }: { room: RoomView; socket: RoomSocket }):
   );
 }
 
-function OwnSeat({ room, socket, layout, maxCards, mySeat, toAct, winAmount, timerFraction, selectable, selected, onToggleCard }: {
+function OwnSeat({ room, socket, layout, maxCards, mySeat, toAct, winAmount, timerFraction, selectable, selected, onToggleCard, noteRef }: {
   room: RoomView;
   socket: RoomSocket;
   layout: TableLayout;
@@ -856,6 +858,8 @@ function OwnSeat({ room, socket, layout, maxCards, mySeat, toAct, winAmount, tim
   selectable: boolean;
   selected: string[];
   onToggleCard: (card: string) => void;
+  /** Receives the slot on the seat's top rule where the action bar says whose turn it is. */
+  noteRef?: (el: HTMLDivElement | null) => void;
 }): JSX.Element {
   const table = room.table;
   const hand = table.hand;
@@ -900,6 +904,7 @@ function OwnSeat({ room, socket, layout, maxCards, mySeat, toAct, winAmount, tim
       data-max-cards={Math.max(maxCards, cards.length)}
       style={{ '--own-card-h': `${cardH}px` } as CSSProperties}
     >
+      <div className="own-note" ref={noteRef} />
       <div className="who">
         <div className="name">
           <span className="who-name">{seat.name}</span>
