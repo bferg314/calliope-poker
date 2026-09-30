@@ -318,7 +318,7 @@ export function Table({ room, socket }: { room: RoomView; socket: RoomSocket }):
   const turnHint = hand?.stage === 'choosing'
     ? 'pick the game'
     : myDraw
-      ? myDraw.replace ? 'the draw' : myDraw.max === 1 ? 'throw one away' : 'the discard'
+      ? myDraw.replace ? 'pick cards to swap' : myDraw.max === 1 ? 'throw one away' : 'the discard'
       : legal
         ? legal.canCheck
           // The big blind can check and *raise*, not bet, so ask the engine

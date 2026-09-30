@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createTable, fullDeck, legalActions, mulberry32, reduce, seededDeck, shuffle, type TableState, type Wild } from '@calliope/engine';
+import { createTable, fullDeck, getVariant, legalActions, mulberry32, reduce, seededDeck, shuffle, type TableState, type Wild } from '@calliope/engine';
 import { BOT_PERSONALITIES } from '@calliope/shared';
 import { blindStrength, chenStrength, chooseDiscards, decideAction, drawKeep, drawKeepThree, estimateStrength } from '../src/index.js';
 
@@ -18,6 +18,25 @@ describe('strength', () => {
     expect(chenStrength('Jh', 'Th')).toBeGreaterThan(chenStrength('Jh', 'Td'));
   });
 
+  it('rates two pair as ordinary when everyone picks from ten cards', () => {
+    /** Seat 0's strength on the last street, holding `hole` against `board`. */
+    const rate = (variantId: string, hole: string[], board: string[]): number => {
+      const s = reduce(table(['A', 'B'], { variantMode: { kind: 'locked', variantId } }), { type: 'start-hand', deck: seededDeck(5) }).state;
+      const h = s.hand!;
+      h.players[0]!.holeDown = hole;
+      h.board = board;
+      h.streetIndex = getVariant(variantId).streets.length - 1;
+      return estimateStrength(s, 0);
+    };
+    const board = ['Kd', '9c', '4s', '2h', '7d'];
+    const holdemTwoPair = rate('holdem', ['Kh', '9h'], board);
+    const cincyTwoPair = rate('cincinnati', ['Kh', '9h', '3c', '5d', 'Jc'], board);
+    const cincyFlush = rate('cincinnati', ['Ad', 'Qd', '3d', '5c', 'Jc'], board);
+    expect(holdemTwoPair).toBeGreaterThanOrEqual(0.6);
+    expect(cincyTwoPair).toBeLessThan(0.35);
+    expect(cincyFlush).toBeGreaterThan(cincyTwoPair);
+  });
+
   it('is between 0 and 1 during a hand', () => {
     const s = reduce(table(['A', 'B', 'C']), { type: 'start-hand', deck: seededDeck(3) }).state;
     for (let seat = 0; seat < 3; seat++) {
@@ -31,7 +50,7 @@ describe('strength', () => {
 describe('decideAction', () => {
   const wilds: Wild[] = [{ kind: 'none' }, { kind: 'jokers' }, { kind: 'deuces' }];
   const cases = BOT_PERSONALITIES.flatMap((personality) => wilds.map((wild) => [personality, wild] as const));
-  for (const variantId of ['holdem', 'omaha', 'stud7', 'stud5', 'pineapple', 'draw5', 'three', 'draw3', 'bluff']) {
+  for (const variantId of ['holdem', 'omaha', 'stud7', 'stud5', 'pineapple', 'atomic', 'cincinnati', 'draw5', 'three', 'draw3', 'bluff']) {
     for (const [personality, wild] of cases) {
       const named = wild.kind === 'none' ? '' : ` with ${wild.kind} wild`;
       it(`plays ${variantId} legally as ${personality}${named}`, () => {

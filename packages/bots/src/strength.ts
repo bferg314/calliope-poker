@@ -79,6 +79,38 @@ function madeStrength(made: HandRank, hole: readonly Card[], board: readonly Car
   }
 }
 
+/**
+ * A made hand in a game where every player picks their best five from nine
+ * cards or more (Cincinnati: five of their own and five shared). With that many
+ * to choose from, two pair is ordinary and a straight is only middling, so the
+ * whole scale moves up a notch.
+ */
+function richMadeStrength(made: HandRank, hole: readonly Card[]): number {
+  const mine = usesHole(made, hole);
+  switch (made.category) {
+    case 0: return 0.04;
+    case 1: return mine ? 0.12 : 0.06;
+    case 2: return mine ? 0.26 : 0.12;
+    case 3: return mine ? 0.4 : 0.18;
+    case 4: return mine ? 0.56 : 0.26;
+    case 5: return mine ? 0.7 : 0.32;
+    case 6: return mine ? 0.86 : 0.42;
+    case 7: return 0.96;
+    default: return 0.995;
+  }
+}
+
+/**
+ * How many cards a player makes their hand from at the showdown: everything
+ * dealt to them and to the board, less what the game makes them throw away.
+ */
+function cardsToChooseFrom(streets: ReturnType<typeof getVariant>['streets']): number {
+  return streets.reduce((n, st) => {
+    const dealt = (st.deal.holeDown ?? 0) + (st.deal.holeUp ?? 0) + (st.deal.community ?? 0);
+    return n + dealt - (st.draw && !st.draw.replace ? st.draw.max : 0);
+  }, 0);
+}
+
 function drawStrength(hole: readonly Card[], board: readonly Card[], omaha: boolean): number {
   const all = [...hole, ...board];
   let best = 0;
@@ -179,7 +211,9 @@ export function estimateStrength(state: TableState, seat: number): number {
   const hole = natural(realHole, isWild);
   const board = natural(h.board, isWild);
   const community = v.streets.some((s) => (s.deal.community ?? 0) > 0);
-  if (community && board.length === 0) return preflopStrength(hole, v.id);
+  const rich = cardsToChooseFrom(v.streets) >= 9;
+  // Five cards of your own flatter a starting hand the way Omaha's four do, only more.
+  if (community && board.length === 0) return clamp(preflopStrength(hole, v.id) * (rich ? 0.8 : 1));
   // Three-card games: no board, no up cards, three in the hand.
   if (!community && hole.length === 3 && p.holeUp.length === 0 && v.streets.every((s) => (s.deal.holeUp ?? 0) === 0)) {
     return threeStrength(realHole, isWild);
@@ -192,10 +226,11 @@ export function estimateStrength(state: TableState, seat: number): number {
   else made = bestHand(all, isWild);
   made = { ...made, cards: natural(made.cards, isWild) };
 
-  let s = madeStrength(made, hole, board);
+  let s = rich ? richMadeStrength(made, hole) : madeStrength(made, hole, board);
   const streetsLeft = v.streets.length - 1 - h.streetIndex;
   if (streetsLeft > 0) {
-    if (community) s = Math.max(s, drawStrength(hole, board, v.id === 'omaha'));
+    // A flush draw is worth less when a made flush is only middling.
+    if (community) s = Math.max(s, drawStrength(hole, board, v.id === 'omaha') * (rich ? 0.6 : 1));
     else if (all.length < 5) s = Math.max(s, studEarlyBonus(hole));
   }
   return clamp(s);

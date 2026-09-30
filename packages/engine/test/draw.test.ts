@@ -210,3 +210,55 @@ describe('five-card draw', () => {
     expect(view.hand!.players[seat]!.discarded).toHaveLength(2);
   });
 });
+
+describe('atomic pineapple', () => {
+  const atomicTable = { variantMode: { kind: 'locked' as const, variantId: 'atomic' } };
+
+  /** Everyone still in throws away their first card. */
+  function throwFirst(t: ReturnType<typeof tableWith>): void {
+    let guard = 0;
+    while (t.state.hand!.stage === 'discarding' && guard++ < 20) {
+      const seat = t.state.hand!.round.actor!;
+      t.apply({ type: 'discard', seat, cards: [t.state.hand!.players[seat]!.holeDown[0]!] });
+    }
+  }
+
+  it('deals five down and throws one away before the flop, the turn and the river', () => {
+    const t = tableWith(['Ann', 'Bob', 'Cid'], 1000, atomicTable);
+    t.apply({ type: 'start-hand', deck: seededDeck(31) });
+    const held = () => t.state.hand!.players.flatMap((p) => (p ? [p.holeDown.length] : []));
+    expect(held()).toEqual([5, 5, 5]);
+
+    for (const [cards, board] of [[4, 3], [3, 4], [2, 5]] as const) {
+      passRound(t);
+      expect(t.state.hand!.stage).toBe('discarding');
+      // The discard comes before the next shared card.
+      expect(t.state.hand!.board).toHaveLength(board - (board === 3 ? 3 : 1));
+      throwFirst(t);
+      expect(held()).toEqual([cards, cards, cards]);
+      expect(t.state.hand!.board).toHaveLength(board);
+    }
+
+    passRound(t); // river
+    const h = t.state.hand!;
+    expect(h.stage).toBe('settled');
+    expect(h.results!.showdown).toBe(true);
+    for (const p of h.players) if (p) expect(p.discarded).toHaveLength(3);
+  });
+
+  it('whittles an all-in hand down to two without anybody choosing', () => {
+    const t = tableWith(['Ann', 'Bob'], 500, atomicTable);
+    t.apply({ type: 'start-hand', deck: seededDeck(32) });
+    t.act(t.actor()!, { type: 'raise', to: 500 });
+    t.act(t.actor()!, { type: 'call' });
+    const h = t.state.hand!;
+    expect(h.stage).toBe('settled');
+    expect(h.board).toHaveLength(5);
+    for (const p of h.players) if (p) expect(p.holeDown).toHaveLength(2);
+  });
+
+  it('seats at most nine, so the deck lasts', () => {
+    const t = tableWith(['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'], 1000, { ...atomicTable, maxSeats: 10 });
+    expect(() => t.apply({ type: 'start-hand', deck: seededDeck(33) })).toThrow(/at most 9/);
+  });
+});

@@ -35,8 +35,8 @@ const out = (n) => path.join(OUT, n);
 const log = (...a) => console.log(new Date().toISOString().slice(11, 19), ...a);
 const list = (v, d) => (v ? v.split(',').map((s) => s.trim()).filter(Boolean) : d);
 
-const MAX_PLAYERS = { holdem: 8, omaha: 8, pineapple: 8, stud5: 8, stud7: 8, draw5: 6, three: 8, draw3: 8, bluff: 8 };
-const VARIANTS = list(process.env.VARIANTS, ['holdem', 'omaha', 'pineapple', 'stud5', 'stud7', 'draw5', 'three', 'draw3', 'bluff']);
+const MAX_PLAYERS = { holdem: 8, omaha: 8, pineapple: 8, atomic: 8, cincinnati: 8, stud5: 8, stud7: 8, draw5: 6, three: 8, draw3: 8, bluff: 8 };
+const VARIANTS = list(process.env.VARIANTS, ['holdem', 'omaha', 'pineapple', 'atomic', 'cincinnati', 'stud5', 'stud7', 'draw5', 'three', 'draw3', 'bluff']);
 const COUNTS = list(process.env.COUNTS, ['3', '6', '8']).map(Number);
 const VIEWPORTS = list(process.env.VIEWPORTS, ['360x640', '390x844', '412x915', '768x1024', '844x390', '1280x800', '1440x900', '1920x1080'])
   .map((s) => { const [width, height] = s.split('x').map(Number); return { width, height, tag: s }; });
@@ -268,7 +268,7 @@ async function playToLateStreet(where, variant) {
   const deadline = Date.now() + 90_000;
   while (Date.now() < deadline) {
     if (await page.locator('.turn-pop .plate').count()) await check(`${where} (turn stamp)`, { table: true });
-    const draw = page.locator('.draw-buttons .btn-red');
+    const draw = page.locator('.draw-buttons .draw-go');
     const call = page.locator('.action-bar .btn-ink:not([disabled])');
     const myTurn = (await draw.count()) > 0 || (await call.count()) > 0;
     if (myTurn && (await lateEnough(variant))) return true;
@@ -279,7 +279,7 @@ async function playToLateStreet(where, variant) {
 
 /** Take one turn if it is ours: throw away the first card when asked, otherwise check or call. */
 async function actOnce() {
-  const draw = page.locator('.draw-buttons .btn-red');
+  const draw = page.locator('.draw-buttons .draw-go');
   if (await draw.count()) {
     const picks = page.locator('.card-pick:not([disabled])');
     if (!(await page.locator('.card-pick.tossed').count())) await picks.first().click().catch(() => {});

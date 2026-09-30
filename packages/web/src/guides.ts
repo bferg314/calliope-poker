@@ -57,6 +57,35 @@ export const GUIDES: Record<string, Guide> = {
     ranking: 'five',
     notes: ['Keep the two that go best with the flop: the throw comes before the turn, so you choose with three shared cards showing.'],
   },
+  atomic: {
+    summary: "Hold'em dealt five cards, whittled down to two by throwing one away before each of the flop, the turn and the river.",
+    steps: [
+      BLINDS,
+      'Everyone gets five cards face down. A round of betting.',
+      'Everyone throws one away. Then the flop, and a round of betting.',
+      'Everyone throws another away. Then the turn, and a round of betting.',
+      "Everyone throws a third away, leaving two. Then the river, a last round of betting, and it is hold'em at the showdown.",
+    ],
+    ranking: 'five',
+    notes: [
+      'The first throw comes before any shared card is out, so keep the cards that work together: pairs, suits, and connected ranks.',
+      'At most nine players, so the deck lasts.',
+    ],
+  },
+  cincinnati: {
+    summary: 'Five cards of your own and five shared, turned over one at a time.',
+    steps: [
+      BLINDS,
+      'Everyone gets five cards face down. A round of betting.',
+      'The five shared cards are turned over one at a time, with a round of betting after each.',
+      'The showdown, after the fifth shared card and its round of betting.',
+    ],
+    ranking: 'five',
+    notes: [
+      'Your hand is the best five of all ten cards, in any mix. With that many to choose from, big hands are common: a straight or a flush often loses.',
+      'At most nine players, so the deck lasts.',
+    ],
+  },
   stud7: {
     summary: 'Seven cards each, some face up, and no shared cards at all.',
     steps: [

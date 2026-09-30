@@ -78,6 +78,8 @@ For split-pot or lowball games you would add a new evaluator alongside these in 
 | `holdem` | Texas Hold'em | 2 down, 5 shared |
 | `omaha` | Omaha | 4 down, exactly two of them play |
 | `pineapple` | Pineapple | 3 down, throw one away after the flop |
+| `atomic` | Atomic Pineapple | 5 down, throw one away before the flop, the turn and the river; at most nine players |
+| `cincinnati` | Cincinnati | 5 down, 5 shared turned one at a time with a bet after each; best five of ten; at most nine players |
 | `stud7` | Seven-card Stud | antes and a bring-in, no board |
 | `stud5` | Five-card Stud | 1 down, 4 up |
 | `draw5` | Five-card Draw | 5 down, one draw, at most six players |
