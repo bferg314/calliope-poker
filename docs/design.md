@@ -229,11 +229,15 @@ changes height.
 
 ### 4.2b Throwing cards away
 
-When it is a player's turn to discard, their own cards become the control: tap a
+When it is a player's turn to discard, their own cards become the control. Each
+one is ringed in a dashed `--red` line and the hand hops once, staggered card by
+card (not under reduced motion), so the cards read as something to press; tap a
 card and it drops slightly, fades, and takes a red "throw" stamp. The action bar
-is replaced by a single instruction line and one committing button, which names
-exactly what will happen: "Throw it away", "Draw 3", or "Stand pat". A "Put back"
-button appears once anything is selected.
+is replaced by a single instruction line, led in red with "Your draw:" or "Your
+discard:", and one committing button, which names exactly what will happen:
+"Throw it away", "Draw 3", or "Keep all 5". Keeping every card is a choice, not
+the default, so that button stays quiet (ink, not red) until a card is picked. A
+"Put back" button appears once anything is selected.
 
 Opponents' seats show how many cards each of them took ("drew 3"), because in
 draw poker that is the only read available.
@@ -252,7 +256,7 @@ themselves:
 
 - **A stamp on the felt.** A band filled `--red`, with "Your turn" in display
   serif and, after a middot, one small caps line saying what is being asked:
-  "10 TO CALL", "CHECK OR RAISE", "PICK THE GAME", "THE DRAW". Red because red
+  "10 TO CALL", "CHECK OR RAISE", "PICK THE GAME", "PICK CARDS TO SWAP". Red because red
   is already the ink that means "to act" on a seat card (§4.2), so the stamp is
   that mark written large; the text is `--on-red`, which each theme sets to the
   one readable ink for its own red.

@@ -85,7 +85,7 @@ async function playToDraw(expectName, shot) {
       const toss = expectName === 'Pineapple' ? 1 : Math.min(2, n);
       for (let i = 0; i < toss; i++) await cards.nth(i).click();
       await page.waitForTimeout(200);
-      await page.locator('.draw-buttons .btn-red').click();
+      await page.locator('.draw-buttons .draw-go').click();
       return strip;
     }
     const call = page.locator('.action-bar .btn-ink:not([disabled])');

@@ -268,7 +268,7 @@ async function playToLateStreet(where, variant) {
   const deadline = Date.now() + 90_000;
   while (Date.now() < deadline) {
     if (await page.locator('.turn-pop .plate').count()) await check(`${where} (turn stamp)`, { table: true });
-    const draw = page.locator('.draw-buttons .btn-red');
+    const draw = page.locator('.draw-buttons .draw-go');
     const call = page.locator('.action-bar .btn-ink:not([disabled])');
     const myTurn = (await draw.count()) > 0 || (await call.count()) > 0;
     if (myTurn && (await lateEnough(variant))) return true;
@@ -279,7 +279,7 @@ async function playToLateStreet(where, variant) {
 
 /** Take one turn if it is ours: throw away the first card when asked, otherwise check or call. */
 async function actOnce() {
-  const draw = page.locator('.draw-buttons .btn-red');
+  const draw = page.locator('.draw-buttons .draw-go');
   if (await draw.count()) {
     const picks = page.locator('.card-pick:not([disabled])');
     if (!(await page.locator('.card-pick.tossed').count())) await picks.first().click().catch(() => {});
