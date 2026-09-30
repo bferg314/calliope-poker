@@ -12,5 +12,5 @@ export * from './table.js';
 export * from './summary.js';
 export * from './view.js';
 export * from './types.js';
-export { bluff, draw3, draw5, holdem, omaha, pineapple, stud5, stud7, three } from './variants/index.js';
+export { atomic, bluff, cincinnati, draw3, draw5, holdem, omaha, pineapple, stud5, stud7, three } from './variants/index.js';
 export type { StreetSpec, VariantDefinition } from './variants/index.js';
