@@ -255,6 +255,14 @@ export function Table({ room, socket }: { room: RoomView; socket: RoomSocket }):
   const [confirmFold, setConfirmFold] = useState(() => {
     try { return localStorage.getItem('calliope.confirmFold') === '1'; } catch { return false; }
   });
+  // The hand log on the right, which a wide screen can fold away for a bigger table.
+  const [logOpen, setLogOpen] = useState(() => {
+    try { return localStorage.getItem('calliope.log') !== '0'; } catch { return true; }
+  });
+  const toggleLog = (open: boolean): void => {
+    setLogOpen(open);
+    try { localStorage.setItem('calliope.log', open ? '1' : '0'); } catch { /* ignore */ }
+  };
   const [bell, setBell] = useState(bellOn);
   const [sound, setSound] = useState(bellSound);
   const [announce, setAnnounce] = useState('');
@@ -731,131 +739,149 @@ export function Table({ room, socket }: { room: RoomView; socket: RoomSocket }):
         </div>
       </header>
 
-      <GameStrip room={room} note={stripNote} alert={stripAlert} />
-
-      <div className="table-layout">
-        <div className={`table-main ${layout === 'short' ? 'side-by-side' : ''}`}>
-          <div
-            className={`table-area ${sides ? 'has-sides' : ''}`}
-            ref={tableAreaRef}
-            style={{ '--board-card': `${boardCardW}px`, '--seat-card': `${seatCardW}px` } as CSSProperties}
-          >
-            <div className="table-surface" aria-hidden="true" />
-            <div className="seats seats-top">{shoe.top.map(seatEl)}</div>
-            <Board hand={hand} slots={boardSlots} cardWidth={boardCardW} />
-            <div className="seats seats-left">{shoe.left.map(seatEl)}</div>
-            <div className="middle">
-              <Pot hand={hand} />
-              <div className="stage">
-                {resultLine && (
-                  // The result is the hand's last word, and a tap on it opens the whole hand.
-                  <button type="button" className="result-review" onClick={reviewLastHand} disabled={!room.lastHand} title="Review this hand">
-                    <span className="result-line">{resultLine}</span>
-                  </button>
-                )}
-                {turnPop && !lastHandPop && <TurnPop hint={turnHint} />}
-              </div>
-            </div>
-            <div className="seats seats-right">{shoe.right.map(seatEl)}</div>
-            <div className="bet-slot" ref={setBetSlot} />
-            {lastHandPop && <LastHandPop />}
-            {hand?.stage === 'choosing' && (
-              <div className="choose-panel">
-                <div className="choose-head">
-                  <div className="label">{hand.chooser === mySeat ? 'your deal. pick the game' : `${actorName ?? 'the dealer'} is choosing the game`}</div>
-                  {hand.chooser === mySeat && (
-                    <button type="button" className="btn btn-quiet btn-small" onClick={howToPlay}>How to play these</button>
-                  )}
-                </div>
-                {hand.chooser === mySeat && (
-                  <label className="field">
-                    <span className="label">wild cards</span>
-                    <WildSelect value={pickWild} onChange={setPickWild} />
-                  </label>
-                )}
-                {hand.chooser === mySeat && (
-                  <div className="choose-games">
-                  {(room.settings.variantMode.kind === 'dealers-choice' ? room.settings.variantMode.allowed : []).map((id) => {
-                    const v = room.variants.find((x) => x.id === id);
-                    const seated = hand.players.filter(Boolean).length;
-                    const tooMany = !!v && seated > v.players.max;
-                    return (
-                      <button
-                        key={id}
-                        className="btn choose-game"
-                        disabled={tooMany}
-                        title={tooMany ? `${v?.name} seats at most ${v?.players.max}` : v?.description}
-                        onClick={() => socket.send({ type: 'choose-variant', variantId: id, wild: pickWild })}
-                      >
-                        <span className="choose-name">{v?.name ?? id}</span>
-                        <span className="micro">
-                          {tooMany ? `needs ${v?.players.max} or fewer` : v?.description}
-                        </span>
-                      </button>
-                    );
-                  })}
-                  </div>
-                )}
-              </div>
+      <div className={`table-layout ${logOpen ? '' : 'log-closed'}`}>
+        <div className="table-column">
+          {/* The strip heads the table's own column, so the game's name sits over the table's middle. */}
+          <div className="table-head">
+            <GameStrip room={room} note={stripNote} alert={stripAlert} />
+            {!logOpen && (
+              <button type="button" className="btn btn-quiet btn-small log-open" onClick={() => toggleLog(true)} aria-label="Show the hand log" title="Show the hand log">
+                <Icon name="chevron-left" /> log
+              </button>
             )}
           </div>
+          <div className={`table-main ${layout === 'short' ? 'side-by-side' : ''}`}>
+            <div
+              className={`table-area ${sides ? 'has-sides' : ''}`}
+              ref={tableAreaRef}
+              style={{ '--board-card': `${boardCardW}px`, '--seat-card': `${seatCardW}px` } as CSSProperties}
+            >
+              <div className="table-surface" aria-hidden="true" />
+              <div className="seats seats-top">{shoe.top.map(seatEl)}</div>
+              <Board hand={hand} slots={boardSlots} cardWidth={boardCardW} />
+              <div className="seats seats-left">{shoe.left.map(seatEl)}</div>
+              <div className="middle">
+                <Pot hand={hand} />
+                <div className="stage">
+                  {resultLine && (
+                    // The result is the hand's last word, and a tap on it opens the whole hand.
+                    <button type="button" className="result-review" onClick={reviewLastHand} disabled={!room.lastHand} title="Review this hand">
+                      <span className="result-line">{resultLine}</span>
+                    </button>
+                  )}
+                  {turnPop && !lastHandPop && <TurnPop hint={turnHint} />}
+                </div>
+              </div>
+              <div className="seats seats-right">{shoe.right.map(seatEl)}</div>
+              <div className="bet-slot" ref={setBetSlot} />
+              {lastHandPop && <LastHandPop />}
+              {hand?.stage === 'choosing' && (
+                <div className="choose-panel">
+                  <div className="choose-head">
+                    <div className="label">{hand.chooser === mySeat ? 'your deal. pick the game' : `${actorName ?? 'the dealer'} is choosing the game`}</div>
+                    {hand.chooser === mySeat && (
+                      <button type="button" className="btn btn-quiet btn-small" onClick={howToPlay}>How to play these</button>
+                    )}
+                  </div>
+                  {hand.chooser === mySeat && (
+                    <label className="field">
+                      <span className="label">wild cards</span>
+                      <WildSelect value={pickWild} onChange={setPickWild} />
+                    </label>
+                  )}
+                  {hand.chooser === mySeat && (
+                    <div className="choose-games">
+                    {(room.settings.variantMode.kind === 'dealers-choice' ? room.settings.variantMode.allowed : []).map((id) => {
+                      const v = room.variants.find((x) => x.id === id);
+                      const seated = hand.players.filter(Boolean).length;
+                      const tooMany = !!v && seated > v.players.max;
+                      return (
+                        <button
+                          key={id}
+                          className="btn choose-game"
+                          disabled={tooMany}
+                          title={tooMany ? `${v?.name} seats at most ${v?.players.max}` : v?.description}
+                          onClick={() => socket.send({ type: 'choose-variant', variantId: id, wild: pickWild })}
+                        >
+                          <span className="choose-name">{v?.name ?? id}</span>
+                          <span className="micro">
+                            {tooMany ? `needs ${v?.players.max} or fewer` : v?.description}
+                          </span>
+                        </button>
+                      );
+                    })}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
 
-          <OwnSeat room={room} socket={socket} layout={layout} maxCards={maxHoleCards(tableVariant?.id)} mySeat={mySeat} toAct={myTurn} winAmount={mySeat !== null ? winAmounts[mySeat] ?? 0 : 0} timerFraction={actorSeat === mySeat ? timerFraction : null} selectable={!!myDraw} selected={selected} onToggleCard={toggleCard} noteRef={setNoteSlot} />
+            <OwnSeat room={room} socket={socket} layout={layout} maxCards={maxHoleCards(tableVariant?.id)} mySeat={mySeat} toAct={myTurn} winAmount={mySeat !== null ? winAmounts[mySeat] ?? 0 : 0} timerFraction={actorSeat === mySeat ? timerFraction : null} selectable={!!myDraw} selected={selected} onToggleCard={toggleCard} noteRef={setNoteSlot} />
 
-          {mySeat !== null && (myDraw ? (
-            <DrawBar
-              spec={myDraw}
-              selected={selected}
-              onClear={() => setSelected([])}
-              onConfirm={(cards) => socket.send({ type: 'discard', cards })}
-            />
-          ) : (
-            <ActionBar
-              legal={legal}
-              waitingFor={legal ? null : actorName}
-              ahead={ahead}
-              turnKey={turnKey}
-              onAction={send}
-              confirmFold={confirmFold}
-              panelHost={betSlot}
-              noteHost={noteSlot}
-              primary={
-                canRebuyNow
-                  ? { label: `Re-buy ${fmt(chips.buyInChips)} chips`, onClick: () => void rebuy() }
-                  : canDeal
-                    ? { label: 'Deal the next hand', onClick: () => socket.send({ type: 'host', command: { kind: 'deal' } }) }
-                    : null
-              }
-            />
-          ))}
+            {mySeat !== null && (myDraw ? (
+              <DrawBar
+                spec={myDraw}
+                selected={selected}
+                onClear={() => setSelected([])}
+                onConfirm={(cards) => socket.send({ type: 'discard', cards })}
+              />
+            ) : (
+              <ActionBar
+                legal={legal}
+                waitingFor={legal ? null : actorName}
+                ahead={ahead}
+                turnKey={turnKey}
+                onAction={send}
+                confirmFold={confirmFold}
+                panelHost={betSlot}
+                noteHost={noteSlot}
+                primary={
+                  canRebuyNow
+                    ? { label: `Re-buy ${fmt(chips.buyInChips)} chips`, onClick: () => void rebuy() }
+                    : canDeal
+                      ? { label: 'Deal the next hand', onClick: () => socket.send({ type: 'host', command: { kind: 'deal' } }) }
+                      : null
+                }
+              />
+            ))}
+          </div>
         </div>
 
-        <aside className="hand-rail">
-          <div className="label">this hand</div>
-          {hand ? (
-            <div>
-              <div className="italic">{variant?.name}</div>
-              {hand.log.slice(-14).map((l, i) => (
-                <div key={i} className={`log-line ${l.kind === 'result' ? 'result' : ''}`}>{l.text}</div>
-              ))}
+        {logOpen && (
+          <aside className="hand-rail">
+            <div className="rail-head">
+              <span className="label">this hand</span>
+              <button type="button" className="btn btn-quiet btn-small" onClick={() => toggleLog(false)} aria-label="Hide the hand log" title="Hide the hand log">
+                <Icon name="chevron-right" />
+              </button>
             </div>
-          ) : (
-            <div className="muted">Between hands.</div>
-          )}
-          {room.lastHand && room.lastHand.number !== hand?.number && (
-            <>
-              <div className="row row-between">
-                <div className="label">last hand</div>
-                <button className="btn btn-quiet btn-small" onClick={reviewLastHand}>review</button>
-              </div>
-              {room.lastHand.winners.map((w) => (
-                <div key={w.seat} className="log-line result">
-                  {room.lastHand!.players.find((p) => p.seat === w.seat)?.name} won {fmt(w.amount)}{w.handLabel ? ` with ${w.handLabel.toLowerCase()}` : ''}
+            <div className="rail-body">
+              {hand ? (
+                <div>
+                  <div className="italic">{variant?.name}</div>
+                  {hand.log.slice(-14).map((l, i) => (
+                    <div key={i} className={`log-line ${l.kind === 'result' ? 'result' : ''}`}>{l.text}</div>
+                  ))}
                 </div>
-              ))}
-            </>
-          )}
-        </aside>
+              ) : (
+                <div className="muted">Between hands.</div>
+              )}
+              {room.lastHand && room.lastHand.number !== hand?.number && (
+                <>
+                  <div className="row row-between">
+                    <div className="label">last hand</div>
+                    <button className="btn btn-quiet btn-small" onClick={reviewLastHand}>review</button>
+                  </div>
+                  {room.lastHand.winners.map((w) => (
+                    <div key={w.seat} className="log-line result">
+                      {room.lastHand!.players.find((p) => p.seat === w.seat)?.name} won {fmt(w.amount)}{w.handLabel ? ` with ${w.handLabel.toLowerCase()}` : ''}
+                    </div>
+                  ))}
+                </>
+              )}
+            </div>
+          </aside>
+        )}
       </div>
 
       {flights}

@@ -174,7 +174,7 @@ The table takes whatever height is left after the top bar, the strip, the player
 
 ### Wide (`wide`, 900px and up)
 
-Seats sit on an ellipse round the felt, spread evenly over the players actually seated with the player's own place at the bottom counted as one of the positions. The board sits just above the middle and is sized to clear every seat on the upper half of the ellipse, up to 120px a card; the pot and the stage sit under it in a column no wider than 36% of the table, which keeps them clear of the lower seats. The player's own cards and the action panel (560px) share one centred column under the table. A hand-history rail sits on the right at ≥ 1200px.
+Seats sit on an ellipse round the felt, spread evenly over the players actually seated with the player's own place at the bottom counted as one of the positions. The board sits just above the middle and is sized to clear every seat on the upper half of the ellipse, up to 120px a card; the pot and the stage sit under it in a column no wider than 36% of the table, which keeps them clear of the lower seats. The player's own cards and the action panel (560px) share one centred column under the table. A hand-history rail sits on the right at ≥ 1200px, under a head of its own that lines up with the game strip; the strip spans only the table's column, so the game's name sits over the table's middle. The rail folds away from its head, and a "log" button at the strip's right end brings it back; each device remembers which.
 
 ### Short (`short`, any window under 520px tall and wider than it is tall)
 
@@ -209,8 +209,8 @@ States:
 
 ### 4.2a Which game is being played
 
-Directly under the top bar, on every screen that has a table, a strip names the
-game in display serif with the betting structure beside it in small caps:
+Directly under the top bar, on every screen that has a table, a strip across the
+table's column names the game in display serif with the betting structure beside it in small caps:
 "Pineapple · no limit". It is never hidden and never abbreviated, because in
 dealer's choice it changes hand to hand and a player who misreads it will misplay
 their cards.

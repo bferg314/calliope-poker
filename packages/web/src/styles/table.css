@@ -140,6 +140,29 @@
   flex-direction: column;
 }
 
+/* The table's own column: the game strip over it, then the table. */
+.table-column {
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.table-head {
+  position: relative;
+  flex-shrink: 0;
+}
+
+/* Brings a folded-away hand log back. Only a wide screen has the log at all. */
+.table-head .log-open {
+  display: none;
+  position: absolute;
+  right: var(--s-2);
+  top: 50%;
+  transform: translateY(-50%);
+}
+
 .table-main {
   flex: 1 1 auto;
   min-height: 0;
@@ -1320,13 +1343,65 @@
   display: none;
 }
 
+/*
+ * A wide screen puts the log beside the table, under a head of its own that
+ * lines up with the game strip. The columns dissolve into one grid so the two
+ * heads share a row and always match in height.
+ */
 @media (min-width: 1200px) {
   .table-layout {
     display: grid;
     grid-template-columns: minmax(0, 1fr) 300px;
+    grid-template-rows: auto minmax(0, 1fr);
+    grid-template-areas:
+      'head rail-head'
+      'main rail-body';
     gap: 0;
   }
+  .table-layout.log-closed {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      'head'
+      'main';
+  }
+  .table-column,
   .hand-rail {
+    display: contents;
+  }
+  /* The strip fills the head's row, however tall the log's head makes it. */
+  .table-head {
+    grid-area: head;
+    display: flex;
+  }
+  .table-head .game-strip {
+    flex: 1 1 auto;
+    align-items: center;
+  }
+  .table-main {
+    grid-area: main;
+  }
+  .table-head .log-open {
+    display: inline-flex;
+  }
+  /* The strip sets the heads' height, so folding the log never moves the table. */
+  .table-head .log-open,
+  .rail-head .btn {
+    min-height: 0;
+    padding-block: var(--s-0);
+  }
+  .rail-head {
+    grid-area: rail-head;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--s-2);
+    padding: 0 var(--s-2) 0 var(--s-4);
+    border-left: 1px solid var(--ink-3);
+    border-bottom: 1px solid var(--ink-3);
+    background: var(--paper-2);
+  }
+  .rail-body {
+    grid-area: rail-body;
     display: flex;
     flex-direction: column;
     gap: var(--s-3);

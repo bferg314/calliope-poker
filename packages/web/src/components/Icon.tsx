@@ -8,6 +8,7 @@
 const PATHS = {
   'chevron-down': 'M6 9.5l6 6 6-6',
   'chevron-right': 'M9.5 6l6 6-6 6',
+  'chevron-left': 'M14.5 6l-6 6 6 6',
   close: 'M6.5 6.5l11 11M17.5 6.5l-11 11',
   plus: 'M12 5v14M5 12h14',
   check: 'M5 12.5l4.5 4.5L19 7.5',
