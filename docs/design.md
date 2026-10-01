@@ -399,18 +399,20 @@ Two rules that keep every theme readable:
 - **Cards keep white stock on every ground.** They are printed objects sitting on the table, not part of it. Only `--card-edge` and the back inks change.
 - **`--on-red` is the text colour on a red fill,** because a red bright enough to read on a dark ground is too light for white text. Light-red themes set it to their darkest ink; dark-red themes set it to paper.
 
-Five themes ship. **Felt is the default**, and its palette lives on bare `:root`
+Seven themes ship. **Felt is the default**, and its palette lives on bare `:root`
 as well as `[data-theme='felt']`, so the very first paint is already correct and
 there is no flash of a light page before the stored choice is applied.
 
 
-| id | ground | ink | accent | |
+| id | room | table and rim | money / you / turn | |
 |---|---|---|---|---|
-| `paper-ink` | cream stock | black and red ink | deep teal |
-| `felt` | deep green | cream | pale blue | *default* |
-| `midnight` | blue-black | warm cream | brass |
-| `noir` | true black | bright white | steel |
-| `oxblood` | burgundy-brown | aged paper | muted gold |
+| `felt` | deep bottle green | baize green, walnut rim | gold / cream-gold / coral | *default* |
+| `paper-ink` | cream stock | sage, red-ink rim | ochre / blue-green / red | |
+| `midnight` | deep blue | navy, brass rim | brass / periwinkle / coral | |
+| `noir` | true black | charcoal, hot red rim | silver / white / hot red | |
+| `oxblood` | near-black red | oxblood leather, gold rim | gold / cream-gold / coral | |
+| `lido` | warm white | seafoam, coral rim | ochre / ocean blue / red | light |
+| `royale` | plum | royal purple, gold rim | gold / mint / rose | |
 
 **Picking one.** The theme grid renders each swatch inside its own `data-theme` wrapper, so the tokens cascade and every swatch is a true miniature — real cards, a real red button — rather than a hand-painted approximation. The full grid lives on the profile screen; a compact row of dots sits in the table menu, because that is where somebody decides the room is too bright. The choice is stored per device in `localStorage`.
 

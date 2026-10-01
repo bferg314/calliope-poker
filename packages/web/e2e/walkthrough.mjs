@@ -130,7 +130,7 @@ await page.waitForSelector('text=your profile');
 await page.screenshot({ path: out('10-profile.png'), fullPage: true });
 
 // Every theme, on the table.
-for (const [i, theme] of ['Paper & ink', 'Midnight', 'Noir', 'Oxblood'].entries()) {
+for (const [i, theme] of ['Paper & ink', 'Midnight', 'Noir', 'Oxblood', 'Lido', 'Royale'].entries()) {
   await page.goto(`${BASE}/me`);
   await page.waitForSelector('.theme-grid');
   if (i === 0) await page.screenshot({ path: out('11-themes.png') });

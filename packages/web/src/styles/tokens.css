@@ -196,6 +196,68 @@
   --card-back-ink: #561b24;
 }
 
+/* Lido: a pool club in the afternoon. Seafoam felt on a coral rim, for daylight. */
+[data-theme='lido'] {
+  color-scheme: light;
+  --paper: #fbf3e4;
+  --paper-2: #f3e6cd;
+  --paper-3: #e6d4b0;
+  --ink: #1d2a2e;
+  --ink-2: #4f5d61;
+  --ink-3: #8f9a97;
+  --red: #c2412b;
+  --red-2: #a3321f;
+  --on-red: #fbf3e4;
+  --accent: #1f5f8b;
+  --felt: #7fc4b8;
+  --focus: #1f5f8b;
+  --ink-disabled: #66706f;
+  --seat-bg: #fffaf0;
+  --rim: #e0573f;
+  --gold: #7a4f00;
+  --you: #1f5f8b;
+  --turn: #c2412b;
+  --strip: #f3e6cd;
+  --field-bg: #fffaf0;
+  --card-face: #fbf8f1;
+  --card-ink: #1b1a17;
+  --card-red: #b3261e;
+  --card-edge: #8f9a97;
+  --card-back: #1f5f8b;
+  --card-back-ink: #fbf3e4;
+}
+
+/* Royale: a casino in 1962. Royal purple felt, a gold rim, mint for you. */
+[data-theme='royale'] {
+  color-scheme: dark;
+  --paper: #1a1030;
+  --paper-2: #22163d;
+  --paper-3: #2f2052;
+  --ink: #f3ecdf;
+  --ink-2: #c4b8d6;
+  --ink-3: #6f6290;
+  --red: #f2808a;
+  --red-2: #db6772;
+  --on-red: #1a1030;
+  --accent: #b9a6ff;
+  --felt: #3b2470;
+  --focus: #b9a6ff;
+  --ink-disabled: #9488ad;
+  --seat-bg: #1a1030;
+  --rim: #d8b24c;
+  --gold: #e8c45a;
+  --you: #8fe0d0;
+  --turn: #f2808a;
+  --strip: #120a24;
+  --field-bg: #22163d;
+  --card-face: #fbf8f1;
+  --card-ink: #1b1a17;
+  --card-red: #b3261e;
+  --card-edge: #4a3d6b;
+  --card-back: #f3ecdf;
+  --card-back-ink: #3b2470;
+}
+
 @media (prefers-reduced-motion: reduce) {
   :root {
     --d-fast: 0ms;

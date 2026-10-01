@@ -4,6 +4,8 @@ export const THEMES = [
   { id: 'midnight', name: 'Midnight', blurb: 'Navy felt and brass, for playing late.', themeColor: '#0e1424', dark: true },
   { id: 'noir', name: 'Noir', blurb: 'Black and silver, framed in one hot red.', themeColor: '#0a0a0a', dark: true },
   { id: 'oxblood', name: 'Oxblood', blurb: 'Oxblood leather on a gold rim.', themeColor: '#1c0e11', dark: true },
+  { id: 'lido', name: 'Lido', blurb: 'Seafoam and coral, for playing in daylight.', themeColor: '#fbf3e4', dark: false },
+  { id: 'royale', name: 'Royale', blurb: 'Royal purple, gold and mint. A casino in 1962.', themeColor: '#1a1030', dark: true },
 ] as const;
 
 export type ThemeId = (typeof THEMES)[number]['id'];
