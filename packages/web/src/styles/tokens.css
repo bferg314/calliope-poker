@@ -17,6 +17,14 @@
   --ink-disabled: #8e9a88;
   --seat-bg: #183026;
 
+  /* One job per ink: the table's rim, money and winning, your own name,
+     whose turn it is, and the bands across the top. */
+  --rim: #8e9a88;
+  --gold: #f4efe3;
+  --you: #f4efe3;
+  --turn: #ec7a68;
+  --strip: #183026;
+
   /* Cards keep their own inks so they read as printed stock on any ground. */
   --field-bg: #183026;
   --card-face: #fbf8f1;
@@ -81,6 +89,11 @@
   --focus: #1f4e5f;
   --ink-disabled: #6f6a5e;
   --seat-bg: #eae3d2;
+  --rim: #9a9384;
+  --gold: #1b1a17;
+  --you: #1b1a17;
+  --turn: #b3261e;
+  --strip: #eae3d2;
   --field-bg: #fbf8f1;
   --card-face: #fbf8f1;
   --card-ink: #1b1a17;
@@ -107,6 +120,11 @@
   --focus: #c9a227;
   --ink-disabled: #86806f;
   --seat-bg: #191c24;
+  --rim: #6f6a5d;
+  --gold: #ece6d9;
+  --you: #ece6d9;
+  --turn: #e0705e;
+  --strip: #191c24;
   --field-bg: #191c24;
   --card-face: #fbf8f1;
   --card-ink: #1b1a17;
@@ -133,6 +151,11 @@
   --focus: #9fb8c4;
   --ink-disabled: #808080;
   --seat-bg: #151515;
+  --rim: #6e6e6e;
+  --gold: #f5f5f5;
+  --you: #f5f5f5;
+  --turn: #e5342a;
+  --strip: #151515;
   --field-bg: #151515;
   --card-face: #fbf8f1;
   --card-ink: #1b1a17;
@@ -159,6 +182,11 @@
   --focus: #d4af37;
   --ink-disabled: #9a8474;
   --seat-bg: #2e1a1c;
+  --rim: #8a7565;
+  --gold: #efe3d2;
+  --you: #efe3d2;
+  --turn: #e2705a;
+  --strip: #2e1a1c;
   --field-bg: #2e1a1c;
   --card-face: #fbf8f1;
   --card-ink: #1b1a17;

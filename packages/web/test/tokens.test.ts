@@ -61,6 +61,17 @@ describe('themes', () => {
       expect(c('--ink-disabled', '--paper-3')).toBeGreaterThanOrEqual(3);
       expect(c('--ink-disabled', '--paper')).toBeGreaterThanOrEqual(3);
       expect(c('--ink', '--seat-bg')).toBeGreaterThanOrEqual(7);
+      expect(c('--ink', '--felt')).toBeGreaterThanOrEqual(7);
+    });
+
+    it(`${id} gives each role an ink that reads`, () => {
+      const c = (a: string, b: string): number => contrast(t.get(a)!, t.get(b)!);
+      // Your name and the pot are text; the turn mark and the rim are marks.
+      expect(c('--you', '--paper')).toBeGreaterThanOrEqual(4.5);
+      expect(c('--you', '--seat-bg')).toBeGreaterThanOrEqual(4.5);
+      expect(c('--gold', '--paper')).toBeGreaterThanOrEqual(4.5);
+      expect(c('--turn', '--seat-bg')).toBeGreaterThanOrEqual(3);
+      expect(c('--ink', '--strip')).toBeGreaterThanOrEqual(7);
     });
   }
 });

@@ -36,11 +36,18 @@ The names come from the paper & ink theme, where they are literal. Felt is the d
 | `--focus` | `#9AC7D6` | `#1F4E5F` | Keyboard focus ring |
 | `--felt` | `#1E3A2F` | `#EAE3D2` | Table surface |
 | `--seat-bg` | `#183026` | `#EAE3D2` | An opponent's seat card, so seats read as things set on the felt |
+| `--rim` | `#8E9A88` | `#9A9384` | The table's rim and the edge of a seat card |
+| `--gold` | `#F4EFE3` | `#1B1A17` | Money and winning: the pot, the dealer button |
+| `--you` | `#F4EFE3` | `#1B1A17` | The player's own name |
+| `--turn` | `#EC7A68` | `#B3261E` | Whose turn it is: the seat's mark, its name and the timer |
+| `--strip` | `#183026` | `#EAE3D2` | The game strip's band |
 | `--field-bg` | `#183026` | `#FBF8F1` | Input and select fill |
 | `--card-face` | `#FBF8F1` | `#FBF8F1` | Card stock, the same on every theme |
 | `--card-back` | `#F4EFE3` | `#1B1A17` | The fallback card's back |
 
-Contrast minimums, per theme: `--ink` on `--paper` ≥ 7:1; `--ink-2` on `--paper` ≥ 4.5:1; `--on-red` on `--red` ≥ 4.5:1; `--ink` on `--seat-bg` ≥ 7:1; `--ink-disabled` on `--paper` and on `--paper-3` ≥ 3:1.
+One job per ink: `--red` is for aggression and danger (raise, bet, the final clock, destructive confirms), not for whose turn it is, who you are or what was won; those have their own tokens, so a theme can give each its own colour.
+
+Contrast minimums, per theme: `--ink` on `--paper`, `--felt` and `--strip` ≥ 7:1; `--you` on `--paper` and `--seat-bg` ≥ 4.5:1; `--gold` on `--paper` ≥ 4.5:1; `--turn` on `--seat-bg` ≥ 3:1; `--ink-2` on `--paper` ≥ 4.5:1; `--on-red` on `--red` ≥ 4.5:1; `--ink` on `--seat-bg` ≥ 7:1; `--ink-disabled` on `--paper` and on `--paper-3` ≥ 3:1.
 
 Chip colors come from room config, not the theme. The theme provides a chip *style* (see §5), and the default denomination set:
 

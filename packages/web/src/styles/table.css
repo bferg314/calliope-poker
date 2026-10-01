@@ -93,7 +93,7 @@
   min-width: 0;
   padding: var(--s-1) var(--s-3);
   border-bottom: 1px solid var(--ink-3);
-  background: var(--paper-2);
+  background: var(--strip);
   text-align: center;
   white-space: nowrap;
   flex-shrink: 0;
@@ -202,7 +202,7 @@
   position: absolute;
   inset: 12% 6% 6%;
   border-radius: 50%;
-  border: 1px solid var(--ink-3);
+  border: 1px solid var(--rim);
   background: var(--felt);
   pointer-events: none;
 }
@@ -212,7 +212,7 @@
   position: absolute;
   inset: var(--s-2);
   border-radius: 50%;
-  border: 1px solid var(--ink-3);
+  border: 1px solid var(--rim);
   opacity: 0.6;
 }
 
@@ -299,6 +299,7 @@
 .pot .amount {
   font-size: var(--t-pot);
   font-weight: 500;
+  color: var(--gold);
 }
 
 .pot .side {
@@ -358,7 +359,7 @@
 .seat-card {
   --seat-card: 22px;
   background: var(--seat-bg);
-  border: 1px solid var(--ink-3);
+  border: 1px solid var(--rim);
   border-left: 3px solid transparent;
   padding: var(--s-1) var(--s-2);
   display: flex;
@@ -454,11 +455,11 @@
 
 .seat-card.to-act {
   border-color: var(--ink);
-  border-left-color: var(--red);
+  border-left-color: var(--turn);
 }
 
 .seat-card.to-act .name {
-  color: var(--red);
+  color: var(--turn);
 }
 
 .seat-card.folded {
@@ -498,7 +499,7 @@
 .timer > i {
   display: block;
   height: 100%;
-  background: var(--red);
+  background: var(--turn);
   transition: width 250ms linear;
 }
 
@@ -507,14 +508,14 @@
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  border: 1px solid var(--ink);
+  border: 1px solid var(--gold);
   font-size: var(--t-micro);
   font-weight: 600;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
   font-family: var(--font-ui);
-  color: var(--ink);
+  color: var(--gold);
   line-height: 1;
 }
 
@@ -637,6 +638,7 @@
   align-items: center;
   gap: var(--s-2);
   min-width: 0;
+  color: var(--you);
 }
 
 .own-seat .who-name {
@@ -699,7 +701,7 @@
 }
 
 .own-seat.to-act .name {
-  color: var(--red);
+  color: var(--turn);
 }
 
 .own-seat.watching {
