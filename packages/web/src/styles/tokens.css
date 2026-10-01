@@ -2,37 +2,37 @@
 :root,
 [data-theme='felt'] {
   color-scheme: dark;
-  --paper: #1e3a2f;
-  --paper-2: #183026;
-  --paper-3: #12261e;
+  --paper: #13241d;
+  --paper-2: #1a3127;
+  --paper-3: #24412f;
   --ink: #f4efe3;
   --ink-2: #cfc8b5;
-  --ink-3: #8e9a88;
-  --red: #ec7a68;
-  --red-2: #d9604c;
-  --on-red: #12261e;
+  --ink-3: #7f9184;
+  --red: #f08a74;
+  --red-2: #e0715a;
+  --on-red: #13241d;
   --accent: #9ac7d6;
-  --felt: #1e3a2f;
+  --felt: #1f5a43;
   --focus: #9ac7d6;
   --ink-disabled: #8e9a88;
-  --seat-bg: #183026;
+  --seat-bg: #13241d;
 
   /* One job per ink: the table's rim, money and winning, your own name,
      whose turn it is, and the bands across the top. */
-  --rim: #8e9a88;
-  --gold: #f4efe3;
-  --you: #f4efe3;
-  --turn: #ec7a68;
-  --strip: #183026;
+  --rim: #8b5a34;
+  --gold: #e2bd62;
+  --you: #f2d68a;
+  --turn: #f08a74;
+  --strip: #0e1b16;
 
   /* Cards keep their own inks so they read as printed stock on any ground. */
-  --field-bg: #183026;
+  --field-bg: #1a3127;
   --card-face: #fbf8f1;
   --card-ink: #1b1a17;
   --card-red: #b3261e;
   --card-edge: #b9b09b;
   --card-back: #f4efe3;
-  --card-back-ink: #1e3a2f;
+  --card-back-ink: #1f5a43;
 
   --font-display: 'Fraunces Variable', 'Iowan Old Style', Georgia, serif;
   --font-ui: 'Instrument Sans Variable', 'Helvetica Neue', Arial, system-ui, sans-serif;
@@ -76,8 +76,8 @@
 [data-theme='paper-ink'] {
   color-scheme: light;
   --paper: #f4efe3;
-  --paper-2: #eae3d2;
-  --paper-3: #ddd4be;
+  --paper-2: #e9e1cd;
+  --paper-3: #dacfb4;
   --ink: #1b1a17;
   --ink-2: #5b574d;
   --ink-3: #9a9384;
@@ -85,77 +85,77 @@
   --red-2: #8f1d17;
   --on-red: #fbf8f1;
   --accent: #1f4e5f;
-  --felt: #eae3d2;
+  --felt: #b9cfc0;
   --focus: #1f4e5f;
-  --ink-disabled: #6f6a5e;
-  --seat-bg: #eae3d2;
-  --rim: #9a9384;
-  --gold: #1b1a17;
-  --you: #1b1a17;
+  --ink-disabled: #6a655a;
+  --seat-bg: #fbf8f1;
+  --rim: #b3261e;
+  --gold: #8a6410;
+  --you: #1f4e5f;
   --turn: #b3261e;
-  --strip: #eae3d2;
+  --strip: #e9e1cd;
   --field-bg: #fbf8f1;
   --card-face: #fbf8f1;
   --card-ink: #1b1a17;
   --card-red: #b3261e;
-  --card-edge: #b9b09b;
+  --card-edge: #9a9384;
   --card-back: #1b1a17;
   --card-back-ink: #f4efe3;
 }
 
-/* Midnight: a neutral dark mode for playing late. Brass on blue-black. */
+/* Midnight: navy felt and brass, for playing late. Periwinkle for you. */
 [data-theme='midnight'] {
   color-scheme: dark;
-  --paper: #12141a;
-  --paper-2: #191c24;
-  --paper-3: #23272f;
+  --paper: #0e1424;
+  --paper-2: #151d33;
+  --paper-3: #1f2945;
   --ink: #ece6d9;
-  --ink-2: #a9a294;
-  --ink-3: #6f6a5d;
-  --red: #e0705e;
-  --red-2: #c85a48;
-  --on-red: #12141a;
-  --accent: #c9a227;
-  --felt: #12141a;
-  --focus: #c9a227;
-  --ink-disabled: #86806f;
-  --seat-bg: #191c24;
-  --rim: #6f6a5d;
-  --gold: #ece6d9;
-  --you: #ece6d9;
-  --turn: #e0705e;
-  --strip: #191c24;
-  --field-bg: #191c24;
+  --ink-2: #a9b0c2;
+  --ink-3: #5d6888;
+  --red: #f07b67;
+  --red-2: #d9634f;
+  --on-red: #0e1424;
+  --accent: #d9b25a;
+  --felt: #1c2c50;
+  --focus: #d9b25a;
+  --ink-disabled: #8a92a8;
+  --seat-bg: #0e1424;
+  --rim: #c9a24a;
+  --gold: #d9b25a;
+  --you: #a9bdff;
+  --turn: #f07b67;
+  --strip: #0a0f1c;
+  --field-bg: #151d33;
   --card-face: #fbf8f1;
   --card-ink: #1b1a17;
   --card-red: #b3261e;
-  --card-edge: #4a4740;
+  --card-edge: #3a4560;
   --card-back: #ece6d9;
-  --card-back-ink: #12141a;
+  --card-back-ink: #1c2c50;
 }
 
-/* Noir: true black, one hot red. High contrast and cinematic. */
+/* Noir: black and silver, and one hot red that frames the table and marks the turn. */
 [data-theme='noir'] {
   color-scheme: dark;
   --paper: #0a0a0a;
   --paper-2: #151515;
-  --paper-3: #222222;
+  --paper-3: #232323;
   --ink: #f5f5f5;
   --ink-2: #a8a8a8;
-  --ink-3: #6e6e6e;
-  --red: #e5342a;
-  --red-2: #c4221a;
+  --ink-3: #5e5e5e;
+  --red: #ff4a3d;
+  --red-2: #e5342a;
   --on-red: #0a0a0a;
-  --accent: #9fb8c4;
-  --felt: #0a0a0a;
-  --focus: #9fb8c4;
+  --accent: #d8d8d8;
+  --felt: #1a1a1a;
+  --focus: #f5f5f5;
   --ink-disabled: #808080;
-  --seat-bg: #151515;
-  --rim: #6e6e6e;
-  --gold: #f5f5f5;
-  --you: #f5f5f5;
-  --turn: #e5342a;
-  --strip: #151515;
+  --seat-bg: #0a0a0a;
+  --rim: #e5342a;
+  --gold: #d8d8d8;
+  --you: #ffffff;
+  --turn: #ff4a3d;
+  --strip: #000000;
   --field-bg: #151515;
   --card-face: #fbf8f1;
   --card-ink: #1b1a17;
@@ -165,35 +165,35 @@
   --card-back-ink: #0a0a0a;
 }
 
-/* Oxblood: leather and mahogany. The back room of a private club. */
+/* Oxblood: a leather table on a gold rim. The back room of a private club. */
 [data-theme='oxblood'] {
   color-scheme: dark;
-  --paper: #241416;
-  --paper-2: #2e1a1c;
-  --paper-3: #3b2326;
-  --ink: #efe3d2;
-  --ink-2: #bda893;
-  --ink-3: #8a7565;
-  --red: #e2705a;
-  --red-2: #c95a45;
-  --on-red: #241416;
-  --accent: #d4af37;
-  --felt: #241416;
-  --focus: #d4af37;
-  --ink-disabled: #9a8474;
-  --seat-bg: #2e1a1c;
-  --rim: #8a7565;
-  --gold: #efe3d2;
-  --you: #efe3d2;
-  --turn: #e2705a;
-  --strip: #2e1a1c;
-  --field-bg: #2e1a1c;
+  --paper: #1c0e11;
+  --paper-2: #271418;
+  --paper-3: #361c21;
+  --ink: #f2e6d4;
+  --ink-2: #c9b29a;
+  --ink-3: #8a6f63;
+  --red: #f08a6c;
+  --red-2: #d9705a;
+  --on-red: #1c0e11;
+  --accent: #e2bd62;
+  --felt: #561b24;
+  --focus: #e2bd62;
+  --ink-disabled: #a08a7a;
+  --seat-bg: #1c0e11;
+  --rim: #c9a24a;
+  --gold: #e2bd62;
+  --you: #f2d68a;
+  --turn: #f08a6c;
+  --strip: #140a0c;
+  --field-bg: #271418;
   --card-face: #fbf8f1;
   --card-ink: #1b1a17;
   --card-red: #b3261e;
   --card-edge: #5a4038;
   --card-back: #efe3d2;
-  --card-back-ink: #241416;
+  --card-back-ink: #561b24;
 }
 
 @media (prefers-reduced-motion: reduce) {
