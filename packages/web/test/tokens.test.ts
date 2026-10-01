@@ -43,8 +43,8 @@ const felt = all.get('felt')!;
 const colourTokens = [...felt].filter(([, v]) => /^#[0-9a-f]{6}$/i.test(v)).map(([k]) => k);
 
 describe('themes', () => {
-  it('ships the five themes', () => {
-    expect([...all.keys()].sort()).toEqual(['felt', 'midnight', 'noir', 'oxblood', 'paper-ink']);
+  it('ships the seven themes', () => {
+    expect([...all.keys()].sort()).toEqual(['felt', 'lido', 'midnight', 'noir', 'oxblood', 'paper-ink', 'royale']);
   });
 
   for (const [id, t] of all) {

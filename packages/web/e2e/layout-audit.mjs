@@ -40,7 +40,7 @@ const VARIANTS = list(process.env.VARIANTS, ['holdem', 'omaha', 'pineapple', 'at
 const COUNTS = list(process.env.COUNTS, ['3', '6', '8']).map(Number);
 const VIEWPORTS = list(process.env.VIEWPORTS, ['360x640', '390x844', '412x915', '768x1024', '844x390', '1280x800', '1440x900', '1920x1080'])
   .map((s) => { const [width, height] = s.split('x').map(Number); return { width, height, tag: s }; });
-const THEMES = ['Felt', 'Paper & ink', 'Midnight', 'Noir', 'Oxblood'];
+const THEMES = ['Felt', 'Paper & ink', 'Midnight', 'Noir', 'Oxblood', 'Lido', 'Royale'];
 
 const browser = await chromium.launch({
   channel: process.env.EXE ? undefined : process.env.CHANNEL || undefined,
