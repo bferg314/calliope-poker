@@ -1345,12 +1345,13 @@ html[data-input='pad'] [data-pad-editing]:focus {
   align-items: center;
   gap: var(--s-1);
   background: var(--felt);
+  border: 3px solid var(--rim);
   padding: var(--s-1);
 }
 
 .theme-swatch .pot-mark {
   font-size: var(--t-micro);
-  color: var(--ink);
+  color: var(--gold);
   font-variant-numeric: tabular-nums;
   margin-left: auto;
 }

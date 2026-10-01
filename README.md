@@ -1,6 +1,6 @@
 # Calliope Poker
 
-Self-hosted poker for a table of friends. Room codes and join links, dealer's choice between Hold'em, Omaha, Pineapple, Atomic Pineapple, Cincinnati, seven-card stud, five-card stud, five-card draw, three-card poker, three-card draw and blind man's bluff, wild cards (jokers, deuces, one-eyed jacks or any rank), buy-ins and re-buys, blinds and antes that climb on a schedule, rule-based bots, five themes, keyboard and game-controller play, and a printed night report at the end.
+Self-hosted poker for a table of friends. Room codes and join links, dealer's choice between Hold'em, Omaha, Pineapple, Atomic Pineapple, Cincinnati, seven-card stud, five-card stud, five-card draw, three-card poker, three-card draw and blind man's bluff, wild cards (jokers, deuces, one-eyed jacks or any rank), buy-ins and re-buys, blinds and antes that climb on a schedule, rule-based bots, seven themes, keyboard and game-controller play, and a printed night report at the end.
 
 No accounts. Everyone gets a name for the evening and a five-word ticket that brings their record back another night, which they can copy or save to their phone as an image.
 
@@ -26,11 +26,11 @@ hand.
 
 <table>
 <tr>
-<td width="50%"><img src="docs/screenshots/themes.png" alt="Five themes, each swatch drawn in its own palette" width="100%"></td>
+<td width="50%"><img src="docs/screenshots/themes.png" alt="Seven themes, each swatch drawn in its own palette" width="100%"></td>
 <td width="50%"><img src="docs/screenshots/rising-stakes.png" alt="The generated blind schedule, previewed in the lobby" width="100%"></td>
 </tr>
 <tr>
-<td align="center"><em>Five themes, each swatch drawn in its own colours</em></td>
+<td align="center"><em>Seven themes, each swatch drawn in its own colours</em></td>
 <td align="center"><em>Blinds and antes climb on a schedule you can see</em></td>
 </tr>
 </table>
@@ -242,7 +242,7 @@ packages/engine   pure, deterministic poker engine: cards, evaluator, betting, p
 packages/shared   zod schemas for settings and the websocket protocol; view types
 packages/bots     rule-based bots (tight, loose, aggressive, calling station)
 packages/server   Fastify + websockets, identity, rooms, Redis snapshots, Postgres history
-packages/web      Vite + React client, hand-drawn SVG cards and chips, five themes
+packages/web      Vite + React client, hand-drawn SVG cards and chips, seven themes
 docs/design.md    the visual system the client is built against
 docs/variants.md  how to add a poker variant
 docs/protocol.md  HTTP and websocket reference
