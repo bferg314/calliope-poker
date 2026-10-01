@@ -198,11 +198,13 @@
   --side: min(8.5rem, 36%);
 }
 
+/* The rim is a solid band of its own ink, with a hairline just inside it, the
+   way a printed table is drawn: a double rule, one of them heavy. */
 .table-surface {
   position: absolute;
   inset: 12% 6% 6%;
   border-radius: 50%;
-  border: 1px solid var(--rim);
+  border: var(--s-2) solid var(--rim);
   background: var(--felt);
   pointer-events: none;
 }
@@ -210,7 +212,7 @@
 .table-surface::after {
   content: '';
   position: absolute;
-  inset: var(--s-2);
+  inset: var(--s-1);
   border-radius: 50%;
   border: 1px solid var(--rim);
   opacity: 0.6;
@@ -359,7 +361,7 @@
 .seat-card {
   --seat-card: 22px;
   background: var(--seat-bg);
-  border: 1px solid var(--rim);
+  border: 1px solid var(--ink-3);
   border-left: 3px solid transparent;
   padding: var(--s-1) var(--s-2);
   display: flex;

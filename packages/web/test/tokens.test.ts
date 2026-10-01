@@ -70,8 +70,17 @@ describe('themes', () => {
       expect(c('--you', '--paper')).toBeGreaterThanOrEqual(4.5);
       expect(c('--you', '--seat-bg')).toBeGreaterThanOrEqual(4.5);
       expect(c('--gold', '--paper')).toBeGreaterThanOrEqual(4.5);
+      expect(c('--gold', '--felt')).toBeGreaterThanOrEqual(3);
+      expect(c('--red', '--paper')).toBeGreaterThanOrEqual(4.5);
       expect(c('--turn', '--seat-bg')).toBeGreaterThanOrEqual(3);
       expect(c('--ink', '--strip')).toBeGreaterThanOrEqual(7);
+    });
+
+    it(`${id} sets the table apart from the room`, () => {
+      const c = (a: string, b: string): number => contrast(t.get(a)!, t.get(b)!);
+      // A table the colour of the page is only an outline: it needs a felt of
+      // its own or a rim that stands out.
+      expect(c('--felt', '--paper') >= 1.25 || c('--rim', '--paper') >= 3).toBe(true);
     });
   }
 });
