@@ -296,7 +296,7 @@ hears it once rather than twice.
 
 Board cards are dealt left to right into fixed slots (5 for community games; stud and draw show no board and the row collapses). Between hands the slots follow the game the table is set to, so they do not come and go. Pot is a small caps label above a large tabular number. Side pots are listed under the main pot as "SIDE 320 · 180" in `--t-small`. When betting is open, the current street's bets are shown at each seat and are not yet in the pot; at street end they slide in.
 
-The result of a hand ("Alice wins the pot of 1,240 with two pair, kings and threes") is printed on the stage under the pot while the hand settles, in display italic on a hairline-ruled slip, and clamped to six lines in a narrow stage.
+The result of a hand ("Alice wins the pot of 1,240 with two pair, kings and threes") is printed on the stage under the pot while the hand settles, in display italic on a hairline-ruled slip, and clamped to six lines in a narrow stage. After a showdown the five cards that won the main pot sit just above it as index tiles, in the order a player reads the hand (the made part first, then the kickers, high to low, wild cards last), and the slip's rule turns `--gold`. They are sized from the board, never smaller than a seat's tiles, and overlap from the right when the stage is narrow. A pot nobody contested shows the line alone.
 
 ### 4.4 Your own seat
 
