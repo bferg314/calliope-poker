@@ -36,10 +36,8 @@ npm test                                 # vitest in every package
 npm run build --workspace @calliope/web  # build the client into packages/web/dist
 ```
 
-CI (`.github/workflows/ci.yml`) runs typecheck, unit tests and the web build,
-then starts the real server against Postgres and Redis and plays hands in a
-browser with the e2e scripts. A change is not done until typecheck and tests
-pass locally.
+CI (`.github/workflows/ci.yml`) runs these, then plays hands in a browser against
+a real server. A change is not done until typecheck and tests pass locally.
 
 ## Running it locally
 
@@ -68,17 +66,10 @@ WEB_DIST="$PWD/packages/web/dist" npx tsx packages/server/src/index.ts
 
 The compose Postgres/Redis also back the maintainer's live app, and the server
 migrates the schema and sweeps rooms on boot. For anything touching schema or
-room lifecycle, use throwaway containers and a different port:
-
-```sh
-docker run -d --rm --name calliope-test-pg -e POSTGRES_USER=calliope \
-  -e POSTGRES_PASSWORD=test -e POSTGRES_DB=calliope \
-  -p 127.0.0.1:55432:5432 postgres:17-alpine
-docker run -d --rm --name calliope-test-redis -p 127.0.0.1:16379:6379 redis:7-alpine
-# run the server with PORT=3100 against those, then `docker stop` both
-```
-
-Avoid host port 56379 on Windows; it falls in an excluded range.
+room lifecycle, run throwaway `--rm` containers (`postgres:17-alpine` on
+127.0.0.1:55432, `redis:7-alpine` on 127.0.0.1:16379), point the server at them
+on `PORT=3100`, and `docker stop` both afterwards. Avoid host port 56379 on
+Windows; it falls in an excluded range.
 
 ## Testing
 
@@ -97,22 +88,15 @@ Avoid host port 56379 on Windows; it falls in an excluded range.
   8 viewports, about 15 minutes. Narrow it with `VARIANTS`, `COUNTS` and
   `VIEWPORTS`. Results depend on random game state, so run the full matrix
   twice before trusting a pass.
-- Many e2e runs in a row trip the server's in-memory "too many new names" limit
-  (the identity step times out). Restart the dev server to clear it.
-- Rebuild the client before taking screenshots.
+- Rebuild the client before screenshots. Many e2e runs in a row trip the
+  server's "too many new names" limit; restart the dev server to clear it.
 
 ### Headless Chrome on the maintainer's Windows machine
 
-Playwright 1.49's `channel: 'chrome'` looks in `%LOCALAPPDATA%` and fails here;
-Chrome is installed under Program Files, and Edge headless renders nothing.
-Launch with an explicit path:
-
-```js
-chromium.launch({ executablePath: 'C:/Program Files/Google/Chrome/Application/chrome.exe', headless: true })
-```
-
-`controller`, `decks`, `layout-audit`, `night-report` and `turn-notification`
-accept `EXE` for this. For the other scripts, copy to a `*.tmp.mjs`, swap `channel:` for
+`channel: 'chrome'` fails here and Edge headless renders nothing. Pass
+`EXE="C:/Program Files/Google/Chrome/Application/chrome.exe"`, which `controller`,
+`decks`, `layout-audit`, `night-report` and `turn-notification` accept. For the
+other scripts, copy to a `*.tmp.mjs`, swap `channel:` for
 `executablePath: process.env.EXE`, run it, and delete the copy.
 
 ## Conventions
@@ -177,10 +161,29 @@ accept `EXE` for this. For the other scripts, copy to a `*.tmp.mjs`, swap `chann
 - **Commit locally and stop.** Don't push, open a PR or merge until the
   maintainer says so; they test changes locally first. When finishing, say
   which branch the work is on.
-- Stacked PRs: `gh pr merge --delete-branch` on a lower PR closes the PR
-  stacked on it rather than retargeting it. Run `gh pr edit <next> --base main`
-  on every PR above first. Squash-merge when a large file must stay out of
-  history.
+- Squash-merge when a large file must stay out of history.
+
+### Spend CI sparingly
+
+Every push to a PR and every merge to `main` runs the whole of CI: typecheck,
+tests, the build, then a browser job with Postgres and Redis. That is about 13
+minutes a run.
+
+- **One PR per piece of work.** Keep the steps as separate commits on one
+  branch. A stack of four PRs costs eight runs. Stack only when asked.
+- **CI is not the test loop.** Run typecheck, the unit tests and the relevant
+  e2e scripts locally, then push once. Batch follow-up fixes into one push.
+- **Merge once the PR's run is green.** If a run fails, read the log and fix the
+  cause; don't re-run it hoping for a pass.
+- **Docs-only changes** (AGENTS.md, README, `docs/`) ride along with the next
+  code PR unless the maintainer asks to ship them alone.
+- Merging several PRs back to back starts a `main` run for each. Concurrency
+  cancels the older `main` runs, but runs on the merged PRs keep going. List
+  the leftovers (`gh run list --status in_progress`) for the maintainer to
+  cancel; agents can't cancel runs.
+- If a stack is unavoidable: `gh pr merge --delete-branch` on a lower PR closes
+  the PR stacked on it. Run `gh pr edit <next> --base main` on every PR above
+  it first.
 
 ## Environment gotchas (Windows)
 
