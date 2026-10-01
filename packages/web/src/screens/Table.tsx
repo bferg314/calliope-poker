@@ -5,6 +5,7 @@ import {
 import { SERVER_LIMIT_WARNING_MINUTES, stakesLabel, type RoomView } from '@calliope/shared';
 import { Board, Pot } from '../components/Board.js';
 import { Card } from '../components/Card.js';
+import { readingOrder } from '../handOrder.js';
 import { useActiveDeck } from '../decks.js';
 import { SeatCard } from '../components/Seat.js';
 import { ActionBar } from '../components/ActionBar.js';
@@ -558,6 +559,13 @@ export function Table({ room, socket }: { room: RoomView; socket: RoomSocket }):
   const resultLine = settled
     ? hand!.log.filter((l) => l.kind === 'result').map((l) => l.text).join(' · ')
     : null;
+  // After a showdown, the cards that won the main pot are laid out in the middle
+  // of the table. A pot nobody contested has no hand to show.
+  const mainWinner = settled && hand!.results!.showdown ? hand!.results!.pots[0]?.winners[0] : undefined;
+  const winIsWild = wildTest(hand?.wild);
+  const winningHand = mainWinner !== undefined ? hand!.results!.hands[mainWinner]?.cards : undefined;
+  const winningCards = winningHand ? readingOrder(winningHand, winIsWild) : null;
+  const winningCardW = Math.max(seatCardW, Math.round(boardCardW * 0.5));
 
   return (
     <div className="table-screen" data-layout={layout} ref={screenRef}>
@@ -765,7 +773,16 @@ export function Table({ room, socket }: { room: RoomView; socket: RoomSocket }):
                 <div className="stage">
                   {resultLine && (
                     // The result is the hand's last word, and a tap on it opens the whole hand.
-                    <button type="button" className="result-review" onClick={reviewLastHand} disabled={!room.lastHand} title="Review this hand">
+                    <button type="button" className={`result-review ${winningCards ? 'has-hand' : ''}`} onClick={reviewLastHand} disabled={!room.lastHand} title="Review this hand">
+                      {winningCards && (
+                        <span className="result-hand" aria-hidden="true">
+                          {winningCards.map((c) => (
+                            <span key={c} className="up-slot">
+                              <Card card={c} width={winningCardW} mode="tile" wild={!!winIsWild?.(c)} />
+                            </span>
+                          ))}
+                        </span>
+                      )}
                       <span className="result-line">{resultLine}</span>
                     </button>
                   )}

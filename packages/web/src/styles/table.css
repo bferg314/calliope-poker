@@ -353,6 +353,30 @@
   -webkit-line-clamp: 6;
 }
 
+/* The winning hand, laid out over its result line after a showdown. Tiles sit
+   side by side while there is room and overlap from the right when there is not,
+   as a seat's face-up cards do, so every rank stays in view. */
+.result-hand {
+  display: flex;
+  justify-content: center;
+  gap: var(--s-0);
+  min-width: 0;
+  margin-bottom: var(--s-1);
+}
+
+.result-hand .up-slot {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+.result-hand .up-slot:last-child {
+  flex-shrink: 0;
+}
+
+.result-review.has-hand .result-line {
+  border-color: var(--gold);
+}
+
 /* ---------- an opponent's seat ---------- */
 .seat {
   min-width: 0;
