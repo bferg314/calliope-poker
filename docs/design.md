@@ -110,7 +110,7 @@ Durations: `--d-fast: 120ms`, `--d-base: 200ms`, `--d-slow: 360ms`. Easing: `cub
 
 - Cards are dealt: slide from the middle of the felt to the seat over `--d-slow`, staggered 60ms per card. A card redrawn in a place already dealt to this hand (a resize that swaps picture for tile) just appears. Flip on reveal: a 1-axis scaleX flip over `--d-base`. In stud, your own "hidden" marks wait until their card lands.
 - Chips placed: a bet's chips set down beside the seat's stack over `--d-slow`, again on every raise.
-- Chips to pot: one chip per bet (24px, bigger than a bet's) slides into the pot over `--d-slow` at street end. The pot number already counts street bets, so it does not change.
+- Chips to pot: one chip per bet (24px, bigger than a bet's) slides into the pot's pile over `--d-slow` at street end, and the pile grows as they land. The pot number already counts street bets, so it does not change.
 - Pot to winner: up to three chips slide from the pot to each winner's stack over 1.6 × `--d-slow`, after the sweep.
 - `packages/web/src/tableMotion.tsx` holds the dealing and chip flights; it only reads the view, so a missed animation is never a missed state.
 - "To act" mark: appears instantly (no fade). A moving red mark is the most important motion in the game, so it must never lag.
@@ -294,7 +294,7 @@ hears it once rather than twice.
 
 ### 4.3 Board and pot
 
-Board cards are dealt left to right into fixed slots (5 for community games; stud and draw show no board and the row collapses). Between hands the slots follow the game the table is set to, so they do not come and go. Pot is a small caps label above a large tabular number. Side pots are listed under the main pot as "SIDE 320 · 180" in `--t-small`. When betting is open, the current street's bets are shown at each seat and are not yet in the pot; at street end they slide in.
+Board cards are dealt left to right into fixed slots (5 for community games; stud and draw show no board and the row collapses). Between hands the slots follow the game the table is set to, so they do not come and go. Pot is a small caps label above a large tabular number. Side pots are listed under the main pot as "SIDE 320 · 180" in `--t-small`. When betting is open, the current street's bets are shown at each seat and are not yet in the pot; at street end they slide in. The chips already in the pot lie beside the number as a small pile (§5), on its left, or over it where the middle is too narrow for both, and stay on the felt until the pot is pushed to the winner.
 
 The result of a hand ("Alice wins the pot of 1,240 with two pair, kings and threes") is printed on the stage under the pot while the hand settles, in display italic on a hairline-ruled slip, and clamped to six lines in a narrow stage. After a showdown the five cards that won the main pot sit just above it as index tiles, in the order a player reads the hand (the made part first, then the kickers, high to low, wild cards last), and the slip's rule turns `--gold`. They are sized from the board, never smaller than a seat's tiles, and overlap from the right when the stage is narrow. A pot nobody contested shows the line alone.
 
@@ -307,7 +307,7 @@ The player's cards and next decision are the loudest things on the screen (§1).
 Chips are drawn as printed tokens: a filled circle in the denomination color, a 2px `--ink` outer ring, four short radial dashes in `--paper`, and the value printed in the center in Instrument Sans. White chips use `--paper` fill with `--ink` ring and ink text. They are used in three places:
 
 1. Beside a seat as its current street bet (up to 4 chips stacked with 3px offsets; the number is always printed beside them).
-2. In the pot (a small pile, purely decorative, max 8).
+2. In the pot (a small pile, purely decorative, max 8): short stacks of up to three, side by side, 20px. It shows what earlier streets put in, not the bets still beside the seats.
 3. On the buy-in and re-buy screens, where the room's denomination set is displayed as a legend.
 
 Chips never need to be counted visually. The number is always present.

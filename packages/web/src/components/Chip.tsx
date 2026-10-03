@@ -52,3 +52,28 @@ export function ChipStack({ amount, denoms, size = 22, max = 5 }: { amount: numb
     </span>
   );
 }
+
+/**
+ * The pot's chips, left lying in the middle of the felt: up to eight, in short
+ * stacks side by side so the pile spreads rather than climbs. Decoration only;
+ * the pot's number beside it is what counts.
+ */
+export function ChipPile({ amount, denoms, size = 20, max = 8 }: { amount: number; denoms: ChipDenomination[]; size?: number; max?: number }): JSX.Element | null {
+  if (amount <= 0) return null;
+  const chips = chipsFor(amount, denoms, max);
+  const stacks: ChipDenomination[][] = [];
+  for (let i = 0; i < chips.length; i += 3) stacks.push(chips.slice(i, i + 3));
+  return (
+    <span className="chip-pile" aria-hidden="true">
+      {stacks.map((s, i) => (
+        <span key={i} className="chip-stack" style={{ height: size + (s.length - 1) * 3, width: size }}>
+          {s.map((c, k) => (
+            <span key={k} style={{ position: 'absolute', bottom: k * 3, left: 0, lineHeight: 0 }}>
+              <Chip denom={c} size={size} />
+            </span>
+          ))}
+        </span>
+      ))}
+    </span>
+  );
+}

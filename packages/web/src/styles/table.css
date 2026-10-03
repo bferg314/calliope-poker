@@ -294,8 +294,26 @@
 }
 
 .pot {
+  max-width: 100%;
   text-align: center;
   line-height: 1.1;
+}
+
+/* The chips swept in lie to the left of the number, set on its baseline,
+   or over it where the middle is too narrow for both on one line. */
+.pot-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: center;
+  gap: var(--s-2);
+}
+
+.chip-pile {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: var(--s-0);
+  padding-bottom: var(--s-1);
 }
 
 .pot .amount {
