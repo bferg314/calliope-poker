@@ -118,7 +118,7 @@ function probe({ table }) {
   const named = (el) => el.querySelector('.name')?.textContent?.trim() || 'open seat';
   const fixed = [
     ['board', document.querySelector('.board .cards')],
-    ['pot', document.querySelector('.board .pot')],
+    ['pot', document.querySelector('.middle .pot')],
     ['own seat', document.querySelector('.own-seat')],
     ['action bar', document.querySelector('.action-bar, .draw-bar')],
     ['game strip', document.querySelector('.game-strip')],
@@ -144,7 +144,7 @@ function probe({ table }) {
   const board = document.querySelector('.board .cards');
   if (shown(board) && !inside(rect(board), areaR)) problems.push('the board leaves the table area');
 
-  const pot = document.querySelector('.board .pot');
+  const pot = document.querySelector('.middle .pot');
   for (const [what, sel] of [['turn stamp', '.turn-pop .plate'], ['result line', '.result-line']]) {
     const el = document.querySelector(sel);
     if (!shown(el)) continue;

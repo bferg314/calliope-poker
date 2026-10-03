@@ -769,7 +769,7 @@ export function Table({ room, socket }: { room: RoomView; socket: RoomSocket }):
               <Board hand={hand} slots={boardSlots} cardWidth={boardCardW} />
               <div className="seats seats-left">{shoe.left.map(seatEl)}</div>
               <div className="middle">
-                <Pot hand={hand} />
+                <Pot hand={hand} denoms={denoms} />
                 <div className="stage">
                   {resultLine && (
                     // The result is the hand's last word, and a tap on it opens the whole hand.

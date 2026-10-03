@@ -10,7 +10,7 @@ import { Chip, chipsFor } from './components/Chip.js';
  * here decides anything, so a missed animation is only a missed animation.
  */
 
-const reducedMotion = (): boolean => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+export const reducedMotion = (): boolean => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
 
 interface Point { x: number; y: number }
 
@@ -82,14 +82,14 @@ interface Flight {
 /** A chip in flight is drawn bigger than a bet's, so the eye can follow it across the felt. */
 const CHIP = 24;
 /** --d-slow, which the sweep into the pot runs for before the pot is pushed. */
-const SWEEP_MS = 360;
+export const SWEEP_MS = 360;
 
 /**
  * Chips in flight: a street's bets swept into the pot when the street ends, and
  * the pot pushed to the winners when the hand settles. Where each bet sat is
  * remembered from the render before, since by the time the street has moved on
  * the bet is no longer drawn. Seats are found by `data-seat`, bets by `.bet`
- * inside them, and the pot by `.pot .amount`.
+ * inside them, and the pot by its pile of chips, or `.pot .amount` before it has one.
  */
 export function useChipFlights(
   root: RefObject<HTMLElement>,
@@ -108,7 +108,7 @@ export function useChipFlights(
     const was = prev.current;
     const settled = hand?.stage === 'settled';
     const bets = hand ? hand.players.map((p) => p?.streetBet ?? 0) : [];
-    const pot = el.querySelector('.pot .amount');
+    const pot = el.querySelector('.pot .chip-pile') ?? el.querySelector('.pot .amount');
     const added: Flight[] = [];
     const chipFor = (amount: number): ChipDenomination | undefined => chipsFor(amount, denoms, 1)[0] ?? denoms[0];
 
