@@ -49,6 +49,17 @@ const browser = await chromium.launch({
 });
 const ctx = await browser.newContext({ viewport: { width: 400, height: 780 }, deviceScaleFactor: 1 });
 const page = await ctx.newPage();
+// The last table state the server sent, so a stuck wait can say whether the
+// server went quiet or the page stopped showing what it was sent.
+let lastSnapshot = null;
+page.on('websocket', (ws) => ws.on('framereceived', ({ payload }) => {
+  try {
+    const msg = JSON.parse(String(payload));
+    if (msg.type !== 'snapshot') return;
+    const h = msg.room.table.hand;
+    lastSnapshot = { at: Date.now(), hand: h ? `hand ${h.number} ${h.stage} street ${h.streetIndex} actor ${h.round?.actor}` : 'no hand' };
+  } catch { /* not ours */ }
+}));
 page.on('pageerror', (e) => failures.push(`page error: ${e.message}`));
 page.on('dialog', (d) => d.accept());
 
@@ -265,7 +276,9 @@ async function lateEnough(variant) {
  * enough and it is our turn, checking the turn stamp each time it lands.
  */
 async function playToLateStreet(where, variant) {
-  const deadline = Date.now() + 90_000;
+  // Eight-handed atomic or Cincinnati is fifty-odd bot moves a hand, over a
+  // minute and a half, and after an all-in it can take two hands to get here.
+  const deadline = Date.now() + 180_000;
   while (Date.now() < deadline) {
     if (await page.locator('.turn-pop .plate').count()) await check(`${where} (turn stamp)`, { table: true });
     const draw = page.locator('.draw-buttons .draw-go');
@@ -277,8 +290,18 @@ async function playToLateStreet(where, variant) {
   return false;
 }
 
-/** Take one turn if it is ours: throw away the first card when asked, otherwise check or call. */
+/**
+ * Take one turn if it is ours: throw away the first card when asked, otherwise
+ * check or call. Calling everything sometimes calls a bot's all-in and loses,
+ * so buy back in when out of chips, or no turn would ever come again.
+ */
 async function actOnce() {
+  const rebuy = page.getByRole('button', { name: /^Re-buy [\d,]+ chips$/ });
+  if (await rebuy.count()) {
+    await rebuy.first().click().catch(() => {});
+    await page.locator('dialog.modal[open]').getByRole('button', { name: 'Re-buy', exact: true }).click({ timeout: 3000 }).catch(() => {});
+    return true;
+  }
   const draw = page.locator('.draw-buttons .draw-go');
   if (await draw.count()) {
     const picks = page.locator('.card-pick:not([disabled])');
@@ -292,6 +315,15 @@ async function actOnce() {
     return true;
   }
   return false;
+}
+
+/** Where the table was when a wait ran out: a screenshot, and what our seat and the strip said. */
+async function stuckAt(shot) {
+  await page.screenshot({ path: path.join(OUT, shot) }).catch(() => {});
+  return page.evaluate(() => {
+    const text = (sel) => document.querySelector(sel)?.textContent?.replace(/\s+/g, ' ').trim() ?? '-';
+    return `strip: ${text('.game-strip')}; own: ${text('.own-seat')}; bar: ${text('.action-bar, .draw-bar')}`;
+  }).then((shown) => `${shown}; last snapshot ${lastSnapshot ? `${Math.round((Date.now() - lastSnapshot.at) / 1000)}s ago, ${lastSnapshot.hand}` : 'never'}`);
 }
 
 async function tableRect() {
@@ -326,7 +358,7 @@ for (const variant of VARIANTS) {
     // Play at a different window size each time, so the turn stamp is checked at all of them.
     const playAt = VIEWPORTS[(VARIANTS.indexOf(variant) * COUNTS.length + COUNTS.indexOf(players)) % VIEWPORTS.length];
     await page.setViewportSize(playAt);
-    if (!(await playToLateStreet(`${where} @${playAt.tag}`, variant))) fail(where, 'never reached a late street on our turn');
+    if (!(await playToLateStreet(`${where} @${playAt.tag}`, variant))) fail(where, `never reached a late street on our turn (${await stuckAt(`stuck-${variant}-${players}.png`)})`);
     await page.waitForTimeout(1800); // let the stamp lift
     for (const vp of VIEWPORTS) {
       await page.setViewportSize(vp);
@@ -352,7 +384,7 @@ for (const variant of VARIANTS) {
       }
     }
     const during = await tableRect();
-    const until = Date.now() + 60_000;
+    const until = Date.now() + 120_000;
     while (Date.now() < until && !(await page.locator('.result-line').count())) {
       await actOnce();
       await page.waitForTimeout(200);
@@ -370,7 +402,7 @@ for (const variant of VARIANTS) {
       }
       if (worst > 1) fail(`${where} @${phone.tag}`, `the table moves ${Math.round(worst)}px between hands (${worstParts})`);
     } else {
-      fail(where, 'never saw the hand settle');
+      fail(where, `never saw the hand settle (${await stuckAt(`unsettled-${variant}-${players}.png`)})`);
     }
   }
 }
