@@ -8,10 +8,27 @@ import { useConfirm } from './Modal.js';
  * How to play: for one game, or for each game a dealer might call, with a row
  * of names to move between them. What wins is shown with cards, best first,
  * because "does a flush beat a straight here?" is the question people ask.
+ *
+ * The games may change while it is open (the host ticking games in the
+ * lobby): a game just added is shown, and one taken away falls back to the first.
  */
 export function GameGuide({ games, first, wild }: { games: { id: string; name: string }[]; first?: string; wild?: Wild | null }): JSX.Element {
   const known = games.filter((g) => GUIDES[g.id]);
-  const [id, setId] = useState(first && GUIDES[first] ? first : known[0]?.id ?? '');
+  const [picked, setId] = useState(first);
+  const ids = known.map((g) => g.id).join(' ');
+  // Set during render, not in an effect, so the old game never flashes first.
+  const [seen, setSeen] = useState(ids);
+  let shown = picked;
+  if (ids !== seen) {
+    const was = seen.split(' ');
+    const added = known.find((g) => !was.includes(g.id))?.id;
+    setSeen(ids);
+    if (added) {
+      setId(added);
+      shown = added;
+    }
+  }
+  const id = known.some((g) => g.id === shown) ? shown! : known[0]?.id ?? '';
   const guide = GUIDES[id];
   const wilds = wildLabel(wild);
   if (!guide) return <p>No guide for this game yet.</p>;
