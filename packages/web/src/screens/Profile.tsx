@@ -5,6 +5,7 @@ import { useConfirm } from '../components/Modal.js';
 import { ResumeBanner } from '../components/ResumeBanner.js';
 import { ThemePicker } from '../components/ThemePicker.js';
 import { KeysPicker } from '../components/KeysPicker.js';
+import { TemplateList } from '../components/TemplateList.js';
 import { TopBar } from '../components/TopBar.js';
 import { fmt, fmtDate, fmtSigned } from '../format.js';
 import { useRouter } from '../router.js';
@@ -85,6 +86,11 @@ export function Profile(): JSX.Element {
               New ticket words
             </button>
           </div>
+        </div>
+
+        <div className="settings-section">
+          <h3>Table templates</h3>
+          <TemplateList />
         </div>
 
         <div className="settings-section">
