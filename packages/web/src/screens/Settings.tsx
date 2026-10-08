@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import {
-  baseStakesOf, BOT_PERSONALITIES, chipUnitOf, DEFAULT_GROWTH, DEFAULT_MAX_LEVEL, ladderOptsOf, levelLadder,
+  baseStakesOf, BOT_PERSONALITIES, chipUnitOf, DEFAULT_GROWTH, DEFAULT_MAX_LEVEL, ladderOptsOf, levelLadder, nextOccurrence,
   type LevelSchedule, type RoomSettings, type VariantInfo,
 } from '@calliope/shared';
 import { Chip } from '../components/Chip.js';
@@ -425,14 +425,6 @@ function clockTime(at: number): string {
 function timeInputValue(at: number): string {
   const d = new Date(at);
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
-}
-
-/** The next time the local clock reads h:m, today or else tomorrow. */
-export function nextOccurrence(h: number, m: number, now: number): number {
-  const d = new Date(now);
-  d.setHours(h, m, 0, 0);
-  if (d.getTime() <= now) d.setDate(d.getDate() + 1);
-  return d.getTime();
 }
 
 /** Two hours from now, rounded up to the quarter hour. */
