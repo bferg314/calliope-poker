@@ -82,7 +82,7 @@ Windows; it falls in an excluded range.
 - **Browser checks** are plain Node scripts in `packages/web/e2e/`, run with
   `npm run e2e:<name> --workspace @calliope/web` (`dealers-choice`,
   `draw-games`, `lobby-and-sharing`, `turn-notification`, `night-report`,
-  `decks`, `controller`, `layout`). They take `BASE` (server URL), `OUT`
+  `decks`, `controller`, `layout`, `templates`). They take `BASE` (server URL), `OUT`
   (screenshot folder) and sometimes `SECONDS`.
 - **Layout audit** (`e2e/layout-audit.mjs`) checks every game x table size x
   8 viewports, about 15 minutes. Narrow it with `VARIANTS`, `COUNTS` and
@@ -95,7 +95,7 @@ Windows; it falls in an excluded range.
 
 `channel: 'chrome'` fails here and Edge headless renders nothing. Pass
 `EXE="C:/Program Files/Google/Chrome/Application/chrome.exe"`, which `controller`,
-`decks`, `layout-audit`, `night-report` and `turn-notification` accept. For the
+`decks`, `layout-audit`, `night-report`, `templates` and `turn-notification` accept. For the
 other scripts, copy to a `*.tmp.mjs`, swap `channel:` for
 `executablePath: process.env.EXE`, run it, and delete the copy.
 

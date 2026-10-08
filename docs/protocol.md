@@ -16,6 +16,10 @@ A session is a random token. The browser gets it as an httpOnly cookie `calliope
 | POST | `/api/me/phrase` | `{ phrase? }` | `{ phrase }` (random when omitted) |
 | GET | `/api/me/rooms` | | rooms the player is still part of, for the "back to your game" banner |
 | GET | `/api/stats/me` | | lifetime stats and past nights |
+| GET | `/api/me/templates` | | `{ templates }`, the identity's saved table setups, by name |
+| POST | `/api/me/templates` | `{ name, settings }` | `{ id }`. 409 `template-exists` on a name in use, 409 `templates-full` past 20 |
+| PUT | `/api/me/templates/:id` | `{ name?, settings? }` | `{ ok }`. 404 when it is not the asker's |
+| DELETE | `/api/me/templates/:id` | | `{ ok }` |
 | GET | `/api/variants` | | the registered poker variants |
 | POST | `/api/rooms` | `{ name?, password?, settings? }` | `{ code, joinUrl }` |
 
@@ -36,6 +40,10 @@ A session is a random token. The browser gets it as an httpOnly cookie `calliope
 | DELETE | `/api/server/admins` | | `{ revoked }`. Revokes every key. Owner only |
 
 Errors are `{ error: { code, message } }` with a 4xx/5xx status. `message` is safe to show to players.
+
+### Table templates
+
+A template (`packages/shared/src/templates.ts`) is a name and a set of room settings, never a table's name, password or bots. It is saved with `toTemplateSettings`, which turns a wall-clock end (`{ kind: 'at', at }`) into a time of day (`{ kind: 'clock', hour, minute }`) so the template still means "tonight" next week; the server refuses an `at` end. `GET` returns settings exactly as they were saved, which may predate settings added since: read them with `fromTemplateSettings(saved, variantIds, now)`, which fills anything missing or no longer valid from the defaults, drops games the server no longer has, and resolves a clock end to its next occurrence in the client's own time zone. The result is what goes in `POST /api/rooms` or a `set-settings` command.
 
 ## Who may open a table
 

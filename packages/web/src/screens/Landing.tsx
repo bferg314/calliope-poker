@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
+import { fromTemplateSettings, type VariantInfo } from '@calliope/shared';
 import { api, ApiError } from '../api.js';
 import { ResumeBanner } from '../components/ResumeBanner.js';
 import { TopBar } from '../components/TopBar.js';
 import { useRouter } from '../router.js';
 import { useSession } from '../session.js';
+import { lastTemplateId, setLastTemplateId, templateSummary, useTemplates } from '../templates.js';
 
 /** "4 hours", "90 minutes", "1 hour 30 minutes". */
 function fmtMinutes(m: number): string {
@@ -26,6 +28,18 @@ export function Landing(): JSX.Element {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [unlocked, setUnlocked] = useState<string | null>(null);
+  const templates = useTemplates(creating);
+  const [variants, setVariants] = useState<VariantInfo[] | null>(null);
+  const [templateId, setTemplateId] = useState<string>(() => lastTemplateId() ?? '');
+
+  // A template needs the games on offer to be read, so fetch them only once there are templates.
+  const hasTemplates = !!templates.list?.length;
+  useEffect(() => {
+    if (!hasTemplates || variants) return;
+    api<VariantInfo[]>('GET', '/api/variants').then(setVariants, () => undefined);
+  }, [hasTemplates, variants]);
+  const template = variants ? templates.list?.find((t) => t.id === templateId) ?? null : null;
+  const templateSettings = template && variants ? fromTemplateSettings(template.settings, variants.map((v) => v.id), Date.now()) : null;
 
   // How busy the server is changes while this page sits open.
   useEffect(() => refreshInstance(), [refreshInstance]);
@@ -41,7 +55,10 @@ export function Landing(): JSX.Element {
       const r = await api<{ code: string }>('POST', '/api/rooms', {
         name: name.trim() || undefined,
         password: password || undefined,
+        // Resolved at the moment of dealing, so a clock end means tonight.
+        settings: template && variants ? fromTemplateSettings(template.settings, variants.map((v) => v.id), Date.now()) : undefined,
       });
+      setLastTemplateId(template?.id ?? null);
       navigate(`/r/${r.code}`);
     } catch (e) {
       setError(e instanceof ApiError ? e.message : 'Could not create a table');
@@ -102,6 +119,18 @@ export function Landing(): JSX.Element {
               <span className="label">password (optional)</span>
               <input className="input" type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="off" />
             </div>
+            {hasTemplates && variants && (
+              <div className="field">
+                <span className="label">settings</span>
+                <select className="select" aria-label="Start from a template" value={template ? template.id : ''} onChange={(e) => setTemplateId(e.target.value)}>
+                  <option value="">Standard settings</option>
+                  {templates.list!.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+                </select>
+                <span className="micro">
+                  {templateSettings ? templateSummary(templateSettings, variants) : 'You can change any of it in the lobby.'}
+                </span>
+              </div>
+            )}
             {limited?.maxTableMinutes && (
               <p className="micro" style={{ margin: 0 }}>
                 Tables here close after {fmtMinutes(limited.maxTableMinutes)}. The hand being played always finishes.

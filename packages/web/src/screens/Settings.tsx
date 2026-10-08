@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import {
-  baseStakesOf, BOT_PERSONALITIES, chipUnitOf, DEFAULT_GROWTH, DEFAULT_MAX_LEVEL, ladderOptsOf, levelLadder,
+  baseStakesOf, BOT_PERSONALITIES, chipUnitOf, DEFAULT_GROWTH, DEFAULT_MAX_LEVEL, ladderOptsOf, levelLadder, nextOccurrence,
   type LevelSchedule, type RoomSettings, type VariantInfo,
 } from '@calliope/shared';
 import { Chip } from '../components/Chip.js';
@@ -9,6 +9,8 @@ import { GameGuide } from '../components/GameGuide.js';
 import { wildLabel } from '@calliope/engine';
 import { fmt, fmtMoney } from '../format.js';
 import { Icon } from '../components/Icon.js';
+import { TemplateShelf } from '../components/TemplateShelf.js';
+import { useTemplates } from '../templates.js';
 
 interface SettingsProps {
   settings: RoomSettings;
@@ -103,6 +105,7 @@ function GamePicker({ variants, allowed, disabled, onChange }: { variants: Varia
 export function Settings({ settings, variants, editable, onSave, onDirtyChange }: SettingsProps): JSX.Element {
   const [draft, setDraft] = useState<RoomSettings>(settings);
   const [dirty, setDirty] = useState(false);
+  const templates = useTemplates(editable);
 
   useEffect(() => {
     if (!dirty) setDraft(settings);
@@ -158,6 +161,14 @@ export function Settings({ settings, variants, editable, onSave, onDirtyChange }
   return (
     <div className="stack">
       <div className="settings-form">
+        {editable && (
+          <TemplateShelf
+            templates={templates}
+            variants={variants}
+            draft={draft}
+            onLoad={(next) => { setDraft(next); setDirty(true); }}
+          />
+        )}
         <Section title="Game" summary={`${gameName}${wildLine ? ` · ${wildLine}` : ''}${draft.shuffleSeats ? ' · seats drawn' : ''} · ${bettingLabel}${usesBlinds ? ` · blinds ${fmt(draft.blinds.small)}/${fmt(draft.blinds.big)}` : ''}${usesAntes ? ` · ante ${fmt(draft.ante)}` : ''}`} open={editable}>
           <div className="row">
             <label className="check">
@@ -209,7 +220,7 @@ export function Settings({ settings, variants, editable, onSave, onDirtyChange }
         </Section>
 
         {/* Open for everyone, and following the host's picks before they are saved. */}
-        <Section title="How to play" summary={guideGames.length === 1 ? guideGames[0]!.name : `${guideGames.length} games`} open>
+        <Section title="How to play" summary={guideGames.length === 1 ? guideGames[0]!.name : `${guideGames.length} games`}>
           <GameGuide games={guideGames} first={allowed[0]} wild={draft.wild} />
         </Section>
 
@@ -425,14 +436,6 @@ function clockTime(at: number): string {
 function timeInputValue(at: number): string {
   const d = new Date(at);
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
-}
-
-/** The next time the local clock reads h:m, today or else tomorrow. */
-export function nextOccurrence(h: number, m: number, now: number): number {
-  const d = new Date(now);
-  d.setHours(h, m, 0, 0);
-  if (d.getTime() <= now) d.setDate(d.getDate() + 1);
-  return d.getTime();
 }
 
 /** Two hours from now, rounded up to the quarter hour. */

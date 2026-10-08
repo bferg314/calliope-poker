@@ -1,8 +1,15 @@
 import postgres from 'postgres';
 import type { HandSummary, } from '@calliope/engine';
-import type { AdminKeyView, InstancePolicy, NightReport } from '@calliope/shared';
+import type { AdminKeyView, InstancePolicy, NightReport, TableTemplate } from '@calliope/shared';
 
 export type Sql = ReturnType<typeof postgres>;
+
+/** How saving a template went: a full shelf and a taken name are refusals. */
+export type TemplateWrite = 'ok' | 'full' | 'exists' | 'missing';
+
+function isUniqueViolation(e: unknown): boolean {
+  return typeof e === 'object' && e !== null && (e as { code?: unknown }).code === '23505';
+}
 
 export interface UserRow {
   id: string;
@@ -124,6 +131,18 @@ CREATE TABLE IF NOT EXISTS hand_players (
   net int NOT NULL
 );
 CREATE INDEX IF NOT EXISTS hand_players_user ON hand_players (user_id);
+
+-- A host's saved table setups. Settings are kept as saved; the client reads
+-- them leniently, so an old template survives settings added since.
+CREATE TABLE IF NOT EXISTS table_templates (
+  id text PRIMARY KEY,
+  user_id text NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  name text NOT NULL,
+  settings jsonb NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE UNIQUE INDEX IF NOT EXISTS table_templates_name ON table_templates (user_id, lower(name));
 `;
 
 export function connect(url: string): Sql {
@@ -343,6 +362,51 @@ export class Db {
       FROM room_players rp JOIN rooms r ON r.code = rp.room_code
       WHERE rp.user_id = ${userId} AND r.ended_at IS NOT NULL`;
     return { nights, totals: totals[0]! };
+  }
+
+  // ---- table templates ----
+
+  async listTemplates(userId: string): Promise<TableTemplate[]> {
+    const rows = await this.sql<{ id: string; name: string; settings: unknown; updated_at: Date }[]>`
+      SELECT id, name, settings, updated_at FROM table_templates WHERE user_id = ${userId} ORDER BY lower(name)`;
+    return rows.map((r) => ({ id: r.id, name: r.name, settings: r.settings, updatedAt: r.updated_at.getTime() }));
+  }
+
+  /** Refused when the identity already keeps `max` templates or one by this name. */
+  async insertTemplate(id: string, userId: string, name: string, settings: unknown, max: number): Promise<TemplateWrite> {
+    try {
+      const rows = await this.sql`
+        INSERT INTO table_templates (id, user_id, name, settings)
+        SELECT ${id}, ${userId}, ${name}, ${this.sql.json(settings as never)}
+        WHERE (SELECT count(*) FROM table_templates WHERE user_id = ${userId}) < ${max}
+        RETURNING id`;
+      return rows.length ? 'ok' : 'full';
+    } catch (e) {
+      if (isUniqueViolation(e)) return 'exists';
+      throw e;
+    }
+  }
+
+  async updateTemplate(id: string, userId: string, change: { name?: string; settings?: unknown }): Promise<TemplateWrite> {
+    const settings = change.settings === undefined ? null : this.sql.json(change.settings as never);
+    try {
+      const rows = await this.sql`
+        UPDATE table_templates
+        SET name = coalesce(${change.name ?? null}::text, name),
+            settings = coalesce(${settings}::jsonb, settings),
+            updated_at = now()
+        WHERE id = ${id} AND user_id = ${userId}
+        RETURNING id`;
+      return rows.length ? 'ok' : 'missing';
+    } catch (e) {
+      if (isUniqueViolation(e)) return 'exists';
+      throw e;
+    }
+  }
+
+  async deleteTemplate(id: string, userId: string): Promise<boolean> {
+    const rows = await this.sql`DELETE FROM table_templates WHERE id = ${id} AND user_id = ${userId} RETURNING id`;
+    return rows.length > 0;
   }
 
   async close(): Promise<void> {
