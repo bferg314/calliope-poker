@@ -1,7 +1,11 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import { hasVariant, getVariant, listVariants, summaryFor, wildLabel, type HandSummary } from '@calliope/engine';
-import { createRoomSchema, instancePolicySchema, nameSchema, phraseSchema, roomCodeSchema, type HandDetail, type HandListItem } from '@calliope/shared';
+import { randomUUID } from 'node:crypto';
+import {
+  createRoomSchema, instancePolicySchema, MAX_TEMPLATES, nameSchema, phraseSchema, roomCodeSchema, saveTemplateSchema, updateTemplateSchema,
+  type HandDetail, type HandListItem,
+} from '@calliope/shared';
 import { hashSecret, verifySecret, type Auth, type PublicUser } from './auth.js';
 import type { Db } from './db.js';
 import { RoomError, type RoomManager } from './manager.js';
@@ -156,6 +160,52 @@ export function registerHttp(app: FastifyInstance, s: Services): void {
     const user = requireUser(request, reply);
     if (!user) return;
     return s.db.lifetimeStats(user.id);
+  });
+
+  // ---- table templates: one identity's saved setups, private to it ----
+
+  const TEMPLATE_REFUSAL = {
+    full: [409, 'templates-full', `You can keep up to ${MAX_TEMPLATES} templates. Delete one to make room.`],
+    exists: [409, 'template-exists', 'You already have a template by that name.'],
+    missing: [404, 'no-template', 'No template with that id'],
+  } as const;
+  const refuseTemplate = (reply: FastifyReply, why: keyof typeof TEMPLATE_REFUSAL): FastifyReply => {
+    const [status, code, message] = TEMPLATE_REFUSAL[why];
+    return fail(reply, status, code, message);
+  };
+  const templateId = (request: FastifyRequest): string => z.string().uuid().parse((request.params as { id: string }).id);
+
+  app.get('/api/me/templates', async (request, reply) => {
+    const user = requireUser(request, reply);
+    if (!user) return;
+    return { templates: await s.db.listTemplates(user.id) };
+  });
+
+  app.post('/api/me/templates', async (request, reply) => {
+    const user = requireUser(request, reply);
+    if (!user) return;
+    const body = saveTemplateSchema.parse(request.body ?? {});
+    const id = randomUUID();
+    const result = await s.db.insertTemplate(id, user.id, body.name, body.settings, MAX_TEMPLATES);
+    if (result !== 'ok') return refuseTemplate(reply, result);
+    return { id };
+  });
+
+  app.put('/api/me/templates/:id', async (request, reply) => {
+    const user = requireUser(request, reply);
+    if (!user) return;
+    const id = templateId(request);
+    const body = updateTemplateSchema.parse(request.body ?? {});
+    const result = await s.db.updateTemplate(id, user.id, body);
+    if (result !== 'ok') return refuseTemplate(reply, result);
+    return { ok: true };
+  });
+
+  app.delete('/api/me/templates/:id', async (request, reply) => {
+    const user = requireUser(request, reply);
+    if (!user) return;
+    if (!(await s.db.deleteTemplate(templateId(request), user.id))) return refuseTemplate(reply, 'missing');
+    return { ok: true };
   });
 
   // ---- rooms ----
