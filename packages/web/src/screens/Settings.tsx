@@ -9,6 +9,8 @@ import { GameGuide } from '../components/GameGuide.js';
 import { wildLabel } from '@calliope/engine';
 import { fmt, fmtMoney } from '../format.js';
 import { Icon } from '../components/Icon.js';
+import { TemplateShelf } from '../components/TemplateShelf.js';
+import { useTemplates } from '../templates.js';
 
 interface SettingsProps {
   settings: RoomSettings;
@@ -103,6 +105,7 @@ function GamePicker({ variants, allowed, disabled, onChange }: { variants: Varia
 export function Settings({ settings, variants, editable, onSave, onDirtyChange }: SettingsProps): JSX.Element {
   const [draft, setDraft] = useState<RoomSettings>(settings);
   const [dirty, setDirty] = useState(false);
+  const templates = useTemplates(editable);
 
   useEffect(() => {
     if (!dirty) setDraft(settings);
@@ -158,6 +161,14 @@ export function Settings({ settings, variants, editable, onSave, onDirtyChange }
   return (
     <div className="stack">
       <div className="settings-form">
+        {editable && (
+          <TemplateShelf
+            templates={templates}
+            variants={variants}
+            draft={draft}
+            onLoad={(next) => { setDraft(next); setDirty(true); }}
+          />
+        )}
         <Section title="Game" summary={`${gameName}${wildLine ? ` · ${wildLine}` : ''}${draft.shuffleSeats ? ' · seats drawn' : ''} · ${bettingLabel}${usesBlinds ? ` · blinds ${fmt(draft.blinds.small)}/${fmt(draft.blinds.big)}` : ''}${usesAntes ? ` · ante ${fmt(draft.ante)}` : ''}`} open={editable}>
           <div className="row">
             <label className="check">
