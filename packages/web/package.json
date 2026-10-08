@@ -19,7 +19,8 @@
     "e2e:night-report": "node e2e/night-report.mjs",
     "e2e:decks": "node e2e/decks.mjs",
     "e2e:controller": "node e2e/controller.mjs",
-    "e2e:layout": "node e2e/layout-audit.mjs"
+    "e2e:layout": "node e2e/layout-audit.mjs",
+    "e2e:templates": "node e2e/templates.mjs"
   },
   "dependencies": {
     "@calliope/engine": "*",
