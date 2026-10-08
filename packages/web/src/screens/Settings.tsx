@@ -220,7 +220,7 @@ export function Settings({ settings, variants, editable, onSave, onDirtyChange }
         </Section>
 
         {/* Open for everyone, and following the host's picks before they are saved. */}
-        <Section title="How to play" summary={guideGames.length === 1 ? guideGames[0]!.name : `${guideGames.length} games`} open>
+        <Section title="How to play" summary={guideGames.length === 1 ? guideGames[0]!.name : `${guideGames.length} games`}>
           <GameGuide games={guideGames} first={allowed[0]} wild={draft.wild} />
         </Section>
 
