@@ -56,4 +56,10 @@ export interface VariantDefinition {
    * only the view each player is sent changes (see viewFor).
    */
   ownUpCardsHidden?: boolean;
+  /**
+   * Razz and other lowball games: the lowest hand wins. `evaluate` must give
+   * lower hands higher values (see bestLow). In stud the highest up card
+   * brings it in, and the lowest showing hand acts first.
+   */
+  lowball?: boolean;
 }
