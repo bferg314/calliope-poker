@@ -69,6 +69,8 @@ If the deck cannot supply everyone on a later street (seven-card stud with eight
 - `bestHand(cards)` — best five of any number of cards (Hold'em, stud, Pineapple).
 - `bestHandOmaha(hole, board)` — exactly two hole cards and three board cards.
 - `bestLow(cards)` — the best ace-to-five low of any number of cards (Razz).
+- `bestDeuceSeven(cards)` — deuce-to-seven low: aces high, straights and flushes count against you (2-7 Triple Draw).
+- `bestBadugi(cards)` — the best badugi of four cards: different suits and ranks, aces low.
 
 ### Lowball
 
@@ -79,10 +81,19 @@ is worse than five different cards. A wild card becomes the lowest rank the
 hand is missing. Its `ranks` count aces as 1, and its labels read "Seven low,
 7-5-4-3-A" or "Wheel, 5-4-3-2-A".
 
+The other two low rankings work the same way. `bestDeuceSeven` reads the
+hand as ordinary poker (`category` 1 is a pair, 4 a straight) with aces only
+high, so A-5-4-3-2 is ace high and not a straight, and turns `value` upside
+down; a wild card never fills a flush. `bestBadugi` keeps the largest set of
+cards with no suit or rank repeated, so more cards always win, then compares
+from the top card down; its `category` is how many cards short of a badugi
+the hand is.
+
 Set `lowball: true` on the variant as well. In stud games that turns the
 bring-in round, so the highest card showing brings it in (kings worst, aces
 low, the higher suit on a tie), and the lowest hand showing acts first on
-later streets. The bots read it too and switch to `lowStrength`.
+later streets. The bots read it too and switch to `lowStrength`, and in draw
+games to the 2-7 and Badugi keep rules in `packages/bots/src/discard.ts`.
 
 Hi/lo split pots are still a gap: they need a second evaluate function and a
 pot-splitting step in `settle`.
@@ -100,6 +111,8 @@ pot-splitting step in `settle`.
 | `razz` | Razz | seven-card stud for the lowest hand; ace-to-five low |
 | `stud5` | Five-card Stud | 1 down, 4 up |
 | `draw5` | Five-card Draw | 5 down, one draw, at most six players |
+| `draw27` | 2-7 Triple Draw | 5 down, three draws of up to five; deuce-to-seven low; at most six players |
+| `badugi` | Badugi | 4 down, three draws of up to four; badugi ranks; at most six players |
 | `three` | Three-card Poker | 3 down, one round of betting; three-card ranks |
 | `draw3` | Three-card Draw | 3 down, one draw of up to three; three-card ranks |
 | `bluff` | Blind Man's Bluff | 1 card each, seen by everyone but its owner; high card wins |
