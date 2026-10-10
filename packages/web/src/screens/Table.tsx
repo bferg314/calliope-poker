@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import {
-  getVariant, legalActions, wildTest, type Action, type HandView, type TableState, type Wild,
+  getVariant, labelInSentence, legalActions, wildTest, type Action, type HandView, type TableState, type Wild,
 } from '@calliope/engine';
 import { SERVER_LIMIT_WARNING_MINUTES, stakesLabel, type RoomView } from '@calliope/shared';
 import { Board, Pot } from '../components/Board.js';
@@ -891,7 +891,7 @@ export function Table({ room, socket }: { room: RoomView; socket: RoomSocket }):
                   </div>
                   {room.lastHand.winners.map((w) => (
                     <div key={w.seat} className="log-line result">
-                      {room.lastHand!.players.find((p) => p.seat === w.seat)?.name} won {fmt(w.amount)}{w.handLabel ? ` with ${w.handLabel.toLowerCase()}` : ''}
+                      {room.lastHand!.players.find((p) => p.seat === w.seat)?.name} won {fmt(w.amount)}{w.handLabel ? ` with ${labelInSentence(w.handLabel)}` : ''}
                     </div>
                   ))}
                 </>

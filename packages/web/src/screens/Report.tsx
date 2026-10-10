@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { labelInSentence } from '@calliope/engine';
 import { priceNight, type NightReport, type RoomView } from '@calliope/shared';
 import { TopBar } from '../components/TopBar.js';
 import { HandHistory } from '../components/HandHistory.js';
@@ -114,7 +115,7 @@ export function ReportSheet({ report, youId }: { report: NightReport; youId: str
             <div className="big num">{fmt(report.biggestPot.amount)}</div>
             <div className="micro">
               hand #{report.biggestPot.handNumber}, {report.biggestPot.winners.join(' and ')}
-              {report.biggestPot.handLabel ? `, ${report.biggestPot.handLabel.toLowerCase()}` : ''}
+              {report.biggestPot.handLabel ? `, ${labelInSentence(report.biggestPot.handLabel)}` : ''}
             </div>
           </div>
         )}

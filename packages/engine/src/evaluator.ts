@@ -31,6 +31,11 @@ function cap(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
+/** A hand label set mid-sentence ("wins with seven low, 7-5-4-3-A"): only its first letter drops. */
+export function labelInSentence(label: string): string {
+  return label.charAt(0).toLowerCase() + label.slice(1);
+}
+
 export function handLabel(category: HandCategory, ranks: readonly number[]): string {
   const r = (i: number): number => ranks[i] ?? 2;
   const name = (i: number): string => RANK_NAMES[r(i)] ?? '';

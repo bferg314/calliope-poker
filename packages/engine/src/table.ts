@@ -1,6 +1,6 @@
 import { isFullDeck, isJoker, mulberry32, rankOf, shuffle, SUIT_ORDER, suitOf, type Card } from './cards.js';
 import { dealsJokers, isWildSpec, NO_WILD, type Wild, wildLabel, wildTest } from './wild.js';
-import { bestHand, bestLow, evaluateCards, type HandRank } from './evaluator.js';
+import { bestHand, bestLow, evaluateCards, type HandRank, labelInSentence } from './evaluator.js';
 import {
   bettingLabel, legalActions, minBet, playersInHand, playersWhoCanAct, resolveBetting,
 } from './betting.js';
@@ -819,9 +819,9 @@ function settle(s: TableState, h: HandState, showdown: boolean, effects: TableEf
     const label = showdown && award.winners[0] !== undefined ? ranks.get(award.winners[0])?.label : undefined;
     const potName = awards.length > 1 ? (award === awards[0] ? 'the main pot' : 'a side pot') : 'the pot';
     if (names.length === 1) {
-      log(h, 'result', award.winners[0]!, `${names[0]} wins ${potName} of ${award.amount}${label ? ` with ${label.toLowerCase()}` : ''}`);
+      log(h, 'result', award.winners[0]!, `${names[0]} wins ${potName} of ${award.amount}${label ? ` with ${labelInSentence(label)}` : ''}`);
     } else if (names.length > 1) {
-      log(h, 'result', null, `${names.join(' and ')} split ${potName} of ${award.amount}${label ? ` with ${label.toLowerCase()}` : ''}`);
+      log(h, 'result', null, `${names.join(' and ')} split ${potName} of ${award.amount}${label ? ` with ${labelInSentence(label)}` : ''}`);
     }
   }
   const net: Record<SeatIndex, number> = {};

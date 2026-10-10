@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { bestLow, legalActions, seededDeck, wildTest } from '../src/index.js';
+import { bestLow, labelInSentence, legalActions, seededDeck, wildTest } from '../src/index.js';
 import { riggedDeck, tableWith } from './helpers.js';
 
 const razzConfig = {
@@ -18,6 +18,7 @@ describe('ace-to-five low', () => {
     expect(low(['7c', '5d', '4h', '3s', '2c'])).toBeGreaterThan(low(['8c', '4d', '3h', '2s', 'Ac']));
     expect(bestLow(['5c', '4d', '3h', '2s', 'Ac']).label).toBe('Wheel, 5-4-3-2-A');
     expect(bestLow(['7c', '5d', '4h', '3s', 'Ac']).label).toBe('Seven low, 7-5-4-3-A');
+    expect(labelInSentence('Eight low, 8-6-4-3-A')).toBe('eight low, 8-6-4-3-A');
   });
 
   it('ignores straights and flushes', () => {
@@ -93,6 +94,7 @@ describe('razz', () => {
     expect(h.stage).toBe('settled');
     expect(h.results!.showdown).toBe(true);
     expect(h.results!.winners).toEqual([2]);
+    expect(h.log.some((l) => l.text.endsWith('with seven low, 7-5-4-3-2'))).toBe(true);
     expect(t.stack(2)).toBe(500 + 2 * 7);
   });
 
