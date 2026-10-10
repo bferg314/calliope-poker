@@ -1,6 +1,6 @@
 import { isFullDeck, isJoker, mulberry32, rankOf, shuffle, SUIT_ORDER, suitOf, type Card } from './cards.js';
 import { dealsJokers, isWildSpec, NO_WILD, type Wild, wildLabel, wildTest } from './wild.js';
-import { bestHand, evaluateCards, type HandRank } from './evaluator.js';
+import { bestHand, bestLow, evaluateCards, type HandRank, labelInSentence } from './evaluator.js';
 import {
   bettingLabel, legalActions, minBet, playersInHand, playersWhoCanAct, resolveBetting,
 } from './betting.js';
@@ -374,16 +374,24 @@ function deal(s: TableState, variantId: string, wild: Wild | undefined, effects:
   proceed(s, effects);
 }
 
-/** Lowest up card brings it in; ties broken by suit (clubs lowest), then seat order. */
+/**
+ * The worst up card brings it in: the lowest, or in a lowball game the highest
+ * (aces low). Ties go to the lower suit (clubs lowest), or in lowball the
+ * higher, then seat order.
+ */
 function bringInSeat(s: TableState, h: HandState): SeatIndex {
+  const low = getVariant(h.variantId).lowball;
+  const isWild = wildTest(h.wild);
   let best: SeatIndex = -1;
-  let bestKey = Infinity;
+  let worst = -Infinity;
   for (const p of playersInHand(h)) {
     const up = p.holeUp[p.holeUp.length - 1];
     if (!up) continue;
-    // A wild card showing is as good as an ace, so it never brings it in.
-    const key = wildTest(h.wild)?.(up) ? 15 * 4 : rankOf(up) * 4 + SUIT_ORDER[suitOf(up)];
-    if (key < bestKey) { bestKey = key; best = p.seat; }
+    // A wild card showing is the best card there is, so it never brings it in.
+    const key = isWild?.(up) ? -1
+      : low ? (rankOf(up) === 14 ? 1 : rankOf(up)) * 4 + SUIT_ORDER[suitOf(up)]
+      : (15 - rankOf(up)) * 4 + 3 - SUIT_ORDER[suitOf(up)];
+    if (key > worst) { worst = key; best = p.seat; }
   }
   if (best === -1) best = nextSeat(s, h.button, (i) => inHand(h, i));
   return best;
@@ -584,10 +592,10 @@ function startRound(s: TableState, h: HandState, v: VariantDefinition): void {
       const i = (h.button + k) % s.config.maxSeats;
       if (!inHand(h, i)) continue;
       const up = h.players[i]!.holeUp.slice(-5);
-      const val = up.length ? evaluateCards(up, wildTest(h.wild)).value : 0;
+      const val = up.length ? (v.lowball ? bestLow : evaluateCards)(up, wildTest(h.wild)).value : 0;
       if (val > bestVal) { bestVal = val; first = i; }
     }
-    if (first !== -1) log(h, 'info', first, `${nameOf(s, h, first)} shows the best hand and acts first`);
+    if (first !== -1) log(h, 'info', first, `${nameOf(s, h, first)} shows the ${v.lowball ? 'lowest' : 'best'} hand and acts first`);
   } else {
     first = h.button;
     first = nextSeat(s, first, (i) => needsToAct(h, i));
@@ -811,9 +819,9 @@ function settle(s: TableState, h: HandState, showdown: boolean, effects: TableEf
     const label = showdown && award.winners[0] !== undefined ? ranks.get(award.winners[0])?.label : undefined;
     const potName = awards.length > 1 ? (award === awards[0] ? 'the main pot' : 'a side pot') : 'the pot';
     if (names.length === 1) {
-      log(h, 'result', award.winners[0]!, `${names[0]} wins ${potName} of ${award.amount}${label ? ` with ${label.toLowerCase()}` : ''}`);
+      log(h, 'result', award.winners[0]!, `${names[0]} wins ${potName} of ${award.amount}${label ? ` with ${labelInSentence(label)}` : ''}`);
     } else if (names.length > 1) {
-      log(h, 'result', null, `${names.join(' and ')} split ${potName} of ${award.amount}${label ? ` with ${label.toLowerCase()}` : ''}`);
+      log(h, 'result', null, `${names.join(' and ')} split ${potName} of ${award.amount}${label ? ` with ${labelInSentence(label)}` : ''}`);
     }
   }
   const net: Record<SeatIndex, number> = {};

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { labelInSentence } from '@calliope/engine';
 import type { HandDetail, HandListItem } from '@calliope/shared';
 import { api, ApiError } from '../api.js';
 import { fmt } from '../format.js';
@@ -10,7 +11,7 @@ const FIRST_SHOWN = 20;
 
 function winnersLine(h: HandListItem): string {
   if (h.winners.length === 0) return 'nobody won';
-  const label = h.showdown && h.winners[0]!.handLabel ? ` with ${h.winners[0]!.handLabel.toLowerCase()}` : '';
+  const label = h.showdown && h.winners[0]!.handLabel ? ` with ${labelInSentence(h.winners[0]!.handLabel)}` : '';
   if (h.winners.length === 1) return `${h.winners[0]!.name} won ${fmt(h.winners[0]!.amount)}${label}`;
   return `${h.winners.map((w) => w.name).join(' and ')} split it${label}`;
 }

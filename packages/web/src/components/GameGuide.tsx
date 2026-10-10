@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { isJoker, wildLabel, type Wild } from '@calliope/engine';
-import { FIVE_CARD_RANKS, GUIDES, THREE_CARD_RANKS } from '../guides.js';
+import { FIVE_CARD_RANKS, GUIDES, LOW_RANKS, THREE_CARD_RANKS } from '../guides.js';
 import { Card } from './Card.js';
 import { useConfirm } from './Modal.js';
 
@@ -32,7 +32,9 @@ export function GameGuide({ games, first, wild }: { games: { id: string; name: s
   const guide = GUIDES[id];
   const wilds = wildLabel(wild);
   if (!guide) return <p>No guide for this game yet.</p>;
-  const ranks = guide.ranking === 'three' ? THREE_CARD_RANKS : FIVE_CARD_RANKS.filter((r) => !r.wildOnly || wilds);
+  const ranks = guide.ranking === 'three' ? THREE_CARD_RANKS
+    : guide.ranking === 'low' ? LOW_RANKS
+    : FIVE_CARD_RANKS.filter((r) => !r.wildOnly || wilds);
 
   return (
     <div className="game-guide">
@@ -79,7 +81,8 @@ export function GameGuide({ games, first, wild }: { games: { id: string; name: s
           {wilds && (
             <li>
               <strong>{wilds.charAt(0).toUpperCase() + wilds.slice(1)}.</strong> A wild card stands for any card at all, even one you already
-              hold, and is ringed on the table. With wild cards, five of a kind beats a straight flush.
+              hold, and is ringed on the table.{' '}
+              {guide.ranking === 'low' ? 'In a low game it plays as the lowest card you are missing.' : 'With wild cards, five of a kind beats a straight flush.'}
             </li>
           )}
         </ul>

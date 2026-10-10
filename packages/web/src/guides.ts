@@ -4,7 +4,7 @@
  * (packages/engine/src/variants), not poker in general.
  */
 
-export type Ranking = 'five' | 'three' | 'high-card';
+export type Ranking = 'five' | 'three' | 'low' | 'high-card';
 
 export interface Guide {
   /** One line on what the game is. */
@@ -101,6 +101,21 @@ export const GUIDES: Record<string, Guide> = {
       'Bets are small on third and fourth streets and double from fifth.',
     ],
   },
+  razz: {
+    summary: 'Seven-card stud where the lowest hand wins.',
+    steps: [
+      'Everyone antes.',
+      'Third street: two cards face down and one face up. The highest card showing must bring it in (kings are worst, aces low), then a round of betting.',
+      'Fourth, fifth and sixth streets: one more face up each, each with a round of betting.',
+      'Seventh street: a last card face down, a last round of betting, then the showdown.',
+    ],
+    ranking: 'low',
+    notes: [
+      'Your hand is the lowest five of your seven. Aces are low, and straights and flushes do not count against you.',
+      'Pairs do: any five different cards beat any pair. Compare from the top card down, so 8-6-4-3-2 beats 8-7-3-2-A.',
+      'From fourth street on, whoever shows the lowest hand acts first.',
+    ],
+  },
   stud5: {
     summary: 'Five cards each, one face down and four up. The old one from the westerns.',
     steps: [
@@ -164,6 +179,16 @@ export const FIVE_CARD_RANKS: { name: string; example: string[]; wildOnly?: bool
   { name: 'Two pair', example: ['Jh', 'Jc', '4d', '4s', 'Ac'] },
   { name: 'Pair', example: ['Th', 'Tc', 'Ks', '8d', '3h'] },
   { name: 'High card', example: ['Ah', 'Jd', '9c', '6s', '3h'] },
+];
+
+/** Ace-to-five low, best first: the top card decides, and a pair is worse than anything without one. */
+export const LOW_RANKS: { name: string; example: string[] }[] = [
+  { name: 'Wheel', example: ['5c', '4d', '3h', '2s', 'Ac'] },
+  { name: 'Six low', example: ['6h', '5h', '4h', '3h', '2h'] },
+  { name: 'Seven low', example: ['7s', '6h', '4d', '3c', '2h'] },
+  { name: 'Eight low', example: ['8d', '7c', '5s', '3h', 'Ad'] },
+  { name: 'King low', example: ['Kc', 'Jd', '9h', '6s', '4c'] },
+  { name: 'Pair', example: ['Ah', 'Ac', '2d', '3s', '4h'] },
 ];
 
 export const THREE_CARD_RANKS: { name: string; example: string[] }[] = [

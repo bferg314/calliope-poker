@@ -68,8 +68,24 @@ If the deck cannot supply everyone on a later street (seven-card stud with eight
 
 - `bestHand(cards)` — best five of any number of cards (Hold'em, stud, Pineapple).
 - `bestHandOmaha(hole, board)` — exactly two hole cards and three board cards.
+- `bestLow(cards)` — the best ace-to-five low of any number of cards (Razz).
 
-For split-pot or lowball games you would add a new evaluator alongside these in `evaluator.ts`. The engine currently awards each pot to the single best `HandRank` value, so hi/lo needs an engine extension (a second evaluate function and a pot-splitting step in `settle`). That is the one documented gap.
+### Lowball
+
+The engine awards each pot to the highest `HandRank` value, so a game where
+the low hand wins needs an evaluator that gives lower hands higher values.
+`bestLow` does: aces count 1, straights and flushes are ignored, and any pair
+is worse than five different cards. A wild card becomes the lowest rank the
+hand is missing. Its `ranks` count aces as 1, and its labels read "Seven low,
+7-5-4-3-A" or "Wheel, 5-4-3-2-A".
+
+Set `lowball: true` on the variant as well. In stud games that turns the
+bring-in round, so the highest card showing brings it in (kings worst, aces
+low, the higher suit on a tie), and the lowest hand showing acts first on
+later streets. The bots read it too and switch to `lowStrength`.
+
+Hi/lo split pots are still a gap: they need a second evaluate function and a
+pot-splitting step in `settle`.
 
 ## What ships
 
@@ -81,6 +97,7 @@ For split-pot or lowball games you would add a new evaluator alongside these in 
 | `atomic` | Atomic Pineapple | 5 down, throw one away before the flop, the turn and the river; at most nine players |
 | `cincinnati` | Cincinnati | 5 down, 5 shared turned one at a time with a bet after each; best five of ten; at most nine players |
 | `stud7` | Seven-card Stud | antes and a bring-in, no board |
+| `razz` | Razz | seven-card stud for the lowest hand; ace-to-five low |
 | `stud5` | Five-card Stud | 1 down, 4 up |
 | `draw5` | Five-card Draw | 5 down, one draw, at most six players |
 | `three` | Three-card Poker | 3 down, one round of betting; three-card ranks |

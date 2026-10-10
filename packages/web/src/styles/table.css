@@ -111,6 +111,26 @@
   flex-shrink: 0;
 }
 
+/* How to play, right after the name; drawn as small as the type, hit at full
+   size. The strip is shorter than a finger on a phone, so the button's pad
+   reaches over the table's top edge and has to sit above it, seats included. */
+.game-strip .game-help {
+  z-index: 4;
+  align-self: center;
+  display: inline-flex;
+  flex-shrink: 0;
+  padding: 0;
+  margin-left: calc(-1 * var(--s-1));
+  border: 0;
+  background: none;
+  color: var(--ink-2);
+  cursor: pointer;
+}
+
+.game-strip .game-help:hover {
+  color: var(--ink);
+}
+
 .game-strip .game-sub {
   font-variant-caps: all-small-caps;
   letter-spacing: 0.1em;

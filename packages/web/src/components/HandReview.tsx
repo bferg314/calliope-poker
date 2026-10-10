@@ -1,4 +1,4 @@
-import { type HandSummaryView, wildLabel, wildTest } from '@calliope/engine';
+import { type HandSummaryView, labelInSentence, wildLabel, wildTest } from '@calliope/engine';
 import { stakesLabel } from '@calliope/shared';
 import { fmt } from '../format.js';
 import { Card } from './Card.js';
@@ -78,7 +78,7 @@ export function HandReview({ hand, variantName }: { hand: HandSummaryView; varia
             );
           })
           : hand.winners.map((w) => (
-            <p key={w.seat}><strong>{nameOf(w.seat)}</strong> won {fmt(w.amount)}{w.handLabel ? ` with ${w.handLabel.toLowerCase()}` : ''}</p>
+            <p key={w.seat}><strong>{nameOf(w.seat)}</strong> won {fmt(w.amount)}{w.handLabel ? ` with ${labelInSentence(w.handLabel)}` : ''}</p>
           ))}
       </div>
 

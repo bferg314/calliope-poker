@@ -31,6 +31,11 @@ function cap(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
+/** A hand label set mid-sentence ("wins with seven low, 7-5-4-3-A"): only its first letter drops. */
+export function labelInSentence(label: string): string {
+  return label.charAt(0).toLowerCase() + label.slice(1);
+}
+
 export function handLabel(category: HandCategory, ranks: readonly number[]): string {
   const r = (i: number): number => ranks[i] ?? 2;
   const name = (i: number): string => RANK_NAMES[r(i)] ?? '';
@@ -207,6 +212,75 @@ function evaluateThreeNatural(cards: readonly Card[]): HandRank {
   // A straight flush that is the top of the deck is not "royal" with three cards.
   const label = category === 8 ? `Straight flush, ${RANK_NAMES[tb[0]!]} high` : handLabel(category, tb);
   return { category, ranks: tb, value: encode(THREE_CARD_ORDER.indexOf(category), tb), label, cards: [...cards] };
+}
+
+/** Above every `encode` result, so a low hand's value can count down from it. */
+const LOW_TOP = 15 ** 6;
+const LOW_CHARS = 'A23456789TJQK';
+
+/** Ace-to-five low: aces count 1, kings 13. */
+function lowRankOf(card: Card): number {
+  const r = rankOf(card);
+  return r === 14 ? 1 : r;
+}
+
+/**
+ * The best ace-to-five low from any number of cards (Razz). Straights and
+ * flushes do not count, aces are low and pairs are bad, so A-2-3-4-5 is the
+ * nuts. With fewer than five cards (a stud hand part dealt, or the cards
+ * showing) it ranks all of them. Lower hands get higher values, so the engine
+ * awards the pot as it always does; values compare only with other lows of
+ * the same size.
+ *
+ * `ranks` count aces as 1. A wild card stands for any card, as everywhere, so
+ * here it is the lowest rank not already held.
+ */
+export function bestLow(cards: readonly Card[], isWild?: WildTest): HandRank {
+  if (cards.length === 0) throw new Error('bestLow needs at least one card');
+  const size = Math.min(5, cards.length);
+  const wilds = isWild ? cards.filter(isWild) : [];
+  const byRank = new Map<number, Card[]>();
+  for (const c of cards) {
+    if (isWild?.(c)) continue;
+    const r = lowRankOf(c);
+    byRank.set(r, [...(byRank.get(r) ?? []), c]);
+  }
+  // One card of each rank, lowest first, with the wilds filling the gaps.
+  const picked = new Map<number, Card[]>();
+  let spare = wilds.length;
+  for (let r = 1; r <= 13 && picked.size < size; r++) {
+    const have = byRank.get(r);
+    if (have) picked.set(r, [have[0]!]);
+    else if (spare > 0) picked.set(r, [wilds[wilds.length - spare--]!]);
+  }
+  // Too few ranks for a whole hand: pair up as little, and as low, as possible.
+  let short = size - picked.size;
+  for (let depth = 1; short > 0; depth++) {
+    for (const [r, held] of [...picked].sort((a, b) => a[0] - b[0])) {
+      const extra = byRank.get(r)?.[depth];
+      if (extra && short > 0) { held.push(extra); short--; }
+    }
+  }
+
+  const groups = [...picked].map(([r, held]) => [r, held.length] as const).sort((a, b) => b[1] - a[1] || b[0] - a[0]);
+  const counts = groups.map((g) => g[1]);
+  let category: HandCategory;
+  if (counts[0] === 4) category = 7;
+  else if (counts[0] === 3 && counts[1] === 2) category = 6;
+  else if (counts[0] === 3) category = 3;
+  else if (counts[0] === 2 && counts[1] === 2) category = 2;
+  else if (counts[0] === 2) category = 1;
+  else category = 0;
+  const tb = groups.map((g) => g[0]);
+  return { category, ranks: tb, value: LOW_TOP - encode(category, tb), label: lowLabel(category, tb), cards: [...picked.values()].flat() };
+}
+
+function lowLabel(category: HandCategory, ranks: readonly number[]): string {
+  if (category !== 0) return handLabel(category, ranks.map((r) => (r === 1 ? 14 : r)));
+  if (ranks.length === 5 && ranks[0] === 5) return 'Wheel, 5-4-3-2-A';
+  const top = cap(RANK_NAMES[ranks[0] === 1 ? 14 : ranks[0]!] ?? '');
+  if (ranks.length === 1) return `${top} low`;
+  return `${top} low, ${ranks.map((r) => LOW_CHARS.charAt(r - 1)).join('-')}`;
 }
 
 /** Positive if a beats b, negative if b beats a, zero on a tie. */

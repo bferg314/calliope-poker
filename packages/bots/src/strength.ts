@@ -1,5 +1,5 @@
 import {
-  bestHand, bestHandOmaha, dealsJokers, evaluateCards, evaluateThree, fullDeck, getVariant, rankOf, suitOf, wildTest,
+  bestHand, bestHandOmaha, bestLow, dealsJokers, evaluateCards, evaluateThree, fullDeck, getVariant, rankOf, suitOf, wildTest,
   type Card, type HandRank, type TableState, type WildTest,
 } from '@calliope/engine';
 
@@ -198,6 +198,48 @@ export function blindStrength(state: TableState, seat: number): number {
   return wins / pool.length;
 }
 
+/** Different ranks of eight or under, ace low; each wild card is one more. */
+function lowCards(cards: readonly Card[], isWild: WildTest | undefined): number {
+  const ranks = new Set<number>();
+  let wilds = 0;
+  for (const c of cards) {
+    if (isWild?.(c)) wilds++;
+    else if (rankOf(c) <= 8 || rankOf(c) === 14) ranks.add(rankOf(c));
+  }
+  return Math.min(5, ranks.size + wilds);
+}
+
+/**
+ * Razz: five different cards of eight or under make a hand, and the lower the
+ * top card the better. Until then, what counts is how many of them the seat
+ * still needs against the cards to come. Anyone showing a cleaner start makes
+ * the hand worth less.
+ */
+export function lowStrength(state: TableState, seat: number): number {
+  const h = state.hand;
+  const p = h?.players[seat];
+  if (!h || !p) return 0;
+  const v = getVariant(h.variantId);
+  const isWild = wildTest(h.wild);
+  const mine = [...p.holeDown, ...p.holeUp, ...h.board];
+  const good = lowCards(mine, isWild);
+  const left = v.streets.length - 1 - h.streetIndex;
+  const need = 5 - good;
+  let s = need > left ? 0.05 : 0.85 * (1 - need / (left + 1));
+  if (mine.length >= 5) {
+    const made = bestLow(mine, isWild);
+    const top = made.ranks[0]!;
+    if (made.category === 0) s = Math.max(s, top <= 6 ? 0.97 : top === 7 ? 0.85 : top === 8 ? 0.7 : top === 9 ? 0.5 : top === 10 ? 0.38 : 0.25);
+  }
+  const showing = p.holeUp.length ? bestLow(p.holeUp, isWild).value : 0;
+  for (const o of h.players) {
+    if (!o || o.seat === seat || o.folded || o.holeUp.length < 2) continue;
+    const clean = lowCards(o.holeUp, isWild) === o.holeUp.length;
+    if (clean && bestLow(o.holeUp, isWild).value > showing) { s *= 0.8; break; }
+  }
+  return clamp(s);
+}
+
 /** 0..1 estimate of how strong the seat's hand is right now, from what the bot can see. */
 export function estimateStrength(state: TableState, seat: number): number {
   const h = state.hand;
@@ -206,6 +248,7 @@ export function estimateStrength(state: TableState, seat: number): number {
   if (!p) return 0;
   const v = getVariant(h.variantId);
   if (v.ownUpCardsHidden) return blindStrength(state, seat);
+  if (v.lowball) return lowStrength(state, seat);
   const isWild = wildTest(h.wild);
   const realHole = [...p.holeDown, ...p.holeUp];
   const hole = natural(realHole, isWild);

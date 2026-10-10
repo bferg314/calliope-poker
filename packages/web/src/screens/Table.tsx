@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import {
-  getVariant, legalActions, wildTest, type Action, type HandView, type TableState, type Wild,
+  getVariant, labelInSentence, legalActions, wildTest, type Action, type HandView, type TableState, type Wild,
 } from '@calliope/engine';
 import { SERVER_LIMIT_WARNING_MINUTES, stakesLabel, type RoomView } from '@calliope/shared';
 import { Board, Pot } from '../components/Board.js';
@@ -751,7 +751,7 @@ export function Table({ room, socket }: { room: RoomView; socket: RoomSocket }):
         <div className="table-column">
           {/* The strip heads the table's own column, so the game's name sits over the table's middle. */}
           <div className="table-head">
-            <GameStrip room={room} note={stripNote} alert={stripAlert} />
+            <GameStrip room={room} note={stripNote} alert={stripAlert} onHelp={howToPlay} />
             {!logOpen && (
               <button type="button" className="btn btn-quiet btn-small log-open" onClick={() => toggleLog(true)} aria-label="Show the hand log" title="Show the hand log">
                 <Icon name="chevron-left" /> log
@@ -891,7 +891,7 @@ export function Table({ room, socket }: { room: RoomView; socket: RoomSocket }):
                   </div>
                   {room.lastHand.winners.map((w) => (
                     <div key={w.seat} className="log-line result">
-                      {room.lastHand!.players.find((p) => p.seat === w.seat)?.name} won {fmt(w.amount)}{w.handLabel ? ` with ${w.handLabel.toLowerCase()}` : ''}
+                      {room.lastHand!.players.find((p) => p.seat === w.seat)?.name} won {fmt(w.amount)}{w.handLabel ? ` with ${labelInSentence(w.handLabel)}` : ''}
                     </div>
                   ))}
                 </>
