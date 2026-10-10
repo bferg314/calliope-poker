@@ -751,7 +751,7 @@ export function Table({ room, socket }: { room: RoomView; socket: RoomSocket }):
         <div className="table-column">
           {/* The strip heads the table's own column, so the game's name sits over the table's middle. */}
           <div className="table-head">
-            <GameStrip room={room} note={stripNote} alert={stripAlert} />
+            <GameStrip room={room} note={stripNote} alert={stripAlert} onHelp={howToPlay} />
             {!logOpen && (
               <button type="button" className="btn btn-quiet btn-small log-open" onClick={() => toggleLog(true)} aria-label="Show the hand log" title="Show the hand log">
                 <Icon name="chevron-left" /> log

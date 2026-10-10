@@ -1,5 +1,6 @@
 import { wildLabel } from '@calliope/engine';
 import type { RoomView } from '@calliope/shared';
+import { Icon } from './Icon.js';
 
 const BETTING: Record<string, string> = {
   'no-limit': 'no limit',
@@ -14,7 +15,13 @@ const BETTING: Record<string, string> = {
  * It also carries what the table is waiting on (the draw, shuffling, a pause,
  * the last hand), always on one line, so the table under it never moves.
  */
-export function GameStrip({ room, note, alert = false }: { room: RoomView; note?: string | null; alert?: boolean }): JSX.Element | null {
+export function GameStrip({ room, note, alert = false, onHelp }: {
+  room: RoomView;
+  note?: string | null;
+  alert?: boolean;
+  /** Open how to play: a "?" right after the game's name, for the game nobody at the table has played before. */
+  onHelp?: () => void;
+}): JSX.Element | null {
   const hand = room.table.hand;
   const mode = room.settings.variantMode;
   const dealersChoice = mode.kind === 'dealers-choice';
@@ -47,6 +54,11 @@ export function GameStrip({ room, note, alert = false }: { room: RoomView; note?
   return (
     <div className="game-strip" aria-live="polite">
       <span className="game-name">{title}</span>
+      {onHelp && (
+        <button type="button" className="game-help hit" onClick={onHelp} aria-label={`How to play ${title}`} title="How to play">
+          <Icon name="help" size={20} />
+        </button>
+      )}
       {(note ?? sub) && <span className={`game-sub ${note && alert ? 'alert' : ''}`}>{note ?? sub}</span>}
     </div>
   );

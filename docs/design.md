@@ -102,7 +102,7 @@ Buttons come in three sizes: the action bar's (64px on a phone, 56px wide), the 
 
 ### Icons
 
-Few, and drawn like the rest of the page: `components/Icon.tsx` holds inline SVGs on a 24-unit grid, one 1.5 stroke in the current ink, square ends, no fills (chevrons, close, plus, check, copy, pencil, person). They sit on the text baseline at 16, 20 or 24px. The dealer button stays a printed "D" in a circle, because it is type. Text glyphs (▾ ▸ ×) are not used as icons.
+Few, and drawn like the rest of the page: `components/Icon.tsx` holds inline SVGs on a 24-unit grid, one 1.5 stroke in the current ink, square ends, no fills (chevrons, close, plus, check, copy, pencil, person, eye, and a ringed question mark for how to play). They sit on the text baseline at 16, 20 or 24px. The dealer button stays a printed "D" in a circle, because it is type. Text glyphs (▾ ▸ ×) are not used as icons.
 
 ### Motion
 
