@@ -537,8 +537,13 @@ export function Table({ room, socket }: { room: RoomView; socket: RoomSocket }):
   // A public table the server will close soon says so, well before it happens.
   const closesIn = room.serverLimit ? room.serverLimit.expiresAt - now : null;
   const closingSoon = closesIn !== null && closesIn <= SERVER_LIMIT_WARNING_MINUTES * 60_000;
+  // Triple draw says which of its three draws this is.
+  const drawStreets = variant ? variant.streets.flatMap((st, i) => (st.draw ? [i] : [])) : [];
+  const drawName = drawStreets.length > 1 && hand
+    ? `draw ${drawStreets.indexOf(hand.streetIndex) + 1} of ${drawStreets.length}`
+    : 'the draw';
   const stripNote = hand?.stage === 'discarding'
-    ? (drawSpec?.replace ? 'the draw' : 'everyone throws one away')
+    ? (drawSpec?.replace ? drawName : 'everyone throws one away')
     : levelUp
       ? `stakes are up: ${levelUp}`
       : room.phase === 'final-hand'

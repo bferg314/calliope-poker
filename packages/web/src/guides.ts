@@ -4,7 +4,7 @@
  * (packages/engine/src/variants), not poker in general.
  */
 
-export type Ranking = 'five' | 'three' | 'low' | 'high-card';
+export type Ranking = 'five' | 'three' | 'low' | 'deuce-seven' | 'badugi' | 'high-card';
 
 export interface Guide {
   /** One line on what the game is. */
@@ -138,6 +138,37 @@ export const GUIDES: Record<string, Guide> = {
     ranking: 'five',
     notes: ['How many cards a player drew is shown at their seat, and it says a lot: standing pat usually means a made hand.', 'At most six players, so the deck lasts.'],
   },
+  draw27: {
+    summary: 'Five cards each, three draws, and the worst hand wins.',
+    steps: [
+      BLINDS,
+      'Everyone gets five cards face down. A round of betting.',
+      'Three draws: each time, throw away as many as you like and be dealt that many back, then a round of betting.',
+      'After the third draw and its betting, the showdown.',
+    ],
+    ranking: 'deuce-seven',
+    notes: [
+      'Aces are high, and straights and flushes count against you: 7-5-4-3-2 of mixed suits is the best hand, and A-5-4-3-2 is only ace high.',
+      'Any pair is worse than any five different cards. Compare from the top card down, so 8-6-5-4-2 beats 8-7-4-3-2.',
+      'Bets are small for the first two rounds and double for the last two. At most six players, so the deck lasts.',
+    ],
+  },
+  badugi: {
+    summary: 'Four cards each, three draws, for four low cards of four different suits.',
+    steps: [
+      BLINDS,
+      'Everyone gets four cards face down. A round of betting.',
+      'Three draws: each time, throw away as many as you like and be dealt that many back, then a round of betting.',
+      'After the third draw and its betting, the showdown.',
+    ],
+    ranking: 'badugi',
+    notes: [
+      'A badugi is four cards of four different suits and four different ranks. Aces are low, so A-2-3-4 of four suits is the best hand.',
+      'Cards that repeat a suit or a rank do not play, so any badugi beats any hand of three cards, and three beat two.',
+      'Compare hands of the same size from the top card down: 6-4-3-2 beats 6-5-2-A.',
+      'Bets are small for the first two rounds and double for the last two. At most six players, so the deck lasts.',
+    ],
+  },
   three: {
     summary: 'Three cards each and a single round of betting.',
     steps: [BLINDS, 'Everyone gets three cards face down.', 'One round of betting, then the showdown.'],
@@ -189,6 +220,25 @@ export const LOW_RANKS: { name: string; example: string[] }[] = [
   { name: 'Eight low', example: ['8d', '7c', '5s', '3h', 'Ad'] },
   { name: 'King low', example: ['Kc', 'Jd', '9h', '6s', '4c'] },
   { name: 'Pair', example: ['Ah', 'Ac', '2d', '3s', '4h'] },
+];
+
+/** Deuce-to-seven, best first: the worst poker hand wins, so a pair, a straight or a flush is bad. */
+export const DEUCE_SEVEN_RANKS: { name: string; example: string[] }[] = [
+  { name: 'Seven low', example: ['7c', '5d', '4h', '3s', '2c'] },
+  { name: 'Eight low', example: ['8s', '6h', '4d', '3c', '2h'] },
+  { name: 'King low', example: ['Kd', 'Jc', '9h', '6s', '4c'] },
+  { name: 'Ace low', example: ['Ah', '5c', '4d', '3s', '2h'] },
+  { name: 'Pair', example: ['2c', '2d', '3h', '4s', '5c'] },
+  { name: 'Straight', example: ['7c', '6d', '5h', '4s', '3c'] },
+  { name: 'Flush', example: ['7h', '5h', '4h', '3h', '2h'] },
+];
+
+/** Badugi, best first: more cards that play beat fewer, then the lower top card. */
+export const BADUGI_RANKS: { name: string; example: string[] }[] = [
+  { name: 'Badugi', example: ['4c', '3d', '2h', 'As'] },
+  { name: 'Badugi', example: ['Kc', 'Qd', 'Jh', 'Ts'] },
+  { name: 'Three cards', example: ['4c', '3d', '2s', 'As'] },
+  { name: 'Two cards', example: ['4d', '3s', '2s', 'As'] },
 ];
 
 export const THREE_CARD_RANKS: { name: string; example: string[] }[] = [
