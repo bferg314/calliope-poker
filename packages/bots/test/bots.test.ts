@@ -188,3 +188,28 @@ describe('drawKeep', () => {
     expect(drawKeep(hand('Qh Jd 8s 5c 3h'))).toEqual([]);
   });
 });
+
+describe('Razz', () => {
+  /** Seat 0 holding `down` and `up` on street `street`, against seat 1 showing `theirs`. */
+  function rate(down: string[], up: string[], theirs: string[], street: number): number {
+    const s = reduce(table(['A', 'B'], { variantMode: { kind: 'locked', variantId: 'razz' } }), { type: 'start-hand', deck: seededDeck(2) }).state;
+    const h = s.hand!;
+    h.players[0]!.holeDown = down;
+    h.players[0]!.holeUp = up;
+    h.players[1]!.holeUp = theirs;
+    h.streetIndex = street;
+    return estimateStrength(s, 0);
+  }
+
+  it('wants five different low cards, not pairs or faces', () => {
+    expect(rate(['7c', '5d'], ['2h'], ['Ts'], 0)).toBeGreaterThan(rate(['Kc', 'Kd'], ['3s'], ['Ts'], 0) + 0.25);
+    expect(rate(['5c', '4d', 'Kh'], ['3h', 'Ac', '2s', 'Qd'], ['Ts', '9d', '8c', 'Jh'], 4)).toBeGreaterThan(0.9);
+    expect(rate(['Kc', 'Kd', 'Qh'], ['Qs', 'Jc', 'Jd', '9h'], ['Ts', '9d', '8c', 'Jh'], 4)).toBeLessThan(0.1);
+  });
+
+  it('respects a cleaner low showing across the table', () => {
+    const vsFaces = rate(['7c', '5d'], ['2h', '8s'], ['Ks', 'Qh'], 1);
+    const vsLow = rate(['7c', '5d'], ['2h', '8s'], ['3s', '4h'], 1);
+    expect(vsLow).toBeLessThan(vsFaces);
+  });
+});

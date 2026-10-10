@@ -2,7 +2,7 @@ import { getVariant, legalActions, playersInHand, type Action, type LegalActions
 import type { BotPersonality } from '@calliope/shared';
 import { estimateStrength } from './strength.js';
 
-export { blindStrength, estimateStrength, chenStrength } from './strength.js';
+export { blindStrength, estimateStrength, chenStrength, lowStrength } from './strength.js';
 export { chooseDiscards, drawKeep, drawKeepThree } from './discard.js';
 
 export interface PersonalityParams {
