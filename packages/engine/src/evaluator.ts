@@ -311,8 +311,10 @@ export function bestDeuceSeven(cards: readonly Card[], isWild?: WildTest): HandR
 
 function deuceSevenNatural(cards: readonly Card[]): HandRank {
   const high = evaluateNatural(cards, false);
+  // An ace is never low here: an ace on top is the worst no-pair hand, "ace high".
+  const top = high.ranks[0]!;
   const label = high.category === 0
-    ? `${cap(RANK_NAMES[high.ranks[0]!] ?? '')} low, ${high.ranks.map((r) => RANK_CHARS.charAt(r - 2)).join('-')}`
+    ? `${cap(RANK_NAMES[top] ?? '')} ${top === 14 ? 'high' : 'low'}, ${high.ranks.map((r) => RANK_CHARS.charAt(r - 2)).join('-')}`
     : high.label;
   return { ...high, value: LOW_TOP - high.value, label };
 }

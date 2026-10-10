@@ -227,7 +227,7 @@ export const DEUCE_SEVEN_RANKS: { name: string; example: string[] }[] = [
   { name: 'Seven low', example: ['7c', '5d', '4h', '3s', '2c'] },
   { name: 'Eight low', example: ['8s', '6h', '4d', '3c', '2h'] },
   { name: 'King low', example: ['Kd', 'Jc', '9h', '6s', '4c'] },
-  { name: 'Ace low', example: ['Ah', '5c', '4d', '3s', '2h'] },
+  { name: 'Ace high', example: ['Ah', '5c', '4d', '3s', '2h'] },
   { name: 'Pair', example: ['2c', '2d', '3h', '4s', '5c'] },
   { name: 'Straight', example: ['7c', '6d', '5h', '4s', '3c'] },
   { name: 'Flush', example: ['7h', '5h', '4h', '3h', '2h'] },

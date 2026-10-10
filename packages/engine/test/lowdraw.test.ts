@@ -24,6 +24,7 @@ describe('deuce-to-seven low', () => {
   it('plays aces high, so A-5-4-3-2 is no straight, just ace high', () => {
     const aceHigh = d27(['Ac', '5d', '4h', '3s', '2c']);
     expect(aceHigh.category).toBe(0);
+    expect(aceHigh.label).toBe('Ace high, A-5-4-3-2');
     expect(d27(['Kc', 'Qd', 'Jh', '9s', '8c']).value).toBeGreaterThan(aceHigh.value);
     expect(aceHigh.value).toBeGreaterThan(d27(['2c', '2d', '3h', '4s', '5c']).value);
   });
