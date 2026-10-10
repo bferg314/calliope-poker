@@ -50,7 +50,7 @@ describe('strength', () => {
 describe('decideAction', () => {
   const wilds: Wild[] = [{ kind: 'none' }, { kind: 'jokers' }, { kind: 'deuces' }];
   const cases = BOT_PERSONALITIES.flatMap((personality) => wilds.map((wild) => [personality, wild] as const));
-  for (const variantId of ['holdem', 'omaha', 'stud7', 'stud5', 'pineapple', 'atomic', 'cincinnati', 'draw5', 'three', 'draw3', 'bluff']) {
+  for (const variantId of ['holdem', 'omaha', 'stud7', 'razz', 'stud5', 'pineapple', 'atomic', 'cincinnati', 'draw5', 'three', 'draw3', 'bluff']) {
     for (const [personality, wild] of cases) {
       const named = wild.kind === 'none' ? '' : ` with ${wild.kind} wild`;
       it(`plays ${variantId} legally as ${personality}${named}`, () => {
