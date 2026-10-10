@@ -1,4 +1,4 @@
-import { type Card, makeCard, RANK_NAMES, RANK_PLURALS, rankOf, type Suit, suitOf } from './cards.js';
+import { type Card, makeCard, RANK_CHARS, RANK_NAMES, RANK_PLURALS, rankOf, type Suit, SUITS, suitOf } from './cards.js';
 import type { WildTest } from './wild.js';
 
 /** 0 high card … 8 straight flush; 9 five of a kind, which only wild cards make. */
@@ -62,12 +62,15 @@ export function handLabel(category: HandCategory, ranks: readonly number[]): str
  * keeps even five wilds to a few thousand tries. The hand keeps its real
  * cards; only the rank and label come from the stand-ins.
  */
-function withWilds(cards: readonly Card[], isWild: WildTest | undefined, rank: (cards: Card[]) => HandRank): HandRank {
+function withWilds(cards: readonly Card[], isWild: WildTest | undefined, rank: (cards: Card[]) => HandRank, avoidFlush = false): HandRank {
   const wild = isWild ? cards.filter(isWild).length : 0;
   if (wild === 0) return rank([...cards]);
   const naturals = cards.filter((c) => !isWild!(c));
   const suits = new Set(naturals.map(suitOf));
-  const suit: Suit = suits.size === 1 ? [...suits][0]! : 's';
+  // In deuce-to-seven a flush is bad, so the wilds take turns through suits the hand is not.
+  const one: Suit | undefined = suits.size === 1 ? [...suits][0] : undefined;
+  const offSuits = SUITS.filter((x) => x !== one);
+  const suitAt = (i: number): Suit => (avoidFlush ? offSuits[i % offSuits.length]! : one ?? 's');
   let best: HandRank | null = null;
   const pick: Card[] = [];
   const walk = (from: number): void => {
@@ -77,7 +80,7 @@ function withWilds(cards: readonly Card[], isWild: WildTest | undefined, rank: (
       return;
     }
     for (let r = from; r <= 14; r++) {
-      pick.push(makeCard(r, suit));
+      pick.push(makeCard(r, suitAt(pick.length)));
       walk(r);
       pick.pop();
     }
@@ -97,7 +100,7 @@ export function evaluateCards(cards: readonly Card[], isWild?: WildTest): HandRa
   return withWilds(cards, isWild, evaluateNatural);
 }
 
-function evaluateNatural(cards: readonly Card[]): HandRank {
+function evaluateNatural(cards: readonly Card[], wheel = true): HandRank {
   const ranks = cards.map(rankOf).sort((a, b) => b - a);
   const counts = new Map<number, number>();
   for (const r of ranks) counts.set(r, (counts.get(r) ?? 0) + 1);
@@ -108,7 +111,7 @@ function evaluateNatural(cards: readonly Card[]): HandRank {
   let straightHigh = 0;
   if (isFive && counts.size === 5) {
     if (ranks[0]! - ranks[4]! === 4) straightHigh = ranks[0]!;
-    else if (ranks[0] === 14 && ranks[1] === 5 && ranks[4] === 2) straightHigh = 5;
+    else if (wheel && ranks[0] === 14 && ranks[1] === 5 && ranks[4] === 2) straightHigh = 5;
   }
   const g0 = groups[0]!;
   const g1 = groups[1];
@@ -281,6 +284,74 @@ function lowLabel(category: HandCategory, ranks: readonly number[]): string {
   const top = cap(RANK_NAMES[ranks[0] === 1 ? 14 : ranks[0]!] ?? '');
   if (ranks.length === 1) return `${top} low`;
   return `${top} low, ${ranks.map((r) => LOW_CHARS.charAt(r - 1)).join('-')}`;
+}
+
+/**
+ * Deuce-to-seven low (2-7 Triple Draw): the worst poker hand wins. Aces are
+ * only ever high, straights and flushes count against you, and A-5-4-3-2 is
+ * no straight, just ace high. 7-5-4-3-2 of mixed suits is the nuts. Takes up
+ * to five cards; more, and the best five play.
+ *
+ * `category` and `ranks` are the hand's ordinary poker reading (a pair is
+ * category 1); `value` is turned upside down, so lower hands win the pot.
+ * A wild card takes whatever rank and suit leave the lowest hand.
+ */
+export function bestDeuceSeven(cards: readonly Card[], isWild?: WildTest): HandRank {
+  if (cards.length === 0) throw new Error('bestDeuceSeven needs at least one card');
+  if (cards.length > 5) {
+    let best: HandRank | null = null;
+    for (const combo of combinations(cards, 5)) {
+      const h = bestDeuceSeven(combo, isWild);
+      if (!best || h.value > best.value) best = h;
+    }
+    return best!;
+  }
+  return withWilds(cards, isWild, deuceSevenNatural, true);
+}
+
+function deuceSevenNatural(cards: readonly Card[]): HandRank {
+  const high = evaluateNatural(cards, false);
+  const label = high.category === 0
+    ? `${cap(RANK_NAMES[high.ranks[0]!] ?? '')} low, ${high.ranks.map((r) => RANK_CHARS.charAt(r - 2)).join('-')}`
+    : high.label;
+  return { ...high, value: LOW_TOP - high.value, label };
+}
+
+const BADUGI_SIZES = ['', 'One card', 'Two cards', 'Three cards', 'Badugi'];
+
+/**
+ * Badugi: four cards, and the best hand is four different suits and four
+ * different ranks, aces low, so A-2-3-4 of four suits is the nuts. Cards that
+ * repeat a suit or a rank do not play: a four-card hand (a badugi) beats any
+ * three-card hand, and so on down. Hands of the same size compare from the
+ * top card down, lower winning.
+ *
+ * `category` is how many cards are missing from a badugi (0 to 3) and `ranks`
+ * count aces as 1. A wild card is any card, so it takes a suit the hand is
+ * missing and the lowest rank it is missing.
+ */
+export function bestBadugi(cards: readonly Card[], isWild?: WildTest): HandRank {
+  if (cards.length === 0) throw new Error('bestBadugi needs at least one card');
+  const wilds = isWild ? cards.filter(isWild) : [];
+  const naturals = cards.filter((c) => !isWild?.(c));
+  let best: HandRank | null = null;
+  for (let mask = 0; mask < 1 << naturals.length; mask++) {
+    const pick = naturals.filter((_, i) => mask & (1 << i));
+    if (new Set(pick.map(suitOf)).size !== pick.length) continue;
+    const ranks = pick.map(lowRankOf);
+    if (new Set(ranks).size !== ranks.length) continue;
+    const all = [...ranks];
+    for (let r = 1, w = 0; w < wilds.length && all.length < 4; r++) if (!all.includes(r)) { all.push(r); w++; }
+    const tb = all.sort((a, b) => b - a);
+    let value = tb.length;
+    for (let i = 0; i < 4; i++) value = value * 15 + (i < tb.length ? 14 - tb[i]! : 0);
+    if (!best || value > best.value) {
+      const size = tb.length;
+      const label = `${BADUGI_SIZES[size]}, ${tb.map((r) => LOW_CHARS.charAt(r - 1)).join('-')}`;
+      best = { category: (4 - size) as HandCategory, ranks: tb, value, label, cards: [...pick, ...wilds.slice(0, size - pick.length)] };
+    }
+  }
+  return best!;
 }
 
 /** Positive if a beats b, negative if b beats a, zero on a tie. */
