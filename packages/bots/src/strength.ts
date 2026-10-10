@@ -1,5 +1,5 @@
 import {
-  bestHand, bestHandOmaha, bestLow, dealsJokers, evaluateCards, evaluateThree, fullDeck, getVariant, rankOf, suitOf, wildTest,
+  bestBadugi, bestDeuceSeven, bestHand, bestHandOmaha, bestLow, dealsJokers, evaluateCards, evaluateThree, fullDeck, getVariant, rankOf, suitOf, wildTest,
   type Card, type HandRank, type TableState, type WildTest,
 } from '@calliope/engine';
 
@@ -221,6 +221,10 @@ export function lowStrength(state: TableState, seat: number): number {
   if (!h || !p) return 0;
   const v = getVariant(h.variantId);
   const isWild = wildTest(h.wild);
+  if (v.streets.some((st) => st.draw)) {
+    const left = drawsAfter(v.streets, h.streetIndex);
+    return p.holeDown.length === 4 ? badugiStrength(p.holeDown, isWild, left) : deuceSevenStrength(p.holeDown, isWild, left);
+  }
   const mine = [...p.holeDown, ...p.holeUp, ...h.board];
   const good = lowCards(mine, isWild);
   const left = v.streets.length - 1 - h.streetIndex;
@@ -238,6 +242,39 @@ export function lowStrength(state: TableState, seat: number): number {
     if (clean && bestLow(o.holeUp, isWild).value > showing) { s *= 0.8; break; }
   }
   return clamp(s);
+}
+
+/** How many draws come after street `index`. */
+export function drawsAfter(streets: ReturnType<typeof getVariant>['streets'], index: number): number {
+  return streets.slice(index + 1).filter((st) => st.draw).length;
+}
+
+/**
+ * 2-7: a made hand is worth its top card, a seven the best there is; a hand
+ * with a pair, a straight or a flush is only worth what the draws can make of
+ * it. Aces are high here, so only twos to eights count as good cards.
+ */
+export function deuceSevenStrength(hole: readonly Card[], isWild: WildTest | undefined, drawsLeft: number): number {
+  const made = bestDeuceSeven(hole, isWild);
+  const top = made.ranks[0]!;
+  const madeScore = made.category !== 0 ? 0 : top <= 7 ? 0.95 : top === 8 ? 0.85 : top === 9 ? 0.7 : top === 10 ? 0.55 : top === 11 ? 0.42 : 0.28;
+  const good = new Set(hole.filter((c) => !isWild?.(c) && rankOf(c) <= 8).map(rankOf)).size + hole.filter((c) => isWild?.(c)).length;
+  const need = Math.max(0, 5 - good);
+  const drawScore = drawsLeft === 0 ? 0.05 : 0.8 * (1 - need / (drawsLeft + 2));
+  return clamp(Math.max(madeScore, drawScore));
+}
+
+/**
+ * Badugi: four cards of four suits is a made hand, worth its top card. Three
+ * is a draw, worth more the more draws are left; two or fewer, not much.
+ */
+export function badugiStrength(hole: readonly Card[], isWild: WildTest | undefined, drawsLeft: number): number {
+  const made = bestBadugi(hole, isWild);
+  const size = 4 - made.category;
+  const top = made.ranks[0] ?? 13;
+  if (size === 4) return top <= 5 ? 0.97 : top === 6 ? 0.92 : top === 7 ? 0.86 : top === 8 ? 0.78 : top === 9 ? 0.68 : top === 10 ? 0.58 : top === 11 ? 0.5 : top === 12 ? 0.42 : 0.35;
+  if (size === 3) return drawsLeft > 0 ? clamp(0.25 + 0.25 * (drawsLeft / 3) - (top > 8 ? 0.1 : 0)) : top <= 5 ? 0.3 : 0.15;
+  return drawsLeft > 0 ? 0.12 : 0.03;
 }
 
 /** 0..1 estimate of how strong the seat's hand is right now, from what the bot can see. */
