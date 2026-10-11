@@ -616,7 +616,7 @@
   align-items: flex-start;
   padding-left: var(--s-0);
   justify-content: flex-start;
-  gap: var(--s-0);
+  gap: 0;
   padding-top: var(--s-0);
   background: var(--card-face);
   color: var(--card-ink);
@@ -709,6 +709,8 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  /* Just the figures: a full line box carries room for descenders a rank never has. */
+  line-height: 0.8;
   min-width: 0;
 }
 
