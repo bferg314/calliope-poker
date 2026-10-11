@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { isJoker, wildLabel, type Wild } from '@calliope/engine';
-import { FIVE_CARD_RANKS, GUIDES, LOW_RANKS, THREE_CARD_RANKS } from '../guides.js';
+import { BADUGI_RANKS, DEUCE_SEVEN_RANKS, FIVE_CARD_RANKS, GUIDES, LOW_RANKS, THREE_CARD_RANKS } from '../guides.js';
 import { Card } from './Card.js';
 import { useConfirm } from './Modal.js';
 
@@ -32,9 +32,9 @@ export function GameGuide({ games, first, wild }: { games: { id: string; name: s
   const guide = GUIDES[id];
   const wilds = wildLabel(wild);
   if (!guide) return <p>No guide for this game yet.</p>;
-  const ranks = guide.ranking === 'three' ? THREE_CARD_RANKS
-    : guide.ranking === 'low' ? LOW_RANKS
-    : FIVE_CARD_RANKS.filter((r) => !r.wildOnly || wilds);
+  const charts = { three: THREE_CARD_RANKS, low: LOW_RANKS, 'deuce-seven': DEUCE_SEVEN_RANKS, badugi: BADUGI_RANKS } as const;
+  const ranks = guide.ranking in charts ? charts[guide.ranking as keyof typeof charts] : FIVE_CARD_RANKS.filter((r) => !r.wildOnly || wilds);
+  const lowGame = guide.ranking === 'low' || guide.ranking === 'deuce-seven' || guide.ranking === 'badugi';
 
   return (
     <div className="game-guide">
@@ -63,8 +63,8 @@ export function GameGuide({ games, first, wild }: { games: { id: string; name: s
           <p>The highest card. Aces are high and suits do not count, so two kings split the pot.</p>
         ) : (
           <ol className="game-guide-ranks">
-            {ranks.map((r) => (
-              <li key={r.name}>
+            {ranks.map((r, i) => (
+              <li key={i}>
                 <span className="name">{r.name}</span>
                 <span className="cards">
                   {r.example.map((c, i) => <Card key={i} card={c} width={26} mode="tile" wild={isJoker(c)} />)}
@@ -82,7 +82,7 @@ export function GameGuide({ games, first, wild }: { games: { id: string; name: s
             <li>
               <strong>{wilds.charAt(0).toUpperCase() + wilds.slice(1)}.</strong> A wild card stands for any card at all, even one you already
               hold, and is ringed on the table.{' '}
-              {guide.ranking === 'low' ? 'In a low game it plays as the lowest card you are missing.' : 'With wild cards, five of a kind beats a straight flush.'}
+              {lowGame ? 'In a low game it plays as whatever card leaves your lowest hand.' : 'With wild cards, five of a kind beats a straight flush.'}
             </li>
           )}
         </ul>

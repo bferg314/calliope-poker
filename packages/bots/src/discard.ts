@@ -1,4 +1,8 @@
-import { bestHand, evaluateCards, evaluateThree, getVariant, rankOf, suitOf, wildTest, type Card, type TableState } from '@calliope/engine';
+import {
+  bestBadugi, bestDeuceSeven, bestHand, evaluateCards, evaluateThree, getVariant, rankOf, suitOf, wildTest,
+  type Card, type TableState, type WildTest,
+} from '@calliope/engine';
+import { drawsAfter } from './strength.js';
 
 /** Ranks that appear more than once, most repeated first. */
 function groups(cards: readonly Card[]): { rank: number; cards: Card[] }[] {
@@ -86,6 +90,42 @@ export function drawKeepThree(hole: readonly Card[]): Card[] {
 }
 
 /**
+ * 2-7: stand pat on a nine or better (a ten on the last draw). Otherwise keep
+ * one card of each rank from two to seven, or to eight if that leaves fewer
+ * than three, and break up a straight or a flush by its top card. Wild cards
+ * are always kept. `draws` counts this draw.
+ */
+export function drawKeepDeuceSeven(hole: readonly Card[], isWild: WildTest | undefined, draws: number): Card[] {
+  const made = bestDeuceSeven(hole, isWild);
+  if (made.category === 0 && made.ranks[0]! <= (draws <= 1 ? 10 : 9)) return [...hole];
+  const wilds = hole.filter((c) => isWild?.(c));
+  const lowest = (max: number): Card[] => {
+    const byRank = new Map<number, Card>();
+    for (const c of hole) if (!isWild?.(c) && rankOf(c) <= max && !byRank.has(rankOf(c))) byRank.set(rankOf(c), c);
+    return [...byRank.values()].sort((a, b) => rankOf(a) - rankOf(b));
+  };
+  let keep = lowest(7);
+  if (keep.length + wilds.length < 3) keep = lowest(8);
+  keep = [...keep, ...wilds];
+  if (keep.length === 5 && bestDeuceSeven(keep, isWild).category !== 0) keep = keep.filter((c) => c !== lowest(8).at(-1));
+  return keep;
+}
+
+/**
+ * Badugi: stand pat on a badugi of a jack or better (any badugi on the last
+ * draw). Otherwise keep the cards that play, less any over an eight, and draw
+ * to the rest. Wild cards are always kept.
+ */
+export function drawKeepBadugi(hole: readonly Card[], isWild: WildTest | undefined, draws: number): Card[] {
+  const made = bestBadugi(hole, isWild);
+  if (made.category === 0 && (made.ranks[0]! <= 11 || draws <= 1)) return [...hole];
+  const low = (c: Card): number => (rankOf(c) === 14 ? 1 : rankOf(c));
+  const keep = made.cards.filter((c) => isWild?.(c) || low(c) <= 8);
+  if (keep.length > 0) return keep;
+  return [[...hole].sort((a, b) => low(a) - low(b))[0]!];
+}
+
+/**
  * Which cards a bot throws away. Returns an empty list when the street has no
  * draw, or when standing pat is allowed and best.
  */
@@ -100,6 +140,12 @@ export function chooseDiscards(state: TableState, seat: number): Card[] {
   const hole = p.holeDown;
   // A wild card is never thrown away. To the keep rules it reads as an ace.
   const isWild = wildTest(h.wild);
+  const v = getVariant(h.variantId);
+  if (v.lowball) {
+    const draws = drawsAfter(v.streets, h.streetIndex) + 1;
+    const keep = hole.length === 4 ? drawKeepBadugi(hole, isWild, draws) : drawKeepDeuceSeven(hole, isWild, draws);
+    return hole.filter((c) => !keep.includes(c) && !isWild?.(c)).slice(0, spec.max);
+  }
   if (spec.replace) {
     const shown = hole.map((c) => (isWild?.(c) ? 'As' : c));
     const keep = hole.length === 3 ? drawKeepThree(shown) : drawKeep(shown);

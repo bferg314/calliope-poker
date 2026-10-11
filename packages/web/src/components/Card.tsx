@@ -117,6 +117,18 @@ function DeckCard({ card, picture, art, width, className, delay, label }: { card
 }
 
 /**
+ * A tile's height and pip size for a rank set at `fontSize`. Squarer than a
+ * card, since it only has to hold a rank and a pip and a seat has little
+ * height to give, but never so short that the pip is cut off. The rank's line
+ * is trimmed to its figures (0.8em, see .card-tile .rank), then the pip, with
+ * 2px above, 2px below and a 1px border round it all.
+ */
+function tileGeometry(width: number, fontSize: number): { height: number; pip: number } {
+  const pip = Math.round(fontSize * 0.8);
+  return { height: Math.max(Math.round(width * 1.2), Math.round(fontSize * 0.8) + pip + 6), pip };
+}
+
+/**
  * A card too small for its picture to be read: card stock with the rank and
  * suit set large in Calliope's own type. Not drawn over the deck's art, but in
  * place of it, the way a scorer writes "K♥" rather than sketching the card.
@@ -128,16 +140,16 @@ function CardTile({ card, width, className, delay, label }: { card: CardCode; wi
   const rank = RANK_TEXT[rankOf(card)] ?? '?';
   // The rank fills the tile's width; never under 12px, which is the point of a tile.
   const fontSize = Math.max(12, Math.round(width * (rank.length === 2 ? 0.5 : 0.62)));
+  const { height, pip } = tileGeometry(width, fontSize);
   return (
     <span
       className={`card card-tile ${red ? 'red' : ''} ${className}`}
-      // Squarer than a card: it only has to hold a rank and a pip, and a seat has little height to give.
-      style={{ width, height: Math.round(width * 1.2), animationDelay: `${delay}ms` }}
+      style={{ width, height, animationDelay: `${delay}ms` }}
       role="img"
       aria-label={label}
     >
       <span className="rank" style={{ fontSize }}>{rank}</span>
-      <svg className="pip" viewBox="0 0 100 100" style={{ width: Math.round(fontSize * 0.8), height: Math.round(fontSize * 0.8) }} aria-hidden="true">
+      <svg className="pip" viewBox="0 0 100 100" style={{ width: pip, height: pip }} aria-hidden="true">
         <SuitShape suit={suit} />
       </svg>
     </span>
@@ -147,15 +159,16 @@ function CardTile({ card, width, className, delay, label }: { card: CardCode; wi
 /** A joker too small for its picture, or from a deck that has none: "JK" over a star. */
 function JokerTile({ width, className, delay, label }: { width: number; className: string; delay: number; label: string }): JSX.Element {
   const fontSize = Math.max(12, Math.round(width * 0.5));
+  const { height, pip } = tileGeometry(width, fontSize);
   return (
     <span
       className={`card card-tile red ${className}`}
-      style={{ width, height: Math.round(width * 1.2), animationDelay: `${delay}ms` }}
+      style={{ width, height, animationDelay: `${delay}ms` }}
       role="img"
       aria-label={label}
     >
       <span className="rank" style={{ fontSize }}>JK</span>
-      <svg className="pip" viewBox="0 0 100 100" style={{ width: Math.round(fontSize * 0.8), height: Math.round(fontSize * 0.8) }} aria-hidden="true">
+      <svg className="pip" viewBox="0 0 100 100" style={{ width: pip, height: pip }} aria-hidden="true">
         <JokerStar />
       </svg>
     </span>

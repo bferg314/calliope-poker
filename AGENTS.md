@@ -110,8 +110,8 @@ other scripts, copy to a `*.tmp.mjs`, swap `channel:` for
   for it in `packages/web/src/guides.ts`.
 - Every game type must keep working whenever the table or engine changes:
   hold'em, Omaha, Pineapple, Atomic Pineapple, Cincinnati, seven- and
-  five-card stud, Razz, five-card draw, three-card poker, three-card draw,
-  blind man's bluff.
+  five-card stud, Razz, five-card draw, 2-7 Triple Draw, Badugi, three-card
+  poker, three-card draw, blind man's bluff.
 - Never send a player cards they should not see (folded hands, other players'
   hole cards). Views are built per seat in `packages/engine/src/view.ts`.
 

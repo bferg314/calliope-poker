@@ -101,33 +101,42 @@ async function playToDraw(expectName, shot) {
 
 let failures = 0;
 
-for (const [id, label, shot] of [['pineapple', 'Pineapple', 'draw-pineapple.png'], ['draw5', 'Five-card Draw', 'draw-five-card.png']]) {
+const GAMES = [
+  ['pineapple', 'Pineapple', 'draw-pineapple.png', 1, [2, 3]],
+  ['draw5', 'Five-card Draw', 'draw-five-card.png', 1, [5]],
+  ['draw27', '2-7 Triple Draw', 'draw-deuce-seven.png', 3, [5]],
+  ['badugi', 'Badugi', 'draw-badugi.png', 3, [4]],
+];
+for (const [id, label, shot, draws, counts] of GAMES) {
   const code = await openTable(id);
   log(`${label}: room ${code}`);
   const stripBefore = (await page.locator('.game-strip').textContent())?.replace(/\s+/g, ' ').trim();
   log(`  strip says: ${stripBefore}`);
   if (!stripBefore?.includes(label)) { log(`  FAIL: the strip does not name ${label}`); failures++; }
 
-  const stripDuringDraw = await playToDraw(label, shot);
-  if (!stripDuringDraw) { log('  FAIL: never got a turn to throw cards away'); failures++; continue; }
-  log(`  during the draw: ${stripDuringDraw}`);
+  // Triple-draw games go through all three; the bots folding may end a hand
+  // early, and the next hand's draw counts just the same.
+  for (let d = 1; d <= draws; d++) {
+    const stripDuringDraw = await playToDraw(label, d === 1 ? shot : shot.replace('.png', `-${d}.png`));
+    if (!stripDuringDraw) { log(`  FAIL: never got a turn to throw cards away (draw ${d})`); failures++; break; }
+    log(`  during draw ${d}: ${stripDuringDraw}`);
 
-  // The hand must keep moving once the draw is done.
-  let moved = false;
-  for (let i = 0; i < 40; i++) {
-    await page.waitForTimeout(500);
-    if (!(await page.locator('.draw-buttons').count())) { moved = true; break; }
+    // The hand must keep moving once the draw is done.
+    let moved = false;
+    for (let i = 0; i < 40; i++) {
+      await page.waitForTimeout(500);
+      if (!(await page.locator('.draw-buttons').count())) { moved = true; break; }
+    }
+    if (!moved) { log('  FAIL: stuck on the draw'); failures++; break; }
+    log('  draw completed and play continued');
+
+    const cardCount = await page.locator('.own-seat .card').count();
+    log(`  cards in hand after the draw: ${cardCount}`);
+    if (!counts.includes(cardCount)) { log('  FAIL: wrong card count'); failures++; }
   }
-  if (!moved) { log('  FAIL: stuck on the draw'); failures++; }
-  else log('  draw completed and play continued');
-
-  const cardCount = await page.locator('.own-seat .card').count();
-  log(`  cards in hand after the draw: ${cardCount}`);
-  if (label === 'Pineapple' && cardCount !== 2 && cardCount !== 3) { log('  FAIL: wrong card count'); failures++; }
-  if (label === 'Five-card Draw' && cardCount !== 5) { log('  FAIL: wrong card count'); failures++; }
 }
 
 log('page errors:', errors.length === 0 ? 'none' : errors.join(' | '));
 await browser.close();
 if (failures > 0 || errors.length > 0) { log(`FAILED (${failures} checks)`); process.exit(1); }
-log('passed: both draw games played through the UI');
+log('passed: every draw game played through the UI');

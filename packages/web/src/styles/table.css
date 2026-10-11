@@ -111,16 +111,46 @@
   flex-shrink: 0;
 }
 
+/* The wild cards, for the whole hand: a red badge with a twinkling star. */
+.game-strip .wild-badge {
+  align-self: center;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-1);
+  flex-shrink: 0;
+  padding: var(--s-0) var(--s-2);
+  border-radius: var(--r-btn);
+  background: var(--red);
+  color: var(--on-red);
+  font-variant-caps: all-small-caps;
+  letter-spacing: 0.1em;
+  font-size: var(--t-small);
+  font-weight: 600;
+}
+
+.game-strip .wild-badge .wild-star {
+  width: 12px;
+  flex-shrink: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card.wild::after,
+  .wild-star { animation: none; }
+}
+
 /* How to play, right after the name; drawn as small as the type, hit at full
    size. The strip is shorter than a finger on a phone, so the button's pad
-   reaches over the table's top edge and has to sit above it, seats included. */
+   reaches over the table's top edge and has to sit above it, seats included.
+   Its box runs on below the icon (the negative margin keeps the icon where
+   it is), so the pad sits lower: reaching up into the top bar it would take
+   taps meant for the room code whenever the name sits beneath it. */
 .game-strip .game-help {
   z-index: 4;
   align-self: center;
   display: inline-flex;
   flex-shrink: 0;
-  padding: 0;
-  margin-left: calc(-1 * var(--s-1));
+  padding: 0 0 var(--s-3);
+  margin: 0 0 calc(-1 * var(--s-3)) calc(-1 * var(--s-1));
   border: 0;
   background: none;
   color: var(--ink-2);
@@ -616,7 +646,7 @@
   align-items: flex-start;
   padding-left: var(--s-0);
   justify-content: flex-start;
-  gap: var(--s-0);
+  gap: 0;
   padding-top: var(--s-0);
   background: var(--card-face);
   color: var(--card-ink);
@@ -632,15 +662,55 @@
   color: var(--card-red);
 }
 
-/* A wild card this hand, ringed in the table's accent. An outline rather than a
-   border, so the card keeps its size and nothing beside it moves. */
+/* A wild card this hand: ringed in red, with a star in its top corner that
+   twinkles. An outline rather than a border, so the card keeps its size and
+   nothing beside it moves. */
 .card.wild {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--red);
   outline-offset: 1px;
+}
+
+.card-tile.wild {
+  position: relative;
+}
+
+/* The wild star: a solid four-point star, one shape for the card and the strip. */
+.card.wild::after,
+.wild-star {
+  content: '';
+  aspect-ratio: 1;
+  background: currentColor;
+  clip-path: polygon(50% 0, 61% 39%, 100% 50%, 61% 61%, 50% 100%, 39% 61%, 0 50%, 39% 39%);
+  animation: twinkle 1.8s var(--ease) infinite;
+}
+
+.card.wild::after {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: max(9px, 22%);
+  color: var(--card-red);
+}
+
+/* A tile's rank fills its top, so the star takes the empty corner below. */
+.card-tile.wild::after {
+  top: auto;
+  bottom: 2px;
+  right: 2px;
+  width: max(8px, 30%);
+}
+
+/* A star catching the light: it turns, swells and dims, then rests. */
+@keyframes twinkle {
+  0%, 60%, 100% { transform: none; opacity: 1; }
+  20% { transform: rotate(45deg) scale(1.35); opacity: 0.85; }
+  40% { transform: rotate(90deg) scale(0.8); opacity: 0.6; }
 }
 
 .card-tile .rank {
   letter-spacing: -0.04em;
+  /* Just the figures: a full line box carries room for descenders a rank never has. */
+  line-height: 0.8;
 }
 
 .card-tile .pip {

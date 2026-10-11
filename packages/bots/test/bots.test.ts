@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { createTable, fullDeck, getVariant, legalActions, mulberry32, reduce, seededDeck, shuffle, type TableState, type Wild } from '@calliope/engine';
 import { BOT_PERSONALITIES } from '@calliope/shared';
-import { blindStrength, chenStrength, chooseDiscards, decideAction, drawKeep, drawKeepThree, estimateStrength } from '../src/index.js';
+import {
+  badugiStrength, blindStrength, chenStrength, chooseDiscards, decideAction, deuceSevenStrength, drawKeep, drawKeepBadugi,
+  drawKeepDeuceSeven, drawKeepThree, estimateStrength,
+} from '../src/index.js';
 
 function table(names: string[], config = {}): TableState {
   let s = createTable(config);
@@ -50,7 +53,7 @@ describe('strength', () => {
 describe('decideAction', () => {
   const wilds: Wild[] = [{ kind: 'none' }, { kind: 'jokers' }, { kind: 'deuces' }];
   const cases = BOT_PERSONALITIES.flatMap((personality) => wilds.map((wild) => [personality, wild] as const));
-  for (const variantId of ['holdem', 'omaha', 'stud7', 'razz', 'stud5', 'pineapple', 'atomic', 'cincinnati', 'draw5', 'three', 'draw3', 'bluff']) {
+  for (const variantId of ['holdem', 'omaha', 'stud7', 'razz', 'stud5', 'pineapple', 'atomic', 'cincinnati', 'draw5', 'draw27', 'badugi', 'three', 'draw3', 'bluff']) {
     for (const [personality, wild] of cases) {
       const named = wild.kind === 'none' ? '' : ` with ${wild.kind} wild`;
       it(`plays ${variantId} legally as ${personality}${named}`, () => {
@@ -211,5 +214,48 @@ describe('Razz', () => {
     const vsFaces = rate(['7c', '5d'], ['2h', '8s'], ['Ks', 'Qh'], 1);
     const vsLow = rate(['7c', '5d'], ['2h', '8s'], ['3s', '4h'], 1);
     expect(vsLow).toBeLessThan(vsFaces);
+  });
+});
+
+describe('2-7 Triple Draw', () => {
+  it('stands pat on a nine or better, a ten on the last draw', () => {
+    expect(drawKeepDeuceSeven(['9c', '7d', '5h', '3s', '2c'], undefined, 3)).toHaveLength(5);
+    expect(drawKeepDeuceSeven(['Tc', '7d', '5h', '3s', '2c'], undefined, 3)).toEqual(['2c', '3s', '5h', '7d']);
+    expect(drawKeepDeuceSeven(['Tc', '7d', '5h', '3s', '2c'], undefined, 1)).toHaveLength(5);
+  });
+
+  it('throws aces, pairs and high cards, and breaks a straight', () => {
+    expect(drawKeepDeuceSeven(['Ac', '7d', '7h', '3s', 'Kc'], undefined, 3)).toEqual(['3s', '7d']);
+    expect(drawKeepDeuceSeven(['7c', '6d', '5h', '4s', '3c'], undefined, 2)).toEqual(['3c', '4s', '5h', '6d']);
+  });
+
+  it('rates a made seven above a pair, and a draw by the draws left', () => {
+    expect(deuceSevenStrength(['7c', '5d', '4h', '3s', '2c'], undefined, 0)).toBeGreaterThan(0.9);
+    expect(deuceSevenStrength(['8c', '8d', '4h', '3s', '2c'], undefined, 0)).toBeLessThan(0.1);
+    expect(deuceSevenStrength(['Kc', '7d', '4h', '3s', '2c'], undefined, 3)).toBeGreaterThan(deuceSevenStrength(['Kc', '7d', '4h', '3s', '2c'], undefined, 1));
+  });
+});
+
+describe('Badugi', () => {
+  it('stands pat on a good badugi and draws to the cards that play', () => {
+    expect(drawKeepBadugi(['As', '5h', '8d', 'Jc'], undefined, 3)).toHaveLength(4);
+    expect(drawKeepBadugi(['As', '5h', '8d', 'Kc'], undefined, 3)).toEqual(['As', '5h', '8d']);
+    expect(drawKeepBadugi(['As', '5h', '8d', 'Kc'], undefined, 1)).toHaveLength(4);
+    expect(drawKeepBadugi(['As', '2s', '3d', '4d'], undefined, 3).sort()).toEqual(['3d', 'As']);
+  });
+
+  it('rates a four-card hand above any draw', () => {
+    expect(badugiStrength(['As', '2h', '3d', '4c'], undefined, 0)).toBeGreaterThan(0.9);
+    expect(badugiStrength(['Ks', 'Qh', 'Jd', 'Tc'], undefined, 0)).toBeGreaterThan(badugiStrength(['As', '2h', '3d', '4d'], undefined, 0));
+    expect(badugiStrength(['As', '2h', '3d', '4d'], undefined, 3)).toBeGreaterThan(badugiStrength(['As', '2h', '3d', '4d'], undefined, 0));
+  });
+
+  it('never throws a wild card away', () => {
+    const s = reduce(table(['A', 'B'], { variantMode: { kind: 'locked', variantId: 'badugi' }, wild: { kind: 'deuces' } }), { type: 'start-hand', deck: seededDeck(4) }).state;
+    const h = s.hand!;
+    h.stage = 'discarding';
+    h.streetIndex = 1;
+    h.players[0]!.holeDown = ['2s', 'Kh', 'Kd', 'Qh'];
+    expect(chooseDiscards(s, 0)).not.toContain('2s');
   });
 });
