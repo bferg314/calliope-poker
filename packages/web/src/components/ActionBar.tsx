@@ -124,24 +124,29 @@ export function ActionBar({ legal, waitingFor, onAction, confirmFold, primary, p
     else setBetOpen((o) => !o);
   };
 
+  // Listened for once, reading the latest render through a ref: a listener put
+  // back on every render can be taken off mid-keypress by another listener's
+  // re-render (the "your turn" stamp hides on any key), losing that key.
+  const onKeyRef = useRef<(e: KeyboardEvent) => void>(() => {});
   useEffect(() => {
-    if (!legal && !ahead) return;
-    const onKey = (e: KeyboardEvent): void => {
-      const t = e.target as HTMLElement | null;
-      if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT')) return;
-      const act = actionFor(e, keys);
-      if (!act) return;
-      e.preventDefault();
-      if (legal && (auto || sentOn === turnSig)) return; // already done, as chosen
-      // Before your turn the same keys set what you will do.
-      if (!legal) toggle(act === 'fold' ? 'check-fold' : act);
-      else if (act === 'fold') fold();
-      else if (act === 'call') checkCall();
-      else betRaise();
-    };
+    const onKey = (e: KeyboardEvent): void => onKeyRef.current(e);
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  });
+  }, []);
+  onKeyRef.current = (e: KeyboardEvent): void => {
+    if (!legal && !ahead) return;
+    const t = e.target as HTMLElement | null;
+    if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT')) return;
+    const act = actionFor(e, keys);
+    if (!act) return;
+    e.preventDefault();
+    if (legal && (auto || sentOn === turnSig)) return; // already done, as chosen
+    // Before your turn the same keys set what you will do.
+    if (!legal) toggle(act === 'fold' ? 'check-fold' : act);
+    else if (act === 'fold') fold();
+    else if (act === 'call') checkCall();
+    else betRaise();
+  };
 
   if (legal && (auto || sentOn === turnSig)) {
     // A choice made ahead is going through: nothing here to press.

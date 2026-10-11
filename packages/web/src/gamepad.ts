@@ -16,7 +16,8 @@ import { pickNext, type Direction } from './padNav.js';
  *                        it; A again is done (and Enter, which places a bet)
  *   B                    back: stop changing a value, close the dialog, the
  *                        bet slip or the menu
- *   X / Y                fold / bet or raise, as the fold and raise keys do
+ *   X / Y                fold / bet or raise, as the fold and raise keys do.
+ *                        While drawing, Y draws (or throws the card away)
  *   LB / RB              on a number or slider, ten steps down or up
  *   Start                the table menu
  *   Right stick          scroll
@@ -84,9 +85,14 @@ function focus(el: HTMLElement): void {
   el.scrollIntoView({ block: 'nearest', inline: 'nearest' });
 }
 
-/** Somewhere sensible to start: the main action on screen, else the first control. */
+/**
+ * Somewhere sensible to start: while drawing, your first card; else the main
+ * action on screen; else the first control.
+ */
 function home(list: HTMLElement[]): HTMLElement | undefined {
-  return list.find((el) => el.matches('.btn-ink, .btn-red')) ?? list[0];
+  return list.find((el) => el.matches('.cards.selectable .card-pick'))
+    ?? list.find((el) => el.matches('.btn-ink, .btn-red'))
+    ?? list[0];
 }
 
 function move(dir: Direction): void {
@@ -140,6 +146,13 @@ function press(): void {
   if (el instanceof HTMLInputElement && !['checkbox', 'radio', 'button', 'submit'].includes(el.type)) { key(el, 'Enter'); return; }
   if (el instanceof HTMLTextAreaElement) return;
   el.click();
+}
+
+/** Y: bet or raise, as the raise key does; while drawing, the draw button. */
+function forward(): void {
+  const draw = document.querySelector<HTMLButtonElement>('.draw-go:enabled');
+  if (draw) draw.click();
+  else key(window, currentKeys().raise);
 }
 
 function back(): void {
@@ -222,7 +235,7 @@ function poll(now: number): void {
     if (pressed(A)) { press(); acted = true; }
     if (pressed(B)) { back(); acted = true; }
     if (pressed(X)) { key(window, currentKeys().fold); acted = true; }
-    if (pressed(Y)) { key(window, currentKeys().raise); acted = true; }
+    if (pressed(Y)) { forward(); acted = true; }
     if (repeat(`${pad.index}:lb`, !!b[LB], now)) { adjust(-1, 10); acted = true; }
     if (repeat(`${pad.index}:rb`, !!b[RB], now)) { adjust(1, 10); acted = true; }
     if (pressed(START)) { document.querySelector<HTMLElement>('.menu-wrap > button')?.click(); acted = true; }
@@ -245,7 +258,7 @@ function greet(): void {
   const note = document.createElement('div');
   note.className = 'toast pad-toast';
   note.setAttribute('role', 'status');
-  note.textContent = 'Controller ready: A to press, B to go back, X to fold, Y to bet, Start for the menu';
+  note.textContent = 'Controller ready: A to press, B to go back, X to fold, Y to bet or draw, Start for the menu';
   document.body.appendChild(note);
   window.setTimeout(() => note.remove(), 5000);
 }
