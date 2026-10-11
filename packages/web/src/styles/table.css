@@ -1243,6 +1243,28 @@
   display: none;
 }
 
+/* While drawing on a wide screen, the digit that picks each card, in the same
+   bare corner, as the action bar prints its keys under its buttons. */
+.card-pick .card-key {
+  display: none;
+}
+
+[data-layout='wide'] .card-pick .card-key {
+  display: block;
+  position: absolute;
+  left: var(--s-1);
+  bottom: var(--s-1);
+  padding: var(--s-0) var(--s-1);
+  border-radius: 2px;
+  background: var(--ink);
+  color: var(--paper);
+  font-family: var(--font-ui);
+  font-size: var(--t-micro);
+  font-weight: 600;
+  line-height: 1.2;
+  pointer-events: none;
+}
+
 /* ---------- dealer's choice ---------- */
 .choose-panel {
   position: absolute;

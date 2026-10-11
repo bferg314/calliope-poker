@@ -1027,6 +1027,7 @@ function OwnSeat({ room, socket, layout, maxCards, mySeat, toAct, winAmount, tim
               </span>
             )}
             {selectable && <span className="toss-mark" aria-hidden="true">throw</span>}
+            {selectable && <kbd className="card-key" aria-hidden="true">{i + 1}</kbd>}
           </button>
         ))}
       </div>
