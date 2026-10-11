@@ -1181,9 +1181,19 @@
   animation: pick-nudge 520ms var(--ease);
 }
 
-.cards.selectable .card-pick:focus-visible {
-  outline: 2px solid var(--focus);
+/* The card the arrows or the D-pad are on: ringed over the dashed "you may
+   throw this" ring (which would otherwise win, being the more specific),
+   lifted like a hovered card, and above its overlapping neighbours. */
+.cards.selectable .card-pick:enabled:focus-visible,
+html[data-input='pad'] .cards.selectable .card-pick:enabled:focus {
+  outline: 3px solid var(--focus);
   outline-offset: 3px;
+  z-index: 1;
+}
+
+.cards.selectable .card-pick:enabled:not(.tossed):focus-visible,
+html[data-input='pad'] .cards.selectable .card-pick:enabled:not(.tossed):focus {
+  transform: translateY(-4px);
 }
 
 .cards.selectable .card-pick:nth-child(2) { animation-delay: 60ms; }

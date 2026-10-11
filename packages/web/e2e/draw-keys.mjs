@@ -41,6 +41,19 @@ const tap = async (name) => {
 };
 const tossed = () => page.locator('.own-seat .card-pick.tossed').count();
 const focusedCard = () => page.evaluate(() => [...document.querySelectorAll('.own-seat .card-pick')].indexOf(document.activeElement));
+/** Whether the focused card wears the solid focus ring, rather than the dashed "you may throw this" one. */
+const ringed = () => page.evaluate(() => {
+  const el = document.activeElement;
+  if (!el?.matches('.card-pick')) return false;
+  const cs = getComputedStyle(el);
+  const focus = getComputedStyle(document.documentElement).getPropertyValue('--focus').trim();
+  const probe = document.createElement('i');
+  probe.style.color = focus;
+  document.body.appendChild(probe);
+  const want = getComputedStyle(probe).color;
+  probe.remove();
+  return cs.outlineStyle === 'solid' && cs.outlineColor === want;
+});
 
 let failures = 0;
 const check = (ok, what) => { if (ok) log('  ok:', what); else { log('  FAIL:', what); failures++; } };
@@ -101,6 +114,7 @@ await page.keyboard.press('Escape');
 check((await tossed()) === 0, 'Escape puts everything back');
 await page.keyboard.press('ArrowRight');
 check((await focusedCard()) === 0, 'the right arrow starts on the first card');
+check(await ringed(), 'and the card it is on is ringed in focus blue');
 await page.keyboard.press('ArrowRight');
 check((await focusedCard()) === 1, 'and moves along to the second');
 await page.keyboard.press('Space');
@@ -115,11 +129,24 @@ await page.evaluate(() => window.dispatchEvent(new Event('gamepadconnected')));
 await tap('B'); // the pad is in use from here
 check(await toDraw(() => tap('A')), 'the next draw came round');
 check((await focusedCard()) === 0, 'the draw puts focus on the first card');
+check(await ringed(), 'and rings it');
 await tap('A');
 await tap('RIGHT');
 await tap('A');
 check((await tossed()) === 2, 'A, right, A throws two cards');
 await page.screenshot({ path: path.join(OUT, 'draw-keys-pad.png') });
+await tap('Y');
+check(await drawGone(), 'Y draws');
+
+log('Badugi, a controller after the mouse');
+check(await toDraw(() => tap('A')), 'the last draw came round');
+// A click hands the page back to the pointer and drops focus.
+await page.evaluate(() => { window.dispatchEvent(new Event('pointerdown')); document.activeElement?.blur(); });
+await tap('RIGHT');
+check((await focusedCard()) === 0, 'the D-pad starts on the first card, not the top bar');
+check(await ringed(), 'and rings it');
+await tap('A');
+check((await tossed()) === 1, 'A throws it');
 await tap('Y');
 check(await drawGone(), 'Y draws');
 

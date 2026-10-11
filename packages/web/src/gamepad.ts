@@ -85,9 +85,14 @@ function focus(el: HTMLElement): void {
   el.scrollIntoView({ block: 'nearest', inline: 'nearest' });
 }
 
-/** Somewhere sensible to start: the main action on screen, else the first control. */
+/**
+ * Somewhere sensible to start: while drawing, your first card; else the main
+ * action on screen; else the first control.
+ */
 function home(list: HTMLElement[]): HTMLElement | undefined {
-  return list.find((el) => el.matches('.btn-ink, .btn-red')) ?? list[0];
+  return list.find((el) => el.matches('.cards.selectable .card-pick'))
+    ?? list.find((el) => el.matches('.btn-ink, .btn-red'))
+    ?? list[0];
 }
 
 function move(dir: Direction): void {
