@@ -141,7 +141,7 @@ Rules:
 - **Imported decks** (Profile → Deck → Import) accept the `.zip` or the single `.cards.json`, are checked the same way, and live in IndexedDB as PNG blobs, drawn from object URLs made once when the deck is chosen. A re-import with the same `deckId` replaces the copy; an imported copy of a starter deck stands in for it until removed.
 - **Fallback.** Before a deck is ready, or if one cannot be read, cards fall back to Calliope's own two-ink SVG (oversized index, single centre pip, lattice back).
 - **Jokers.** Drawn from the deck's own joker pictures when it has them (Classic Deck 54 does). Otherwise, and as a tile, Calliope draws its own: "JK" and a star in the red ink, and the word *Joker* in the display italic.
-- **Wild cards** are ringed in `--accent` (a 2px outline, offset 1px, so nothing moves), and named in the game strip after the game ("jokers wild · no limit").
+- **Wild cards** are ringed in `--red` (a 2px outline, offset 1px, so nothing moves) with a solid red four-point star that twinkles in a corner (top right on a picture, bottom right on a tile, clear of the rank), and named in a red badge in the game strip right after the game, with the same star, for the whole hand. The star is a shape, not a glow, and holds still under reduced motion.
 - Backs chosen for starter decks must be obviously "not a face" at 24px.
 
 Face-down cards belonging to the player are never shown face down; the player always sees their own cards. The one exception is Blind Man's Bluff, where your own card is the one card you cannot see: it is a back marked "they see it" until the showdown.

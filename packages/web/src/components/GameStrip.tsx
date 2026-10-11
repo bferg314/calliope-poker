@@ -30,25 +30,29 @@ export function GameStrip({ room, note, alert = false, onHelp }: {
   let title: string;
   let sub: string | null;
 
-  // The wild cards go right after the game: they change what every hand is worth.
-  const withWild = (betting: string | null, wild = wildLabel(hand?.wild ?? room.settings.wild)): string | null =>
-    wild ? (betting ? `${wild} · ${betting}` : wild) : betting;
+  // The wild cards change what every hand is worth, so they get a badge of
+  // their own right after the game, for as long as the hand lasts.
+  let wild: string | null;
 
   if (hand && hand.variantId) {
     title = nameOf(hand.variantId);
-    sub = withWild(BETTING[hand.betting] ?? hand.betting, wildLabel(hand.wild));
+    sub = BETTING[hand.betting] ?? hand.betting;
+    wild = wildLabel(hand.wild);
   } else if (hand && hand.stage === 'choosing') {
     const chooser = hand.chooser !== null ? room.table.seats[hand.chooser]?.name : null;
     title = "Dealer's choice";
     sub = chooser ? `${chooser} is picking the game` : 'picking the game';
+    wild = null;
   } else if (dealersChoice) {
     title = "Dealer's choice";
     // A few games read well by name; past that the strip would run off the
     // table, so it counts them (the lobby lists them all).
-    sub = withWild(mode.allowed.length <= 3 ? mode.allowed.map(nameOf).join(' · ') : `${mode.allowed.length} games`);
+    sub = mode.allowed.length <= 3 ? mode.allowed.map(nameOf).join(' · ') : `${mode.allowed.length} games`;
+    wild = wildLabel(room.settings.wild);
   } else {
     title = nameOf(mode.variantId);
-    sub = withWild(BETTING[room.settings.betting] ?? null);
+    sub = BETTING[room.settings.betting] ?? null;
+    wild = wildLabel(room.settings.wild);
   }
 
   return (
@@ -58,6 +62,12 @@ export function GameStrip({ room, note, alert = false, onHelp }: {
         <button type="button" className="game-help hit" onClick={onHelp} aria-label={`How to play ${title}`} title="How to play">
           <Icon name="help" size={20} />
         </button>
+      )}
+      {wild && (
+        <span className="wild-badge">
+          <span className="wild-star" aria-hidden="true" />
+          {wild}
+        </span>
       )}
       {(note ?? sub) && <span className={`game-sub ${note && alert ? 'alert' : ''}`}>{note ?? sub}</span>}
     </div>
