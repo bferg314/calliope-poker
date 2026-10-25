@@ -142,3 +142,22 @@ jobs:
           name: screenshots
           path: ${{ runner.temp }}/shots
           if-no-files-found: ignore
+
+  deploy:
+    name: Deploy to apps
+    # Only after both jobs pass, and only for main. Never add pull_request_target
+    # or workflow_run to this file: both hand repo secrets to code from forks.
+    needs: [check, play]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions: {}
+    steps:
+      - name: Ask bferg314/deploys to deploy this commit
+        env:
+          TOKEN: ${{ secrets.DEPLOYS_DISPATCH_TOKEN }}
+        run: |
+          curl -fsS -X POST \
+            -H "Authorization: Bearer $TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            https://api.github.com/repos/bferg314/deploys/dispatches \
+            -d "{\"event_type\":\"deploy\",\"client_payload\":{\"app\":\"calliope-poker\",\"sha\":\"$GITHUB_SHA\"}}"
