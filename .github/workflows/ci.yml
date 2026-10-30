@@ -150,6 +150,9 @@ jobs:
     needs: [check, play]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    # The dispatch token lives only in this environment, which only main can use,
+    # so workflows on other branches cannot read it.
+    environment: production
     permissions: {}
     steps:
       - name: Ask bferg314/deploys to deploy this commit
