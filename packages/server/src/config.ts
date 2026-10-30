@@ -23,6 +23,12 @@ export interface Config {
   webDist: string | null;
 }
 
+// Production sits behind a Cloudflare Tunnel, which appends the real client
+// address to X-Forwarded-For. Trusting only the nearest hop makes request.ip
+// that last entry; trusting every hop would take the first, which the client
+// writes. Fastify 5 takes this as a function rather than a hop count.
+export const trustOneProxy = (_address: string, hop: number): boolean => hop === 0;
+
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
   const production = env.NODE_ENV === 'production';
   return {

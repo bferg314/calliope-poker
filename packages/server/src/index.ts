@@ -4,7 +4,7 @@ import cookie from '@fastify/cookie';
 import fastifyStatic from '@fastify/static';
 import websocket from '@fastify/websocket';
 import { Auth } from './auth.js';
-import { loadConfig } from './config.js';
+import { loadConfig, trustOneProxy } from './config.js';
 import { Db, connect, migrate } from './db.js';
 import { registerHttp } from './http.js';
 import { RoomManager } from './manager.js';
@@ -20,7 +20,7 @@ declare module 'fastify' {
 
 async function main(): Promise<void> {
   const config = loadConfig();
-  const app = Fastify({ logger: { level: config.production ? 'info' : 'debug' }, trustProxy: true });
+  const app = Fastify({ logger: { level: config.production ? 'info' : 'debug' }, trustProxy: trustOneProxy });
   app.decorate('publicUrl', config.publicUrl);
 
   const sql = connect(config.databaseUrl);
