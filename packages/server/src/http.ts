@@ -6,7 +6,7 @@ import {
   createRoomSchema, instancePolicySchema, MAX_TEMPLATES, nameSchema, phraseSchema, roomCodeSchema, saveTemplateSchema, updateTemplateSchema,
   type HandDetail, type HandListItem,
 } from '@calliope/shared';
-import { hashSecret, verifySecret, type Auth, type PublicUser } from './auth.js';
+import { hashSecret, verifySecret, Limiter, type Auth, type PublicUser } from './auth.js';
 import type { Db } from './db.js';
 import { RoomError, type RoomManager } from './manager.js';
 import { REFUSAL_STATUS, type TablePolicy } from './policy.js';
@@ -32,6 +32,10 @@ function fail(reply: FastifyReply, status: number, code: string, message: string
 }
 
 export function registerHttp(app: FastifyInstance, s: Services): void {
+  // Each table password check is a deliberately slow scrypt hash, so cap the
+  // attempts per address and per player, as recovery does.
+  const passwordLimiter = new Limiter(10, 15 * 60 * 1000);
+
   app.decorateRequest('user', null);
 
   app.addHook('preHandler', async (request) => {
@@ -248,8 +252,13 @@ export function registerHttp(app: FastifyInstance, s: Services): void {
     const r = rt.record;
     if (!r.members[user.id]) {
       if (r.phase === 'ended') return fail(reply, 410, 'ended', 'That night is over');
-      if (r.passwordHash && !(body.password && verifySecret(body.password, r.passwordHash))) {
-        return fail(reply, 403, 'bad-password', 'Wrong password');
+      if (r.passwordHash) {
+        if (!passwordLimiter.allow(`ip:${request.ip}`) || !passwordLimiter.allow(`user:${user.id}`)) {
+          return fail(reply, 429, 'too-many-attempts', 'Too many attempts. Wait a few minutes and try again.');
+        }
+        if (!(body.password && verifySecret(body.password, r.passwordHash))) {
+          return fail(reply, 403, 'bad-password', 'Wrong password');
+        }
       }
     }
     s.manager.join(rt, user);

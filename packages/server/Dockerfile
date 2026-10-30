@@ -35,4 +35,6 @@ COPY packages/server/src packages/server/src
 COPY packages/server/tsconfig.json packages/server/
 COPY --from=build /app/packages/web/dist packages/web/dist
 EXPOSE 3000
+# The server writes no files, so it runs as the image's unprivileged node user.
+USER node
 CMD ["node_modules/.bin/tsx", "packages/server/src/index.ts"]
